@@ -83,11 +83,37 @@ media slice. The local foundation proves direct
 authorization failures, revocation, token replay and the RTL root/browser shell.
 Final Hebrew copy and the archive/editorial/media acceptance matrix remain pending.
 
+### Branch and release flow (adopted 2026-11-01, mirrors Sana)
+
+Features merge into `dev` through PRs; `main` only receives `dev` → `main`
+release PRs. Vercel's Git auto-deploy is disabled in `vercel.json`, so no
+branch or PR creates a Vercel deployment. A push to `main` runs
+`.github/workflows/vercel-deploy.yml`: it calls the Vercel deploy hook, then a
+smoke gate waits until `/api/health` reports the merged commit on a new
+deployment id with a reachable database and probes `/` and `/sign-in`.
+CI (`Verify`) runs on pull requests only and skips docs-only changes.
+
+The workflow needs repository variable `PROD_URL` and secret
+`VERCEL_DEPLOY_HOOK_URL`, mapped in `hetzy8/ops/secrets/targets.json` and
+pushed from Bitwarden. Neither exists yet; they belong to the authorized
+provisioning step, and a release before then fails the workflow loudly.
+
+Release checklist:
+
+1. `dev` CI is green on the latest merged PRs; list what the batch contains.
+2. Yoram gives an explicit go; open the `dev` → `main` PR
+   (`gh pr create --base main --head dev`) and wait for its checks.
+3. Before merging, confirm migrations are backward-compatible with the code
+   currently live (rollback runs old code against the new schema).
+4. Merge; confirm the `Vercel Deploy (production)` run's smoke gate is green
+   (`gh run list --workflow=vercel-deploy.yml --limit 1`, then
+   `gh run view <id> --json conclusion`).
+5. Tag the deployed `main` commit and record SHA, run and verification here.
+
 After an explicitly authorized release: verify migrations and recovery steps,
-deploy the reviewed `main` SHA, check email and media access with approved test
-accounts, and record the actual deployment. Then apply an annotated `vX.Y.Z`
-tag to that deployed commit (patch for fixes, minor for features, major for
-breaking changes). Do not create a release tag for documentation bootstrap.
+check email and media access with approved test accounts, and record the actual
+deployment. Then apply an annotated `vX.Y.Z` tag to that deployed commit
+(patch for fixes, minor for features, major for breaking changes). Do not create a release tag for documentation bootstrap.
 Rollback must consider database compatibility; do not run a destructive down
 migration merely to make old code start.
 
@@ -143,4 +169,5 @@ At Yoram's instruction, Sana's main ruleset was copied to Kobob and read back:
 [main ruleset](https://github.com/hetzy8/kobob/rules/26310833). It is active on the
 default branch, blocks deletion and non-fast-forward updates, and preserves
 administrator bypass. It does not require PR reviews or status checks. The
-contributor workflow still uses focused branches and PRs into main.
+contributor workflow uses focused branches and PRs into `dev`; see Branch and
+release flow. A matching `dev` ruleset is proposed but not yet applied.

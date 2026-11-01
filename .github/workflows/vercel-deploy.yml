@@ -1,0 +1,127 @@
+name: Vercel Deploy (production)
+
+# Adapted from hetzy8/sana. Vercel's Git auto-deploy is disabled
+# (vercel.json → git.deploymentEnabled false), so no branch or PR creates a
+# Vercel deployment. Production is deployed only by this workflow: on a push to
+# main (the dev → main release merge), or manually via "Run workflow".
+#
+# The smoke job then blocks until the NEW deployment is live and /api/health
+# reports a reachable database, so a build that succeeds but fails at runtime
+# turns this workflow red instead of silently degrading production.
+#
+# Requires: secret VERCEL_DEPLOY_HOOK_URL (distributed from Bitwarden by the
+# ops secrets tooling, never set by hand) and variable PROD_URL (canonical
+# origin, no trailing slash). Both are absent until Yoram authorizes
+# provisioning; a release before then fails here loudly, by design.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Trigger Vercel production deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      before_deployment: ${{ steps.before.outputs.id }}
+    env:
+      PROD_URL: ${{ vars.PROD_URL }}
+    steps:
+      - name: Check configuration
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          missing=0
+          if [ -z "$PROD_URL" ]; then echo "::error::Repository variable PROD_URL is not set"; missing=1; fi
+          if [ -z "$DEPLOY_HOOK_URL" ]; then echo "::error::Secret VERCEL_DEPLOY_HOOK_URL is not set"; missing=1; fi
+          exit "$missing"
+
+      # Record the live deployment BEFORE the hook fires. The smoke gate waits
+      # for a different one; matching on commit alone passes instantly on a
+      # same-commit redeploy while Vercel is still building (sana, 2026-10-04).
+      # Before the first deploy nothing answers, so the id is "unreadable" and
+      # the gate relies on the commit match.
+      - name: Record the live deployment
+        id: before
+        run: |
+          for attempt in 1 2 3; do
+            if body="$(curl -sS --max-time 15 "$PROD_URL/api/health")" \
+               && id="$(echo "$body" | jq -er 'if has("deploymentId") then .deploymentId else "" end' 2>/dev/null)"; then
+              echo "Live deployment before deploy: ${id:-<none>}"
+              echo "id=$id" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "  attempt $attempt: could not read $PROD_URL/api/health; retrying in 10s"
+            sleep 10
+          done
+          echo "::warning::Could not read $PROD_URL/api/health — deploying anyway; the smoke gate will rely on the commit match."
+          echo "id=unreadable" >> "$GITHUB_OUTPUT"
+
+      - name: Call Vercel deploy hook
+        env:
+          DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          curl -fsS -X POST "$DEPLOY_HOOK_URL" -o /dev/null -w 'Deploy hook HTTP %{http_code}\n'
+
+  smoke:
+    name: Post-deploy smoke gate
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PROD_URL: ${{ vars.PROD_URL }}
+      TARGET_SHA: ${{ github.sha }}
+      BEFORE_DEPLOYMENT: ${{ needs.deploy.outputs.before_deployment }}
+    steps:
+      - name: Wait for the new deployment to go live, then verify health
+        run: |
+          echo "Waiting for $PROD_URL to serve commit $TARGET_SHA ..."
+          deadline=$(( $(date +%s) + 15*60 ))
+          while :; do
+            body="$(curl -sS --max-time 15 "$PROD_URL/api/health" 2>/dev/null || echo '{}')"
+            status="$(echo "$body" | jq -r '.status // "unknown"' 2>/dev/null || echo unknown)"
+            commit="$(echo "$body" | jq -r '.commit // ""' 2>/dev/null || true)"
+            deployment="$(echo "$body" | jq -r '.deploymentId // ""' 2>/dev/null || true)"
+            echo "  health: status=$status commit=${commit:0:12} (want ${TARGET_SHA:0:12}) deployment=${deployment:-?} (was ${BEFORE_DEPLOYMENT:-?})"
+            new_deployment=1
+            if [ -n "$BEFORE_DEPLOYMENT" ] && [ "$deployment" = "$BEFORE_DEPLOYMENT" ]; then
+              new_deployment=0
+            fi
+            if [ "$commit" = "$TARGET_SHA" ] && [ "$new_deployment" = 1 ]; then
+              if [ "$status" = "ok" ]; then
+                echo "New deployment is live and database-healthy."
+                break
+              fi
+              echo "::error::New deployment ($TARGET_SHA) is live but /api/health is '$status'. Production is degraded; roll back per docs/OPERATIONS.md."
+              exit 1
+            fi
+            if [ "$(date +%s)" -ge "$deadline" ]; then
+              echo "::error::Timed out after 15m waiting for commit $TARGET_SHA to go live (last status=$status, commit=$commit)."
+              exit 1
+            fi
+            sleep 15
+          done
+
+      - name: Probe key public routes
+        run: |
+          fail=0
+          for path in / /sign-in; do
+            code="$(curl -s -o /dev/null -L --max-time 15 -w '%{http_code}' "$PROD_URL$path")"
+            if [ "$code" = "200" ]; then
+              echo "  OK  $path -> $code"
+            else
+              echo "::error::$path returned $code (expected 200)"
+              fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ] || { echo "::error::Post-deploy route probe failed. Roll back per docs/OPERATIONS.md."; exit 1; }
+          echo "Smoke gate passed — production is live and healthy."

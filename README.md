@@ -65,9 +65,11 @@ source. See [migration](docs/DATA-MIGRATION.md), [hosting](docs/HOSTING.md) and
 When resuming a session, read the [handoff](docs/SESSION-HANDOFF.md) alongside
 the spec and plan, then recheck Git/PR state before changing files.
 
-The first commit established documentation on main. Subsequent work uses a
-focused branch and a PR into main. A documentation merge is not a production
-release. Local setup and actual verification commands are in
+`dev` is the integration branch and `main` is production, as in Sana: work
+on a focused branch from `dev` with a PR into `dev`. A release is a `dev` →
+`main` PR on Yoram's explicit go; merging it deploys to Vercel through the
+deploy workflow, followed by an annotated version tag. A merge into `dev` is
+not a production release. Local setup and actual verification commands are in
 [DEVELOPMENT.md](docs/DEVELOPMENT.md). Production access/content and visual
 approval remain separate from the local foundation.
 

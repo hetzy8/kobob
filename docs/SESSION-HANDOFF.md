@@ -6,7 +6,8 @@ Read AGENTS.md, README.md, docs/README.md, the product spec and plan before chan
 
 ## Repository and current work
 
-- Repository: `hetzy8/kobob`; default branch: `main`.
+- Repository: `hetzy8/kobob`; default branch: `main` (production). Since
+  2026-11-01 feature PRs target `dev`; see OPERATIONS.md → Branch and release flow.
 - PRs #1 and #2 were merged. Yoram then explicitly requested implementation.
 - Current branch: `feat/member-access-foundation`.
 - [PR #3](https://github.com/hetzy8/kobob/pull/3) is open; do not merge by assumption.
@@ -146,7 +147,7 @@ Drive; no files were moved. Permanent deletion awaits retention/cleanup policy.
 At Yoram's request, [main ruleset](https://github.com/hetzy8/kobob/rules/26310833)
 was copied exactly from Sana: active on the default branch, block deletion and
 non-fast-forward updates, administrator bypass. No mandatory reviews/status
-checks were added. Continue focused branches and PRs; do not infer merge or
+checks were added. Continue focused branches and PRs into `dev`; do not infer merge or
 release authorization from the bypass or from a green check.
 
 ## Member-administration update
