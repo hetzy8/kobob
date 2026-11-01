@@ -38,6 +38,7 @@ export function createAuthSystem({
 	onDeliveryError,
 	clientAddress,
 }: Options) {
+	const issuance = new AsyncLocalStorage<{ identifier?: string }>();
 	const consumed = new AsyncLocalStorage<{ member?: MemberContext }>();
 	const auth = betterAuth({
 		baseURL: config.origin,
@@ -99,6 +100,8 @@ export function createAuthSystem({
 							where: { email: parsed.data.email },
 						});
 						if (member?.status !== "active") return false;
+						const scope = issuance.getStore();
+						if (scope) scope.identifier = record.identifier;
 						return {
 							data: {
 								...record,
@@ -294,15 +297,21 @@ export function createAuthSystem({
 				return json({ accepted: true });
 			const member = await db.user.findUnique({ where: { email } });
 			if (member?.status !== "active") return json({ accepted: true });
-			try {
-				await auth.api.signInMagicLink({
-					body: { email, callbackURL: "/family" },
-					headers: request.headers,
-				});
-			} catch {
-				await db.verification.deleteMany({ where: { memberId: member.id } });
-				onDeliveryError?.();
-			}
+			await issuance.run({}, async () => {
+				try {
+					await auth.api.signInMagicLink({
+						body: { email, callbackURL: "/family" },
+						headers: request.headers,
+					});
+				} catch {
+					const identifier = issuance.getStore()?.identifier;
+					if (identifier)
+						await db.verification.deleteMany({
+							where: { identifier, memberId: member.id },
+						});
+					onDeliveryError?.();
+				}
+			});
 			return json({ accepted: true });
 		}
 		if (path === "/api/access/confirm") {

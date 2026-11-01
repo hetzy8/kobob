@@ -154,6 +154,17 @@ Verification: each regression failed before its fix; the complete local check
 passed with 18 unit, 31 PostgreSQL integration and seven Chromium tests, plus
 lint, type checking and production build. Tests use synthetic data and mock mail.
 
+## Failed-delivery cleanup follow-up
+
+Failed delivery now removes only the verification identifier captured for that
+issuance request via AsyncLocalStorage. An overlapping successful delivery keeps
+its credential. The new PostgreSQL regression failed before the change and passes
+afterward. An additional expired-credential test confirms cleanup leaves no
+session; this path already passed before any housekeeping-hook change.
+The broader internal-lock/deletion-hook follow-up remains under investigation.
+Full local verification passed: 18 unit, 33 integration, seven browser tests,
+lint, types and production build, using synthetic data and mocked delivery.
+
 ## Server launchers
 
 With Node 24 selected and dependencies installed, run either
