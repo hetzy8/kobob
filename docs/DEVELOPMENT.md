@@ -185,3 +185,42 @@ and no invented caption, identities or dates. Only a 1600-square WebP derivative
 is stored in public/images; EXIF/XMP are stripped. The source remains outside
 Git. This explicit selection applies to this collage, not the remaining archive.
 Production build passed; lint completed with the three existing cookie warnings.
+
+## Local member administration
+
+The family page links administrators to `/admin/members`. Every list/action
+requires a current verified active admin session and rechecks role, status and
+access version inside a serialized PostgreSQL transaction. Adding grants ordinary
+unverified membership only. Revocation, restoration and email changes advance the
+access version and remove sessions and pending credentials in the same transaction.
+Restored members and changed addresses must verify again. No email is sent by
+these controls. Duplicate addresses and failures return honest generic feedback;
+typed addresses remain available for retry.
+
+A transaction-scoped advisory lock serializes administration and bootstrap,
+including concurrent last-verified-active-admin checks. A private audit table
+records actor/target IDs, action and time without copying email values. No role
+promotion UI, member deletion or production data is included. Administrator email
+changes are deliberately unavailable in the UI; a verified owner-recovery flow
+is still required before enabling that operation for the sole administrator.
+
+`npm run admin:bootstrap` is an explicit interactive operator command. Configure
+an isolated local database and server settings in the process environment first;
+the command does not load production `.env` files. It asks for the address and
+an explicit BOOTSTRAP confirmation, refuses an existing administrator or existing
+member, and leaves email unverified. Its code is tested with synthetic addresses;
+no real bootstrap was run. Live sign-in remains unavailable until approved email
+configuration is implemented. Never put an actual address in Git or shell history.
+
+Browser tests use a separate `.next-e2e` build directory so a local preview can
+remain running. `KOBOB_TEST_PORT=3310` selects a free test port when another
+project uses the default 3100; test config and mocked links share that origin.
+
+Verification for this slice: full local `npm run check` passed with 18 unit,
+40 real PostgreSQL integration and ten Chromium tests, plus lint/types/build.
+Lint retains three existing document.cookie warnings. Browser coverage includes
+anonymous/member denial, the full admin workflow, and an open admin form submitted
+after role removal with input preserved. The Next test server clears the runner's
+react-server NODE_OPTIONS because Next sets its own runtime conditions.
+A fresh code review checked authorization, bootstrap, invalidation and concurrency;
+the owner-email restriction is now explicit and failed-form input is preserved.

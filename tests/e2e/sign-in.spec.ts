@@ -5,7 +5,7 @@ import { createAuthSystem } from "../../src/lib/auth-system";
 import { readServerConfig, requireTestDatabaseUrl } from "../../src/lib/config";
 const db = createDatabase(requireTestDatabaseUrl(process.env));
 const config = readServerConfig({
-	SITE_ORIGIN: "http://127.0.0.1:3100",
+	SITE_ORIGIN: `http://127.0.0.1:${process.env.KOBOB_TEST_PORT || "3100"}`,
 	DATABASE_URL: requireTestDatabaseUrl(process.env),
 	AUTH_SECRET: "synthetic-browser-secret-more-than-32-characters",
 });
@@ -20,8 +20,8 @@ test.afterAll(async () => {
 	await db.user.deleteMany();
 	await db.$disconnect();
 });
-async function emailLink() {
-	await db.user.create({ data: { email: "browser@example.test" } });
+async function emailLink(role: "admin" | "member" = "member") {
+	await db.user.create({ data: { email: "browser@example.test", role } });
 	let link = "";
 	const auth = createAuthSystem({
 		db,
@@ -213,7 +213,9 @@ test("reads a fresh verification fragment in the same document", async ({
 	await page.getByRole("button", { name: expected.confirm }).click();
 	// A completed invalid confirmation proves client handlers are attached and
 	// also verifies that the next fragment clears the previous error.
-	await expect(page.locator("main").getByRole("alert")).toHaveText(expected.invalid);
+	await expect(page.locator("main").getByRole("alert")).toHaveText(
+		expected.invalid,
+	);
 	await page.evaluate((url) => {
 		window.location.href = url;
 	}, link);
@@ -222,4 +224,68 @@ test("reads a fresh verification fragment in the same document", async ({
 	).toBeVisible();
 	expect(new URL(page.url()).hash).toBe("");
 	await confirmSignIn(page);
+});
+
+test("administrator adds, changes, revokes and restores membership", async ({
+	page,
+}) => {
+	await page.goto(await emailLink("admin"));
+	await confirmSignIn(page);
+	await page.goto("/admin/members");
+	const add = page.locator("form").filter({
+		has: page.getByRole("button", { name: "הוספת גישה", exact: true }),
+	});
+	await add.getByRole("textbox").fill("new@example.test");
+	await add.getByRole("button").click();
+	let row = page.locator("section").filter({
+		has: page.getByRole("heading", { name: "new@example.test", exact: true }),
+	});
+	await expect(row).toBeVisible();
+	await row.getByRole("textbox").fill("changed@example.test");
+	await row.getByRole("button", { name: "עדכון כתובת דוא״ל" }).click();
+	row = page.locator("section").filter({
+		has: page.getByRole("heading", {
+			name: "changed@example.test",
+			exact: true,
+		}),
+	});
+	await expect(row).toBeVisible();
+	await row.getByRole("button", { name: "ביטול גישה", exact: true }).click();
+	await expect(row.getByRole("button", { name: "חידוש גישה" })).toBeVisible();
+	await row.getByRole("button", { name: "חידוש גישה" }).click();
+	await expect(
+		row.getByRole("button", { name: "ביטול גישה", exact: true }),
+	).toBeVisible();
+});
+test("anonymous and ordinary family users cannot view membership", async ({
+	page,
+}) => {
+	await page.goto("/admin/members");
+	await expect(page).toHaveURL(/\/sign-in$/);
+	await page.goto(await emailLink());
+	await confirmSignIn(page);
+	await page.goto("/admin/members");
+	await expect(page).toHaveURL(/\/sign-in$/);
+	await expect(page.getByText("browser@example.test")).toHaveCount(0);
+});
+
+test("an open admin form cannot mutate membership after role removal", async ({
+	page,
+}) => {
+	await page.goto(await emailLink("admin"));
+	await confirmSignIn(page);
+	await page.goto("/admin/members");
+	const form = page
+		.locator("form")
+		.filter({
+			has: page.getByRole("button", { name: "הוספת גישה", exact: true }),
+		});
+	await form.getByRole("textbox").fill("denied@example.test");
+	await db.user.updateMany({ data: { role: "member" } });
+	await form.getByRole("button").click();
+	await expect(form.getByRole("status")).not.toBeEmpty();
+	await expect(form.getByRole("textbox")).toHaveValue("denied@example.test");
+	expect(await db.user.count({ where: { email: "denied@example.test" } })).toBe(
+		0,
+	);
 });

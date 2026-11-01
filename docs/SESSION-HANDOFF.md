@@ -148,3 +148,13 @@ was copied exactly from Sana: active on the default branch, block deletion and
 non-fast-forward updates, administrator bypass. No mandatory reviews/status
 checks were added. Continue focused branches and PRs; do not infer merge or
 release authorization from the bypass or from a green check.
+
+## Member-administration update
+
+Local Task 2 implementation now includes explicit unverified bootstrap, admin
+listing/add/revoke/restore/member-email actions, transactional invalidation and
+minimal membership audit. See DEVELOPMENT.md. Owner email recovery/change remains
+restricted and live delivery remains disconnected. No real member was created.
+Earlier statements that administration does not exist describe the prior slice.
+Recheck current PR/head/CI before resuming. Housekeeping PR #6 was still open at
+the start of this slice; do not assume its fix merged into main.

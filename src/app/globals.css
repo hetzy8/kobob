@@ -166,3 +166,12 @@ button:disabled {
 	height: auto;
 	margin-block: 2rem;
 }
+
+.member-list {
+	display: grid;
+	gap: 1.5rem;
+	margin-block: 2rem;
+}
+.member-list h2 {
+	overflow-wrap: anywhere;
+}
