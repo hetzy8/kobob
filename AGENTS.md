@@ -61,9 +61,20 @@ decisions and implemented behavior as different statuses.
 
 ## Development and documentation
 
-- First initialization may establish `main` because the remote has no history.
-  Afterward, fetch current refs, inspect the worktree, and work on a focused
-  branch with a PR into `main`. Never overwrite another contributor's work.
+- Branch flow (adopted 2026-11-01, as in hetzy8/sana): `dev` is the
+  integration branch and `main` is production. Fetch current refs, inspect the
+  worktree, branch from `origin/dev`, and open a PR into `dev`
+  (`gh pr create --base dev`; the default branch is still `main`, so the base
+  must be explicit). Never push to `dev` or `main` directly, and never PR a
+  feature into `main`: a merge to `main` deploys production. Never overwrite
+  another contributor's work.
+- A release is a `dev` → `main` PR opened only on Yoram's explicit go. Merging
+  it triggers `.github/workflows/vercel-deploy.yml` (Vercel Git auto-deploy is
+  off in `vercel.json`); after its smoke gate passes, tag the deployed `main`
+  commit (see Secrets, costs, and operations), then `dev` is deleted and
+  recreated from that commit and open PRs are retargeted to it. Agents cannot
+  push to `dev`/`main` (hetzy8-eng command guard); Yoram runs those pushes.
+  See docs/OPERATIONS.md → Branch and release flow.
 - Keep README.md as the human entry point and docs/README.md as the map.
   Dated designs live in `docs/superpowers/specs/`; dated executable plans live
   in `docs/superpowers/plans/`. Update status and affected docs with behavior.
