@@ -258,8 +258,27 @@ export function createAuthSystem({
 			return json({ error: "FORBIDDEN" }, 403);
 		let input: unknown;
 		try {
-			const text = await request.text();
-			if (text.length > 4096) return json({ error: "INVALID_REQUEST" }, 400);
+			const reader = request.body?.getReader();
+			const decoder = new TextDecoder();
+			let text = "";
+			let bytes = 0;
+			if (reader) {
+				try {
+					while (true) {
+						const { done, value } = await reader.read();
+						if (done) break;
+						bytes += value.byteLength;
+						if (bytes > 4096) {
+							await reader.cancel();
+							return json({ error: "INVALID_REQUEST" }, 400);
+						}
+						text += decoder.decode(value, { stream: true });
+					}
+					text += decoder.decode();
+				} finally {
+					reader.releaseLock();
+				}
+			}
 			input = request.headers.get("content-type")?.includes("application/json")
 				? JSON.parse(text)
 				: Object.fromEntries(new URLSearchParams(text));

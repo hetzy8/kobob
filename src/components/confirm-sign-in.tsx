@@ -1,22 +1,23 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { copy } from "@/locales/he";
 export function ConfirmSignIn() {
 	const [token, setToken] = useState<string | null>(null);
-	const fragmentRead = useRef(false);
 	const [pending, setPending] = useState(false);
 	const [error, setError] = useState("");
 	useEffect(() => {
-		if (fragmentRead.current) return;
-		fragmentRead.current = true;
-		const value = new URLSearchParams(window.location.hash.slice(1)).get(
-			"token",
-		);
-		// This effect synchronizes a browser-only URL fragment; it cannot be read during SSR.
-		setToken(value);
-		if (window.location.hash)
+		function readFragment() {
+			const hash = window.location.hash;
+			if (!hash) return;
+			const value = new URLSearchParams(hash.slice(1)).get("token");
+			setToken(value);
+			setError("");
 			window.history.replaceState(null, "", window.location.pathname);
+		}
+		readFragment();
+		window.addEventListener("hashchange", readFragment);
+		return () => window.removeEventListener("hashchange", readFragment);
 	}, []);
 	if (!token)
 		return (
@@ -42,6 +43,8 @@ export function ConfirmSignIn() {
 							body: JSON.stringify({ token }),
 						});
 						if (response.ok && new URL(response.url).pathname === "/family") {
+							document.cookie =
+								"kobob_logout_pending=; Path=/; Max-Age=0; SameSite=Strict";
 							window.location.replace("/family");
 							return;
 						}

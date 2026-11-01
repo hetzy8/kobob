@@ -391,3 +391,27 @@ describe("fresh access checks", () => {
 		);
 	});
 });
+
+it("cancels oversized streamed bodies before reading further chunks", async () => {
+	let cancelled = false;
+	let pulls = 0;
+	const body = new ReadableStream<Uint8Array>({
+		pull(controller) {
+			pulls++;
+			controller.enqueue(new Uint8Array(4097));
+			if (pulls > 3) controller.close();
+		},
+		cancel() {
+			cancelled = true;
+		},
+	});
+	const request = new Request(`${config.origin}/api/access/request`, {
+		method: "POST",
+		headers: { origin: config.origin, "content-type": "application/json" },
+		body,
+		duplex: "half",
+	} as RequestInit);
+	expect((await system().handle(request)).status).toBe(400);
+	expect(cancelled).toBe(true);
+	expect(pulls).toBeLessThanOrEqual(2);
+});

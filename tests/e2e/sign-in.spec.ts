@@ -113,6 +113,15 @@ test("locks private UI when logout fails without claiming server revocation, the
 		page.getByRole("heading", { name: expected.family }),
 	).toHaveCount(0);
 	expect(await db.session.count()).toBe(1);
+	await page.goto("/");
+	await page.goto("/family");
+	await expect(
+		page.getByRole("button", { name: expected.retrySignOut }),
+	).toBeVisible();
+	await page.reload();
+	await expect(
+		page.getByRole("heading", { name: expected.family }),
+	).toHaveCount(0);
 	await page.unroute("**/api/access/sign-out");
 	await page.getByRole("button", { name: expected.retrySignOut }).click();
 	await expect(page).toHaveURL(`${config.origin}/`);
@@ -194,4 +203,22 @@ test("shows Hebrew interface copy and Achievements with a plain sign-in label", 
 		await expect(page.locator('[lang="en"]')).toHaveCount(0);
 		expect(await page.title()).toBe(expected.title);
 	}
+});
+
+test("reads a fresh verification fragment in the same document", async ({
+	page,
+}) => {
+	const link = await emailLink();
+	await page.goto("/verify");
+	await expect(
+		page.getByRole("link", { name: expected.requestAnother }),
+	).toBeVisible();
+	await page.evaluate((url) => {
+		window.location.href = url;
+	}, link);
+	await expect(
+		page.getByRole("button", { name: expected.confirm }),
+	).toBeVisible();
+	expect(new URL(page.url()).hash).toBe("");
+	await confirmSignIn(page);
 });

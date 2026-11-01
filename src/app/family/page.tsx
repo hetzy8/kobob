@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireMember } from "@/services/access";
 import { SessionPanel } from "@/components/session-panel";
@@ -11,10 +12,12 @@ export default async function Family() {
 			redirect("/sign-in");
 		throw new Error(copy.error);
 	}
+	const logoutPending =
+		(await cookies()).get("kobob_logout_pending")?.value === "1";
 	return (
-		<SessionPanel>
-			<h1>{copy.family}</h1>
-			<p>{copy.foundation}</p>
+		<SessionPanel logoutPending={logoutPending}>
+			{!logoutPending && <h1>{copy.family}</h1>}
+			{!logoutPending && <p>{copy.foundation}</p>}
 		</SessionPanel>
 	);
 }

@@ -139,3 +139,17 @@ library housekeeping of expired/internal lock rows. These affect link availabili
 and database cleanup, not authorization: expired/revoked credentials remain denied.
 Resolve both before enabling live delivery/real membership; test overlapping
 successful/failed sends and safe cleanup separately from consumption proof.
+
+## Copilot review fixes
+
+PR #3 review follow-ups persist pending logout in a browser session cookie.
+The family server page omits private children while that intent is present,
+including before hydration; successful logout or explicit fresh confirmation
+clears it. This is a UI lock, not a substitute for server session revocation.
+Verification handles initial and subsequent hash fragments, removes credentials
+from the address bar and clears prior errors. Access requests enforce a 4,096-byte
+limit during streaming and cancel oversized bodies before parsing.
+
+Verification: each regression failed before its fix; the complete local check
+passed with 18 unit, 31 PostgreSQL integration and seven Chromium tests, plus
+lint, type checking and production build. Tests use synthetic data and mock mail.

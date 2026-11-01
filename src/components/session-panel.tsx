@@ -2,11 +2,18 @@
 import { useState } from "react";
 import { copy } from "@/locales/he";
 import { useClientReady } from "./use-client-ready";
-export function SessionPanel({ children }: { children: React.ReactNode }) {
-	const [locked, setLocked] = useState(false);
+export function SessionPanel({
+	children,
+	logoutPending = false,
+}: {
+	children: React.ReactNode;
+	logoutPending?: boolean;
+}) {
+	const [locked, setLocked] = useState(logoutPending);
 	const [pending, setPending] = useState(false);
 	const ready = useClientReady();
 	async function signOut() {
+		document.cookie = "kobob_logout_pending=1; Path=/; SameSite=Strict";
 		setLocked(true);
 		setPending(true);
 		try {
@@ -16,6 +23,8 @@ export function SessionPanel({ children }: { children: React.ReactNode }) {
 				body: "{}",
 			});
 			if (response.ok) {
+				document.cookie =
+					"kobob_logout_pending=; Path=/; Max-Age=0; SameSite=Strict";
 				window.location.replace("/");
 				return;
 			}
