@@ -1,19 +1,19 @@
-// Hebrew interface copy. Family names, biography and archive content remain
-// unpopulated until supplied and approved; neutral labels do not invent facts.
+// Hebrew interface copy. The display name was supplied by Yoram.
+// Biography and archive content remain unpopulated until supplied and approved.
 export const copy = {
 	preview: "גרסת פיתוח — התוכן המשפחתי עדיין לא נוסף.",
-	title: "אתר ההנצחה",
-	documentTitle: "אתר ההנצחה — גרסת פיתוח",
+	title: "יקי חץ",
+	documentTitle: "יקי חץ — גרסת פיתוח",
 	skip: "דילוג לתוכן",
 	navigationLabel: "ניווט ראשי",
 	about: "סיפור חיים",
 	achievements: "הישגים",
-	archive: "הארכיון",
+	archive: "ארכיון",
 	navigation: [
 		{ href: "/", label: "דף הבית" },
 		{ href: "/about", label: "סיפור חיים" },
 		{ href: "/achievements", label: "הישגים" },
-		{ href: "/archive", label: "הארכיון" },
+		{ href: "/archive", label: "ארכיון" },
 	],
 	empty: "עדיין לא נוסף תוכן ציבורי.",
 	deliveryNotice: "שליחת קישורי כניסה בדוא״ל עדיין אינה זמינה בגרסת הפיתוח.",

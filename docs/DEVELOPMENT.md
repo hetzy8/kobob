@@ -14,7 +14,7 @@ durable issuance throttles; logout retry that hides private UI on failure.
 The public pages are honest empty shells, not the completed archive. Interface
 copy is Hebrew in `src/locales/he.ts`, including navigation, sign-in and error
 states. Yoram requested the shorter Achievements label and plain Sign in.
-Neutral headings avoid inventing an unapproved Hebrew name. No biography,
+The Hebrew display name was supplied explicitly by Yoram. No biography,
 awards, dates or rights are invented.
 User management/bootstrap, shared editing, publication, archive/restore, content
 search, media, embeds and imports remain future slices. The access service's
