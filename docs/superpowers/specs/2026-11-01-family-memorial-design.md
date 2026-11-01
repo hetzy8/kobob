@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-01
 **Repository:** hetzy8/kobob
-**Status:** development authorized; agreed rules consolidated; page design and remaining engineering choices under review; no application code yet
+**Status:** initial local application/access foundation implemented; full archive/editorial flows and final presentation pending; not deployed
 **Initial intended domain:** kobobhetz.org; ownership, DNS and deployment unverified
 
 ## 1. Intent and evidence
@@ -36,7 +36,7 @@ remain separate from approved scope and implemented behavior.
 - One unified searchable archive uses media-type filters rather than separate
   photo, audio, video, article and memory sections. Mixed-media items retain
   one identity with multiple sources or delivery representations.
-- A dedicated **Achievements and prizes** section covers recognition across
+- A dedicated **Achievements** section covers recognition across
   the years and links to supporting archive items and external sources.
 - Much material lives on other websites. External-source entries are first-class
   archive items; links do not imply permission to copy content.
@@ -148,10 +148,12 @@ from faces. Original and derivative hashes remain separate.
 
 ## 6. Authentication proposal and compatibility gate
 
-Code versus link and the maintained auth-library choice remain open.
-Auth.js/Prisma and Better Auth are candidates; documentation is not integration
-proof. Verify compatible supported versions and pin them. No copied beta version
-or custom cryptography by default.
+The local foundation uses Better Auth 1.7.15 with Prisma 7.10.1 and confirmation
+links as an initial engineering default, not a claimed explicit family preference
+for links over codes. Registry compatibility, source inspection and isolated
+contract tests informed this choice; versions are pinned. See
+[development](../../DEVELOPMENT.md) for implemented scope and limitations.
+No custom cryptography or automatic signup is introduced.
 
 The proposed link flow sends only to active members with a generic public
 request result. Random hashed single-use credentials bind to member/access
@@ -242,8 +244,8 @@ imports, DNS changes and launch remain separately authorized work.
 
 ## 9. Remaining decisions
 
-Before editorial implementation: review page structure, select the sign-in
-method, define permanent-deletion/retention behavior and
+Before editorial implementation: review page structure, define permanent-
+deletion/retention behavior and
 prove compatible packages/provider integrations. Engineering can choose focused
 schema/service details within these boundaries.
 

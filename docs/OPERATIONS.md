@@ -1,7 +1,8 @@
 # Operations, cost and launch conventions
 
-**Status:** planned. No application services, secrets, backups, monitoring or
-domain configuration were created during documentation initialization.
+**Status:** initial local foundation exists; provider services, live email,
+secrets distribution, backups, monitoring integration and domain configuration
+remain unprovisioned. Local test data and source CI configuration are not production.
 
 ## Ownership
 
@@ -76,9 +77,11 @@ to a secret. A later `.env.example` contains empty placeholders only.
 ## Verification and release
 
 Documentation-only changes check links, scope, English text, statuses and
-whitespace; there is no app suite yet. Future CI uses isolated databases,
-mocked email/storage and synthetic family fixtures. It must prove direct
-authorization failures, revocation, token replay and Hebrew RTL flows.
+whitespace. The local application suite and bounded PR workflow use isolated databases,
+mocked email and synthetic fixtures; private media/storage tests belong to the
+media slice. The local foundation proves direct
+authorization failures, revocation, token replay and the RTL root/browser shell.
+Final Hebrew copy and the archive/editorial/media acceptance matrix remain pending.
 
 After an explicitly authorized release: verify migrations and recovery steps,
 deploy the reviewed `main` SHA, check email and media access with approved test
@@ -133,3 +136,11 @@ must cover new website data; preserved Drive originals do not cover it.
 Repository visibility remains unresolved: the repository is currently public
 and contains engineering docs only, while the source brief proposed private
 GitHub. Do not change visibility or add private archive exports by assumption.
+
+## Repository protection verified, 2026-11-01
+
+At Yoram's instruction, Sana's main ruleset was copied to Kobob and read back:
+[main ruleset](https://github.com/hetzy8/kobob/rules/26310833). It is active on the
+default branch, blocks deletion and non-fast-forward updates, and preserves
+administrator bypass. It does not require PR reviews or status checks. The
+contributor workflow still uses focused branches and PRs into main.

@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:17.7-alpine
+    environment:
+      POSTGRES_USER: kobob_test
+      POSTGRES_PASSWORD: synthetic-local-test-only
+      POSTGRES_DB: kobob_test
+    ports:
+      - "127.0.0.1:55439:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kobob_test -d kobob_test"]
+      interval: 1s
+      timeout: 5s
+      retries: 30

@@ -13,12 +13,13 @@ by Yoram. All active verified family members can read private items and edit,
 publish, unpublish, archive and restore everyone's items. Restoration is private;
 only Yoram manages users or permanently deletes items.
 
-The repository currently contains documentation only. Yoram authorized starting
-development on 2026-11-01; Task 0 design/compatibility decisions remain in progress.
-The current work is consolidated planning and page design, not scaffolding.
-Do not provision services, import real data, change DNS, send invitations or deploy
-without the corresponding explicit instruction. Preserve requirements, proposals,
-open decisions and implemented behavior as different statuses.
+The repository now has an initial local application/access foundation. Yoram
+authorized development on 2026-11-01 and resumed implementation after merging
+the consolidated plan. See docs/DEVELOPMENT.md for exact implemented scope and
+checks; do not confuse page shells with a completed archive. Do not provision
+services, import real data, change DNS, send invitations or deploy without the
+corresponding explicit instruction. Preserve requirements, proposals, open
+decisions and implemented behavior as different statuses.
 
 ## Language and family content
 
@@ -95,3 +96,13 @@ deployed `main` commit. Do not tag this docs initialization as a production
 release. Record deploy SHA, verification, migration/rollback notes, and restore
 evidence. Monitoring integration belongs in a later ops PR; do not modify ops
 as part of this repository initialization.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
