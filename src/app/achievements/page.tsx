@@ -1,8 +1,8 @@
-import { copy } from "@/locales/development";
+import { copy } from "@/locales/he";
 export default function Achievements() {
 	return (
 		<>
-			<h1>Achievements and prizes</h1>
+			<h1>{copy.achievements}</h1>
 			<p>{copy.empty}</p>
 		</>
 	);

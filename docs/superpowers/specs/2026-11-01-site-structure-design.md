@@ -1,7 +1,7 @@
 # Site structure and sitemap proposal
 
 **Date:** 2026-11-01
-**Status:** page-composition proposal; initial empty page/access shells implemented; final Hebrew copy and visual direction pending
+**Status:** page-composition proposal; initial Hebrew page/access shells implemented; approved family content and visual direction pending
 **Product rules:** [memorial specification](2026-11-01-family-memorial-design.md)
 
 ## Intent and approach
@@ -9,8 +9,9 @@
 Help public visitors discover Yaki's story and public archive material, while
 family members preserve and edit the same collection privately. Keep one
 archive and one item identity, with supported playback and clear source links.
-All navigation labels here are English engineering labels; Hebrew labels need
-approval and are not invented here.
+The navigation labels below are English engineering descriptions. The actual
+interface is Hebrew, with strings centralized in `src/locales/he.ts`. Approved
+family names and biographical content remain separate from interface labels.
 
 Yoram chose a unified archive with type filters over separate photo/video/audio/
 article sections. Separate sections would duplicate navigation and fragment
@@ -26,7 +27,7 @@ engineering proposals for review.
 |---|---|---|---|
 | Home `/` | Introduce Yaki and offer curated entry points | Public content only | Same public view; family workspace link |
 | About Yaki `/about` | Approved biography and supporting material | Public content only | Family editing entry point |
-| Achievements and prizes `/achievements` | Recognition across the years, connected to evidence | Public entries/relationships only | Public and private entries with clear visibility |
+| Achievements `/achievements` | Recognition across the years, connected to evidence | Public entries/relationships only | Public and private entries with clear visibility |
 | Archive `/archive` | Search/filter one collection | Public items only | Public/private items, with visibility filter |
 | Item `/archive/[id]` | Read/view/play an item and follow its sources | Public item/representations only | Any non-archived private/public item |
 | Sign in `/sign-in` | Verify email for existing membership | Generic request result | Sign out or continue to workspace |
@@ -63,7 +64,7 @@ Related private records never reveal titles, images or snippets to public reader
 Timeline is not a separate first-release section; verified dates may appear here
 or in the archive. A standalone timeline can be added later if justified.
 
-### Achievements and prizes
+### Achievements
 
 A dedicated recognition list with date evidence, approved name, awarding body
 when known, short description and supporting sources/items. Propose chronological
@@ -120,7 +121,7 @@ access records never appear in public pages or general archive exports.
 
 ## Navigation and adaptability
 
-Propose main navigation: Home, About Yaki, Achievements and prizes, Archive.
+Propose main navigation: Home, About Yaki, Achievements, Archive.
 A utility area provides Sign in, or Family workspace and Sign out. Yoram also
 has User management. Mobile navigation preserves RTL order, keyboard focus and
 readable labels. Exact typography, palette and component layout are not chosen.

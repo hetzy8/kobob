@@ -1,5 +1,5 @@
 import { SignInForm } from "@/components/sign-in-form";
-import { copy } from "@/locales/development";
+import { copy } from "@/locales/he";
 export default function SignIn() {
 	return (
 		<section className="panel">

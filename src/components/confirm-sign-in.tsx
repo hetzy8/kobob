@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { copy } from "@/locales/development";
+import { copy } from "@/locales/he";
 export function ConfirmSignIn() {
 	const [token, setToken] = useState<string | null>(null);
 	const fragmentRead = useRef(false);

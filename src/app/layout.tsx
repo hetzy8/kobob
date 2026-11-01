@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { copy } from "@/locales/development";
+import { copy } from "@/locales/he";
 import "./globals.css";
 export const metadata: Metadata = {
-	title: "Kobob — development preview",
+	title: copy.documentTitle,
 	robots: { index: false, follow: false },
 };
 export default function RootLayout({
@@ -13,16 +13,16 @@ export default function RootLayout({
 		<html lang="he" dir="rtl">
 			<body>
 				<a className="skip-link" href="#main">
-					Skip to content
+					{copy.skip}
 				</a>
-				<div className="preview" lang="en">
+				<div className="preview" lang="he">
 					{copy.preview}
 				</div>
-				<header className="site-header" lang="en">
+				<header className="site-header" lang="he">
 					<Link href="/" className="wordmark">
 						{copy.title}
 					</Link>
-					<nav aria-label="Main navigation">
+					<nav aria-label={copy.navigationLabel}>
 						{copy.navigation.map((item) => (
 							<Link key={item.href} href={item.href}>
 								{item.label}
@@ -33,7 +33,7 @@ export default function RootLayout({
 						{copy.signIn}
 					</Link>
 				</header>
-				<main id="main" lang="en">
+				<main id="main" lang="he">
 					{children}
 				</main>
 			</body>

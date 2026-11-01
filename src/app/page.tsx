@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { copy } from "@/locales/development";
+import { copy } from "@/locales/he";
 export default function Home() {
 	return (
 		<>

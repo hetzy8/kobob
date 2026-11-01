@@ -36,7 +36,7 @@ remain separate from approved scope and implemented behavior.
 - One unified searchable archive uses media-type filters rather than separate
   photo, audio, video, article and memory sections. Mixed-media items retain
   one identity with multiple sources or delivery representations.
-- A dedicated **Achievements and prizes** section covers recognition across
+- A dedicated **Achievements** section covers recognition across
   the years and links to supporting archive items and external sources.
 - Much material lives on other websites. External-source entries are first-class
   archive items; links do not imply permission to copy content.

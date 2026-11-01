@@ -5,15 +5,17 @@ content, production membership, provider resources or live mail delivery exists.
 
 ## Current slice
 
-Implemented: Next.js page shells for Home, About Yaki, Achievements and prizes,
+Implemented: Next.js page shells for Home, About Yaki, Achievements,
 Archive, sign-in and verification; Hebrew RTL root; a protected family shell;
 validated server configuration; Prisma membership/session/verification schema
 and migration; Better Auth confirmation links; fresh membership/role checks;
 durable issuance throttles; logout retry that hides private UI on failure.
 
 The public pages are honest empty shells, not the completed archive. Interface
-copy is temporary English in `src/locales/development.ts`, explicitly marked as
-awaiting approved Hebrew copy. No biography, awards, dates or rights are invented.
+copy is Hebrew in `src/locales/he.ts`, including navigation, sign-in and error
+states. Yoram requested the shorter Achievements label and plain Sign in.
+Neutral headings avoid inventing an unapproved Hebrew name. No biography,
+awards, dates or rights are invented.
 User management/bootstrap, shared editing, publication, archive/restore, content
 search, media, embeds and imports remain future slices. The access service's
 revocation behavior is tested through synthetic database changes; the admin
@@ -74,7 +76,7 @@ below do not load `.env` files or fall back to `DATABASE_URL`.
 
 Live email is deliberately disconnected in `src/lib/runtime.ts`. Browser tests
 issue synthetic links using an injected mock sender in test setup; there is no
-test mailbox/token endpoint or production bypass. The normal sign-in page states
+test mailbox/token endpoint or production bypass. The Hebrew sign-in page states
 that live delivery is unavailable in this preview. Configuring a real sender,
 secrets and delivery requires its separate operational work; no mail was sent.
 

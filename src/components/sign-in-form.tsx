@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { copy } from "@/locales/development";
+import { copy } from "@/locales/he";
 import { useClientReady } from "./use-client-ready";
 export function SignInForm() {
 	const [pending, setPending] = useState(false);

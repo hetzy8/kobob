@@ -4,12 +4,13 @@ A public Hebrew RTL family memorial for Yaki Hetz, initially intended for
 **kobobhetz.org**. Public visitors see only explicitly public content. Family
 access requires verified email and active membership managed by Yoram.
 The domain may change; keep site URLs configurable and item identities stable.
-GitHub work is English; approved product content and interface copy will be Hebrew.
+GitHub work is English; the website interface is Hebrew. Family content still
+requires approval.
 
 **Status: initial application/access foundation implemented locally; not deployed.**
 Empty public page shells and a tested invitation-only access boundary now exist.
 Shared editing, archive data/media, member administration and live email remain
-future work. Temporary interface copy is English pending Hebrew approval; no
+future work. Interface copy is Hebrew; approved family names and content remain pending. No
 real family data has been imported. See [local setup and checks](docs/DEVELOPMENT.md).
 
 ## Start here
@@ -30,14 +31,14 @@ real family data has been imported. See [local setup and checks](docs/DEVELOPMEN
 - Archiving is recoverable; restoration is private. Only Yoram manages users
   and permanently deletes. Concurrent edits cannot silently overwrite work.
 - One searchable archive has media-type filters and stable item identities.
-  A dedicated Achievements and prizes section links recognition to evidence.
+  A dedicated Achievements section links recognition to evidence.
 - Video/audio plays within item pages using supported external embeds or hosted
   media. Articles keep flexible representations, including source links.
 - Preserve provenance and rights; never invent family facts or permission.
   Private content, member data and originals never enter this public repository.
 
 The [sitemap proposal](docs/superpowers/specs/2026-11-01-site-structure-design.md)
-sets out Home, About Yaki, Achievements and prizes, Archive and item pages, plus
+sets out Home, About Yaki, Achievements, Archive and item pages, plus
 the family workspace, recovery and Yoram-only user management. Page composition,
 visual direction remain under review. Edits to public items stay
 private working revisions until explicit publication; existing public content

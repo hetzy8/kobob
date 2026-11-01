@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireMember } from "@/services/access";
 import { SessionPanel } from "@/components/session-panel";
-import { copy } from "@/locales/development";
+import { copy } from "@/locales/he";
 export const dynamic = "force-dynamic";
 export default async function Family() {
 	try {
@@ -9,7 +9,7 @@ export default async function Family() {
 	} catch (error) {
 		if (error instanceof Error && error.message === "UNAUTHORIZED")
 			redirect("/sign-in");
-		throw new Error("Family access is unavailable. Please retry later.");
+		throw new Error(copy.error);
 	}
 	return (
 		<SessionPanel>

@@ -5,7 +5,12 @@ export default defineConfig({
 	testDir: "./tests/e2e",
 	fullyParallel: false,
 	workers: 1,
-	use: { baseURL: "http://127.0.0.1:3100", trace: "off", screenshot: "off" },
+	use: {
+		baseURL: "http://127.0.0.1:3100",
+		locale: "he-IL",
+		trace: "off",
+		screenshot: "off",
+	},
 	reporter: "list",
 	projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 	webServer: {

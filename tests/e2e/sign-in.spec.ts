@@ -1,3 +1,4 @@
+import expected from "../fixtures/he-interface.json" with { type: "json" };
 import { test, expect, type Page } from "@playwright/test";
 import { createDatabase } from "../../src/lib/database";
 import { createAuthSystem } from "../../src/lib/auth-system";
@@ -42,7 +43,7 @@ async function confirmSignIn(page: Page) {
 	const confirmation = page.waitForResponse(
 		(response) => new URL(response.url()).pathname === "/api/access/confirm",
 	);
-	await page.getByRole("button", { name: "Confirm sign-in" }).click();
+	await page.getByRole("button", { name: expected.confirm }).click();
 	const response = await confirmation;
 	expect(response.status()).toBe(303);
 	expect(response.headers().location).toBe(`${config.origin}/family`);
@@ -58,12 +59,12 @@ test("public foundation has Hebrew RTL root, relative navigation and no private 
 	await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
 	await expect(page.getByRole("navigation")).toBeVisible();
 	await page
-		.getByRole("link", { name: "Archive", exact: true })
+		.getByRole("link", { name: expected.archive, exact: true })
 		.first()
 		.click();
 	await expect(page).toHaveURL(/\/archive$/);
 	await expect(
-		page.getByRole("heading", { name: "Archive", exact: true }),
+		page.getByRole("heading", { name: expected.archive, exact: true }),
 	).toBeVisible();
 	await expect(page.getByText("browser@example.test")).toHaveCount(0);
 	await page.setViewportSize({ width: 375, height: 812 });
@@ -78,13 +79,13 @@ test("requires explicit confirmation, removes the token from the address bar, th
 }) => {
 	await page.goto(await emailLink());
 	await expect(
-		page.getByRole("button", { name: "Confirm sign-in" }),
+		page.getByRole("button", { name: expected.confirm }),
 	).toBeVisible();
 	expect(new URL(page.url()).hash).toBe("");
 	expect(await db.session.count()).toBe(0);
 	await confirmSignIn(page);
 	await expect(
-		page.getByRole("heading", { name: "Family workspace" }),
+		page.getByRole("heading", { name: expected.family }),
 	).toBeVisible();
 	expect(await db.session.count()).toBe(1);
 	await db.user.updateMany({
@@ -93,7 +94,7 @@ test("requires explicit confirmation, removes the token from the address bar, th
 	await page.reload();
 	await expect(page).toHaveURL(/\/sign-in$/);
 	await expect(
-		page.getByRole("heading", { name: "Family workspace" }),
+		page.getByRole("heading", { name: expected.family }),
 	).toHaveCount(0);
 });
 test("locks private UI when logout fails without claiming server revocation, then retries", async ({
@@ -102,16 +103,18 @@ test("locks private UI when logout fails without claiming server revocation, the
 	await page.goto(await emailLink());
 	await confirmSignIn(page);
 	await page.route("**/api/access/sign-out", (route) => route.abort());
-	await page.getByRole("button", { name: "Sign out", exact: true }).click();
+	await page
+		.getByRole("button", { name: expected.signOut, exact: true })
+		.click();
 	await expect(
-		page.getByRole("button", { name: "Retry sign-out" }),
+		page.getByRole("button", { name: expected.retrySignOut }),
 	).toBeVisible();
 	await expect(
-		page.getByRole("heading", { name: "Family workspace" }),
+		page.getByRole("heading", { name: expected.family }),
 	).toHaveCount(0);
 	expect(await db.session.count()).toBe(1);
 	await page.unroute("**/api/access/sign-out");
-	await page.getByRole("button", { name: "Retry sign-out" }).click();
+	await page.getByRole("button", { name: expected.retrySignOut }).click();
 	await expect(page).toHaveURL(`${config.origin}/`);
 	expect(await db.session.count()).toBe(0);
 });
@@ -121,7 +124,7 @@ test("shows an honest expired-link state and blocks raw auth endpoints", async (
 }) => {
 	await page.goto("/verify?error=invalid");
 	await expect(
-		page.getByRole("link", { name: "Request another link" }),
+		page.getByRole("link", { name: expected.requestAnother }),
 	).toBeVisible();
 	expect(
 		(
@@ -147,7 +150,7 @@ test("keeps sign-in disabled until client handlers are ready", async ({
 	try {
 		await page.goto("/sign-in", { waitUntil: "commit" });
 		await expect(
-			page.getByRole("button", { name: "Request sign-in link" }),
+			page.getByRole("button", { name: expected.requestLink }),
 		).toBeDisabled();
 	} finally {
 		release?.();
@@ -155,6 +158,40 @@ test("keeps sign-in disabled until client handlers are ready", async ({
 		await page.unroute(pattern);
 	}
 	await expect(
-		page.getByRole("button", { name: "Request sign-in link" }),
+		page.getByRole("button", { name: expected.requestLink }),
 	).toBeEnabled();
+});
+
+test("shows Hebrew interface copy and Achievements with a plain sign-in label", async ({
+	page,
+}) => {
+	for (const [path, heading] of [
+		["/", expected.home],
+		["/about", expected.about],
+		["/achievements", expected.achievements],
+		["/archive", expected.archive],
+		["/sign-in", expected.signIn],
+		["/verify", expected.confirm],
+		["/missing-page", expected.notFound],
+	]) {
+		await page.goto(path);
+		await expect(
+			page.getByRole("heading", { name: heading, exact: true }),
+		).toBeVisible();
+		await expect(
+			page.getByRole("navigation", { name: expected.navigation }),
+		).toBeVisible();
+		await expect(
+			page.getByRole("link", { name: expected.signIn, exact: true }),
+		).toBeVisible();
+		await expect(
+			page
+				.getByRole("link", { name: expected.achievements, exact: true })
+				.first(),
+		).toBeVisible();
+		// biome-ignore lint/performance/useDomNodeTextContent: assert visible interface text, excluding script payloads.
+		expect(await page.locator("body").innerText()).not.toMatch(/[A-Za-z]/);
+		await expect(page.locator('[lang="en"]')).toHaveCount(0);
+		expect(await page.title()).toBe(expected.title);
+	}
 });

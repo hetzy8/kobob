@@ -1,5 +1,5 @@
 import { ConfirmSignIn } from "@/components/confirm-sign-in";
-import { copy } from "@/locales/development";
+import { copy } from "@/locales/he";
 export default function Verify() {
 	return (
 		<section className="panel">

@@ -1,8 +1,8 @@
-import { copy } from "@/locales/development";
+import { copy } from "@/locales/he";
 export default function Archive() {
 	return (
 		<>
-			<h1>Archive</h1>
+			<h1>{copy.archive}</h1>
 			<p>{copy.empty}</p>
 		</>
 	);
