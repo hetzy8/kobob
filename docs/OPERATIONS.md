@@ -109,6 +109,12 @@ Release checklist:
    (`gh run list --workflow=vercel-deploy.yml --limit 1`, then
    `gh run view <id> --json conclusion`).
 5. Tag the deployed `main` commit and record SHA, run and verification here.
+6. Delete `dev` and recreate it from the release commit, then retarget any
+   open PRs to the new `dev` (`gh pr edit <n> --base dev`). This is the hetzy8
+   standards release rule (getmygoals' practice): each cycle starts level with
+   production, which is why `dev` has no ruleset. The hetzy8-eng command guard
+   blocks agents from writing `dev`/`main`, so Yoram runs:
+   `git push origin --delete dev && git push origin <release-sha>:refs/heads/dev`.
 
 After an explicitly authorized release: verify migrations and recovery steps,
 check email and media access with approved test accounts, and record the actual
@@ -170,4 +176,5 @@ At Yoram's instruction, Sana's main ruleset was copied to Kobob and read back:
 default branch, blocks deletion and non-fast-forward updates, and preserves
 administrator bypass. It does not require PR reviews or status checks. The
 contributor workflow uses focused branches and PRs into `dev`; see Branch and
-release flow. A matching `dev` ruleset is proposed but not yet applied.
+release flow. `dev` deliberately has no ruleset: it is deleted and recreated
+from the release commit after every release.

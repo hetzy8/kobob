@@ -71,8 +71,10 @@ decisions and implemented behavior as different statuses.
 - A release is a `dev` → `main` PR opened only on Yoram's explicit go. Merging
   it triggers `.github/workflows/vercel-deploy.yml` (Vercel Git auto-deploy is
   off in `vercel.json`); after its smoke gate passes, tag the deployed `main`
-  commit (see Secrets, costs, and operations). See docs/OPERATIONS.md →
-  Verification and release.
+  commit (see Secrets, costs, and operations), then `dev` is deleted and
+  recreated from that commit and open PRs are retargeted to it. Agents cannot
+  push to `dev`/`main` (hetzy8-eng command guard); Yoram runs those pushes.
+  See docs/OPERATIONS.md → Branch and release flow.
 - Keep README.md as the human entry point and docs/README.md as the map.
   Dated designs live in `docs/superpowers/specs/`; dated executable plans live
   in `docs/superpowers/plans/`. Update status and affected docs with behavior.
