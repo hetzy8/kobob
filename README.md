@@ -61,6 +61,9 @@ source. See [migration](docs/DATA-MIGRATION.md), [hosting](docs/HOSTING.md) and
 
 ## Working here
 
+When resuming a session, read the [handoff](docs/SESSION-HANDOFF.md) alongside
+the spec and plan, then recheck Git/PR state before changing files.
+
 The first commit established documentation on main. Subsequent work uses a
 focused branch and a PR into main. A documentation merge is not a production
 release. Local setup and actual verification commands are in

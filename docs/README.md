@@ -5,6 +5,7 @@ All documents are English. The website itself will be Hebrew RTL.
 | Document | Purpose | Status |
 |---|---|---|
 | [AGENTS.md](../AGENTS.md) | Contributor invariants and workflow | Applies now |
+| [Session handoff](SESSION-HANDOFF.md) | Restart context, verified PR/head, preview state and next work | Read when resuming; recheck external state |
 | [Product spec](superpowers/specs/2026-11-01-family-memorial-design.md) | Agreed rules, proposals, access and acceptance criteria | Consolidated; open decisions explicit |
 | [Page structure and sitemap](superpowers/specs/2026-11-01-site-structure-design.md) | Navigation, page responsibilities and family workflows | Draft for Yoram's review |
 | [Development](DEVELOPMENT.md) | Implemented local scope, setup, test isolation and limitations | Foundation implemented; no deployment |
