@@ -113,6 +113,8 @@ export function createAuthSystem({
 				},
 				delete: {
 					before: async (record) => {
+						// Expired rows may be deleted, but never establish session proof.
+						if (new Date(record.expiresAt).getTime() <= Date.now()) return;
 						if (
 							typeof record.memberId !== "string" ||
 							typeof record.accessVersion !== "number"
