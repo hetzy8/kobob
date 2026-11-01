@@ -3,13 +3,14 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans when implementation is authorized. Steps use checkbox (`- [ ]`) syntax for tracking. Do not execute this plan during documentation initialization.
 
 **Goal:** Deliver an accessible Hebrew RTL memorial with verified email access,
-Yoram-managed membership, approved content and private photographs.
+Yoram-managed membership, approved content and a private searchable multimedia archive.
 
 **Architecture:** A single Next.js application with centralized server-side
 authorization and services for members, editorial content and media. A
 relational database stores membership and content; a maintained auth library
 handles email verification/session primitives; a private object store holds
-media. No separate backend or worker is proposed.
+media. No separate backend is proposed. Media conversion may need bounded background
+execution; evaluate representative files before selecting that mechanism.
 
 **Tech Stack:** Proposed Next.js/TypeScript/React, Tailwind, PostgreSQL/Prisma,
 Auth.js-compatible email links, Resend, private S3-compatible storage, Vitest
@@ -28,7 +29,8 @@ documentation tree.
 - Access requires verified email **and** active membership managed by Yoram.
 - No public signup or automatic first-user admin; no real data/assets in Git.
 - Proposed email-link expiry: **15 minutes**; maximum session lifetime: **7 days**.
-- Proposed accepted uploads: JPEG, PNG, WebP; maximum **20 MiB per image**.
+- Preserve legacy originals privately; validate format-specific limits and safe
+  display derivatives before publication. Code versus email link remains open.
 - Private content is never publicly cached or stored in `public/`.
 - Proposed recovery targets: **RPO 24 hours, RTO 1 working day**.
 - Confirm the spec's open decisions before implementation; do not provision or
@@ -47,7 +49,7 @@ documentation tree.
 **Files:** the linked spec, `docs/ARCHITECTURE.md`, `docs/OPERATIONS.md`.
 
 - [ ] Obtain Yoram's decisions on private/public scope, content sections,
-  contribution permissions, admin/recovery identity, providers, budget and
+  contribution permissions, admin/recovery identity, provider account plans, budget and
   retention. Keep personal addresses and content outside GitHub.
 - [ ] Record approved decisions and the implementation instruction in the spec;
   adjust downstream tasks if the read-only member proposal changes.
@@ -152,22 +154,22 @@ validated input. Rendering consumes only the minimal permitted data.
   and visual direction before family content is imported.
 - [ ] Run relevant checks, document limitations, and commit.
 
-## Task 5: Private photographs and thumbnails
+## Task 5: Private media, safe derivatives and streaming
 
 **Create:** `src/services/media.ts`, `src/app/api/media/[id]/route.ts`, admin
 upload actions, `tests/integration/media.test.ts`, `tests/e2e/media.spec.ts`.
 
 **Interfaces:** `readPublishedMedia(id: string): Promise<AuthorizedMedia>`
-checks membership and publication; `uploadMedia(input: ValidatedImage)` is
-admin-only and stores private objects/derivatives. IDs never grant access alone.
+checks membership and publication; `uploadMedia(input: ValidatedMediaUpload)` is
+admin-only, applies format-specific validation and stores private originals/derivatives. IDs never grant access alone.
 
 - [ ] Write failing tests for anonymous/reader uploads, oversized files, spoofed
   MIME types, SVG/HTML, unpublished assets, guessed IDs and cache/header leaks.
-- [ ] Verify the chosen host's upload/body limits. If 20 MiB cannot pass through
-  the app, use short-lived admin-authorized write-only grants to private
+- [ ] Verify the chosen host's upload/body limits. For files above the verified app body limit, use short-lived admin-authorized write-only grants to private
   quarantine storage, followed by server-side size/type validation and
   finalization. Test that unfinalized objects are never readable/published.
-- [ ] Implement JPEG/PNG/WebP validation, the approved size cap, EXIF-stripped
+- [ ] Implement format-specific validation and limits, safe document/audio/video
+  display derivatives and EXIF-stripped
   delivery copies, private storage and authorized streaming. Keep originals
   private under the agreed retention policy; avoid public signed bearer download URLs. Upload-only quarantine grants
   do not authorize reads and must expire.
@@ -175,6 +177,24 @@ admin-only and stores private objects/derivatives. IDs never grant access alone.
   test storage failure leaves no published broken attachment and reports failure.
 - [ ] Run integration/browser image and RTL gallery flows with a mock/private
   test bucket, then document cleanup/retention and commit.
+
+## Task 5A: Archive catalog, migration and website management
+
+**Files:** future archive models/services, admin catalog/import pages,
+private import tooling and synthetic integration fixtures.
+
+- [ ] Implement the logical archive/review/source/variant/import-run models
+  from the spec, preserving KOB IDs and original field values.
+- [ ] Build Hebrew search and type/period/tag filters with server-enforced
+  approval; admin search includes every imported record.
+- [ ] Execute the dry-run and reconciliation stages in
+  [DATA-MIGRATION.md](../../DATA-MIGRATION.md) only after import authorization.
+- [ ] Prove idempotence, conflict reporting, count/hash reconciliation, safe
+  retries and zero automatic publication with synthetic tests.
+- [ ] Add admin upload/metadata/review/publication and processing status/retry
+  workflows so post-launch management requires no Sheet or CLI.
+- [ ] Preserve Drive originals, rehearse consistent restore, reconcile a final
+  source delta and obtain explicit cutover approval. Record website authority.
 
 ## Task 6: Preservation, operations and launch readiness
 
@@ -203,3 +223,12 @@ interfaces use the same MemberContext/access-version boundary throughout.
 The plan is deliberately not a code scaffold. Revisit filenames and library
 adapter details after Task 0, then execute only the approved scope in focused
 PRs. A documentation merge is not permission to start Task 1.
+
+## Planning update, 2026-11-01
+
+Yoram accepted Vercel/Neon/private R2/Resend as the hosting direction, all
+1,374 records in private administration, approved-only viewer access, and
+website management after launch. See HOSTING.md and DATA-MIGRATION.md under
+docs for the evidence and transition. This plan is still a draft; detailed
+implementation tasks must be revised after the updated design is reviewed,
+including the code/link choice and multimedia delivery constraints.

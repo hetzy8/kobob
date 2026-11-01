@@ -89,3 +89,15 @@ Adding a replacement admin revokes obsolete access and records an audit event.
 - [ ] Restore drill and rollback procedure are recorded.
 - [ ] Ops monitoring/configuration is added in a separate authorized PR.
 - [ ] A verified production deployment and its annotated version tag exist.
+
+## Accepted direction and migration gates
+
+Vercel, Neon, private R2 and Resend are the accepted hosting direction; see
+[HOSTING.md](HOSTING.md) for dated catalog-size evidence and unresolved costs.
+See [DATA-MIGRATION.md](DATA-MIGRATION.md) for source preservation, idempotent
+imports, the final edit freeze and website authority after cutover. Backups
+must cover new website data; preserved Drive originals do not cover it.
+
+Repository visibility remains unresolved: the repository is currently public
+and contains engineering docs only, while the source brief proposed private
+GitHub. Do not change visibility or add private archive exports by assumption.

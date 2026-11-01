@@ -21,7 +21,7 @@ repository. The domain is a target, not evidence of a running deployment.
 
 ## Product boundary
 
-- Remember Yaki through family-approved text, photographs, and memories.
+- Remember Yaki through family-approved text and a searchable multimedia archive.
 - Make Hebrew reading, navigation, and mixed Hebrew/English text work well on
   phones and larger screens.
 - Verify control of an email address **and** check Yoram's active member list;
@@ -33,18 +33,19 @@ The initial proposal protects all memorial content behind sign-in. A public
 introduction and member contributions remain decisions for Yoram; neither is
 silently included as an approved requirement.
 
-## Proposed stack
+## Accepted hosting direction
 
-One Next.js App Router application with TypeScript, React, Tailwind CSS,
-PostgreSQL/Prisma, email-link authentication through a maintained library,
-Resend, and private S3-compatible object storage. Vercel and Neon are proposed
-hosting/database providers. This follows inspected Sana web conventions and
-avoids a second backend service. Exact compatible versions and the auth-library
-integration must be verified before implementation; nothing is installed yet.
+A Next.js App Router application on Vercel, Neon PostgreSQL for catalog and
+users, private Cloudflare R2 for media, and Resend for email verification.
+This follows Sana's existing approach. Provider plans, budget and exact
+compatible versions remain to be verified; nothing has been provisioned.
+Code versus link authentication remains open.
 
-The alternatives and evidence are in [ARCHITECTURE.md](docs/ARCHITECTURE.md).
-This is a documented recommendation, not a claim that Yoram has approved a
-provider, budget, or implementation.
+All 1,374 catalog records are planned for private administration; family
+viewers see only Yoram-approved items. After launch the website manages the
+archive and users. Drive remains a preserved migration source. See the
+[data migration plan](docs/DATA-MIGRATION.md) and
+[hosting decision](docs/HOSTING.md).
 
 ## Working here
 

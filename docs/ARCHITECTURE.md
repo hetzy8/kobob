@@ -1,7 +1,7 @@
 # Architecture and stack recommendation
 
 **Date:** 2026-11-01
-**Status:** proposed after inspecting existing projects; no services provisioned
+**Status:** hosting direction accepted by Yoram; implementation details proposed; no services provisioned
 
 ## Evidence before selection
 
@@ -29,7 +29,9 @@ See [the inspected revisions](README.md#reference-material-inspected).
 | FastAPI plus a separate frontend, following Passus | Familiar backend and explicit API boundary | Two application surfaces/builds for a small memorial; extra auth integration and operations | Not recommended for the first version |
 | Static site plus an external access gateway/CMS | Small public delivery surface | Private media, individual revocation, and Yoram's user management still need protected services; Git content would be public here | Not recommended for the private archive |
 
-These are engineering recommendations, not decisions attributed to Yoram.
+Yoram accepted the Vercel-based direction after considering the existing
+Vercel/Sana and Railway/Passus deployments. Framework/library details remain
+engineering proposals; account plans and provisioning are not approved.
 
 ## Proposed components
 
@@ -37,11 +39,11 @@ These are engineering recommendations, not decisions attributed to Yoram.
 |---|---|---|
 | App | Next.js App Router, TypeScript, React | Reuse the existing web development approach; one deployable application |
 | UI | Tailwind CSS, accessible primitives only as needed | Logical CSS properties and RTL testing; avoid importing Sana's whole UI dependency set |
-| Database | PostgreSQL with Prisma; Neon proposed | Relational membership, sessions, content and audit records; isolated dev/test/production databases |
-| Authentication | Maintained email-link auth library; Auth.js/Prisma is the existing-project candidate | Verify compatibility and invite-only integration first; no custom cryptography or copied beta version by default |
+| Database | PostgreSQL with Prisma; Neon selected for planning | Relational membership, sessions, content and audit records; isolated dev/test/production databases |
+| Authentication | Maintained email-verification library; code/link choice open; Auth.js/Prisma is the existing-project candidate | Verify compatibility and invite-only integration first; no custom cryptography or copied beta version by default |
 | Email | Resend with a verified sender for the memorial domain | Existing operational experience; separate sender/configuration and no production delivery in tests |
-| Media | Private S3-compatible storage; R2 proposed | Existing tooling experience; authorized application delivery of photos and thumbnails |
-| Hosting | Vercel proposed | Existing monolith deployment practice; app auth protects every hostname |
+| Media | Private S3-compatible storage; R2 selected for planning | Existing tooling experience; authorized delivery of originals and safe display derivatives |
+| Hosting | Vercel selected for planning | Existing monolith deployment practice; app auth protects every hostname |
 | Verification | Type checking, lint, focused unit/integration tests, Playwright | Test security and actual Hebrew RTL flows, not only component strings |
 
 Do not copy version numbers from another repo. At implementation start choose
@@ -84,7 +86,8 @@ and egress, transactional email, backups, domain renewal and CI minutes. Record
 dated estimates and an owner-approved cap before provisioning. Prefer existing
 provider familiarity while keeping credentials and data isolated from Sana
 and Passus. There is no reason for AI APIs, a CMS service, a search service, a
-queue, mobile builds, or an always-on worker in the initial version.
+mobile builds or an always-on worker by default. Choose any background
+execution mechanism only after the archive conversion feasibility check.
 
 ## External references
 
@@ -99,3 +102,17 @@ Reviewed on 2026-11-01; recheck at implementation because platform details chang
 
 Provider selection and application access are separate: family members should
 not need Vercel accounts to read the memorial.
+
+## Archive-specific implementation gates
+
+See [hosting](HOSTING.md) and [migration](DATA-MIGRATION.md). Preserve legacy
+formats privately; conversion and bulk import are resumable operations, not
+one unbounded web request. Post-launch upload, processing status, retries and
+publication are operated through the website. A managed background execution
+mechanism may be needed; choose it after testing representative media against
+Vercel limits. No persistent worker is authorized or assumed.
+
+Large authenticated downloads and audio/video need verified streaming/range
+behavior, current membership checks on every new request, and measured host
+transfer costs. Do not replace this boundary with public bucket links to work
+around function limits.
