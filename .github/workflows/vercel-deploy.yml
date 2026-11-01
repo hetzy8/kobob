@@ -29,6 +29,9 @@ concurrency:
 jobs:
   deploy:
     name: Trigger Vercel production deploy
+    # The hook always builds main; a manual run from another ref would wait for
+    # a SHA that never deploys and time out.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
@@ -86,6 +89,9 @@ jobs:
         run: |
           echo "Waiting for $PROD_URL to serve commit $TARGET_SHA ..."
           deadline=$(( $(date +%s) + 15*60 ))
+          # A first connection to a cold Neon compute can fail once; require
+          # three consecutive non-ok readings on the new deployment to fail.
+          bad=0
           while :; do
             body="$(curl -sS --max-time 15 "$PROD_URL/api/health" 2>/dev/null || echo '{}')"
             status="$(echo "$body" | jq -r '.status // "unknown"' 2>/dev/null || echo unknown)"
@@ -101,8 +107,12 @@ jobs:
                 echo "New deployment is live and database-healthy."
                 break
               fi
-              echo "::error::New deployment ($TARGET_SHA) is live but /api/health is '$status'. Production is degraded; roll back per docs/OPERATIONS.md."
-              exit 1
+              bad=$((bad + 1))
+              if [ "$bad" -ge 3 ]; then
+                echo "::error::New deployment ($TARGET_SHA) is live but /api/health is '$status' on 3 consecutive reads. Production is degraded; roll back per docs/OPERATIONS.md."
+                exit 1
+              fi
+              echo "  new deployment not healthy yet ($bad/3)"
             fi
             if [ "$(date +%s)" -ge "$deadline" ]; then
               echo "::error::Timed out after 15m waiting for commit $TARGET_SHA to go live (last status=$status, commit=$commit)."

@@ -5,6 +5,10 @@
 // production credentials. Locally and in CI this exits 0 without touching any
 // database, so `npm run build` never migrates by accident.
 //
+// Why after `next build`: a compile failure must not leave production on a
+// new schema under the old code. Vercel promotes the deployment only after the
+// whole build command succeeds, so migrations still land before traffic moves.
+//
 // Why DIRECT_URL: Neon's pooled endpoint (DATABASE_URL, used at runtime) does
 // not support the session features `migrate deploy` needs. The direct URL is
 // passed to the child only, so prisma.config.ts keeps a single DATABASE_URL

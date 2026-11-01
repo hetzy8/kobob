@@ -150,7 +150,9 @@ Release checklist:
 2. Yoram gives an explicit go; open the `dev` → `main` PR
    (`gh pr create --base main --head dev`) and wait for its checks.
 3. Before merging, confirm migrations are backward-compatible with the code
-   currently live (rollback runs old code against the new schema).
+   currently live (rollback runs old code against the new schema). The build
+   migrates after `next build` succeeds but before Vercel promotes, so a
+   failed smoke gate can still leave the new schema under the old code.
 4. Merge; confirm the `Vercel Deploy (production)` run's smoke gate is green
    (`gh run list --workflow=vercel-deploy.yml --limit 1`, then
    `gh run view <id> --json conclusion`).
