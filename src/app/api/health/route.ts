@@ -1,3 +1,4 @@
+import { failureCodes } from "@/lib/failure-codes";
 import { database } from "@/lib/runtime";
 export const runtime = "nodejs";
 // No HTTP caching: the post-deploy smoke gate (.github/workflows/vercel-deploy.yml)
@@ -36,9 +37,13 @@ async function databaseReady(): Promise<boolean> {
 		// against must fail the gate instead of answering `SELECT 1`.
 		await database().$queryRaw`SELECT 1 FROM "_prisma_migrations" LIMIT 1`;
 		ok = true;
-	} catch {
+	} catch (error) {
 		// Driver and configuration errors can contain hostnames or credentials;
-		// this endpoint reports only a generic failure.
+		// the response stays generic. The private runtime log gets identifying
+		// codes only (never the message), so a failed gate can be diagnosed:
+		// e.g. 42P01 = migrated table missing (wrong database), 28P01 = bad
+		// password, ECONNREFUSED/ENOTFOUND = unreachable host.
+		console.error("[health] database check failed", failureCodes(error));
 		ok = false;
 	}
 	lastCheck = { ok, at: Date.now() };
