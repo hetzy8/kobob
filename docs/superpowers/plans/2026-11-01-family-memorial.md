@@ -279,3 +279,12 @@ member administration is Task 2. Auth is a testable factory in
 `src/services/access.ts` adapters; this replaces the proposed `src/lib/auth.ts`
 filename without changing the required service boundary. Biome replaces ESLint;
 Node 24 and Webpack are recorded in DEVELOPMENT.md with the reasons.
+
+## Task 2 local execution update
+
+Local member management implements bootstrap, admin-only list/add/revoke/restore
+and ordinary-member email changes with fresh verification, transactional credential
+invalidation and audit. Permanent deletion and role promotion remain unavailable.
+The sole administrator cannot change their own email through the UI because that
+would remove the last verified administrator; owner recovery is a remaining gate.
+No real bootstrap, live delivery or provider configuration was performed.

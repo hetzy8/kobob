@@ -1,6 +1,22 @@
 // Hebrew interface copy. The display name was supplied by Yoram.
 // Biography and archive content remain unpopulated until supplied and approved.
 export const copy = {
+	members: "ניהול גישה למשפחה",
+	adminEmailLocked: "שינוי כתובת מנהל אינו זמין כאן כדי למנוע אובדן גישה.",
+	addMember: "הוספת גישה",
+	revokeMember: "ביטול גישה",
+	restoreMember: "חידוש גישה",
+	changeMemberEmail: "עדכון כתובת דוא״ל",
+	activeMember: "גישה פעילה",
+	revokedMember: "גישה מבוטלת",
+	verifiedMember: "כתובת מאומתת",
+	unverifiedMember: "נדרש אימות כתובת",
+	memberSuccess: "השינוי נשמר.",
+	memberFailure:
+		"לא ניתן לשמור את השינוי. יש לבדוק הרשאות, כתובת ומצב גישה ולנסות שוב.",
+	memberHelp:
+		"הוספה וחידוש גישה מחייבים אימות דוא״ל. שינוי כתובת או ביטול גישה מבטלים חיבורים וקישורי כניסה קודמים. שליחת דוא״ל עדיין אינה זמינה בגרסת הפיתוח.",
+
 	homeCollageAlt: "קולאז׳ תמונות",
 	preview: "גרסת פיתוח — התוכן המשפחתי עדיין לא נוסף.",
 	title: "יקי חץ",

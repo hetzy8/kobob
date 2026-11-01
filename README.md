@@ -9,7 +9,8 @@ requires approval.
 
 **Status: initial application/access foundation implemented locally; not deployed.**
 Empty public page shells and a tested invitation-only access boundary now exist.
-Shared editing, archive data/media, member administration and live email remain
+Member administration now exists locally with explicit bootstrap, add/revoke/restore
+and member email changes. Shared editing, archive data/media and live email remain
 future work. Interface copy is Hebrew; approved family names and content remain pending. No
 real family data has been imported. See [local setup and checks](docs/DEVELOPMENT.md).
 
