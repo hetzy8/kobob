@@ -189,3 +189,12 @@ local check passed: 18 unit, 34 integration and seven browser tests, lint, types
 and build. Earlier follow-up notes above describe historical findings; the
 expired-row housekeeping issue is now resolved. Member administration remains
 unimplemented.
+
+## First public homepage image
+
+Yoram selected a Downloads collage for the public site on 2026-11-01.
+The homepage now displays its full composition with generic Hebrew alt text
+and no invented caption, identities or dates. Only a 1600-square WebP derivative
+is stored in public/images; EXIF/XMP are stripped. The source remains outside
+Git. This explicit selection applies to this collage, not the remaining archive.
+Production build passed; lint completed with the three existing cookie warnings.
