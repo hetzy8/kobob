@@ -1,7 +1,7 @@
 # Hosting decision
 
 **Date:** 2026-11-01
-**Status:** direction accepted; documentation only, no resources provisioned.
+**Status:** direction accepted; development authorized, no resources provisioned.
 
 ## Decision and alternatives
 
@@ -50,11 +50,13 @@ These public rates were checked on 2026-11-01; no total bill is estimated yet.
 - Check current Vercel request, streaming response and execution limits against
   representative files. The [function limits](https://vercel.com/docs/functions/limitations)
   document a 4.5 MB body limit; do not proxy ordinary large uploads as bodies.
-- Design short-lived admin-only upload grants into private quarantine, validate
+- Design short-lived active-family upload grants into private quarantine, validate
   before finalization and publication, and support retries/resumable uploads.
-- Prove private authenticated streaming/range delivery for audio/video and
-  large documents without public read URLs or shared caches. Record limits
-  and bandwidth estimates before accepting the delivery design.
+- Prove visibility-aware streaming/range delivery: public items expose only
+  permitted representations, private/archived items require active verified
+  membership, and originals remain private. Test unpublish/archive on new
+  requests without durable URLs or caches bypassing state changes. Measure
+  bandwidth and transfer limits; selected external players also need review.
 - Test conversion feasibility and choose bounded background execution for
   formats requiring it. Routine post-launch operations remain in the website.
 

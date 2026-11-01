@@ -5,11 +5,12 @@ All documents are English. The website itself will be Hebrew RTL.
 | Document | Purpose | Status |
 |---|---|---|
 | [AGENTS.md](../AGENTS.md) | Contributor invariants and workflow | Applies now |
-| [Product spec](superpowers/specs/2026-11-01-family-memorial-design.md) | Requirements, proposed scope, access rules, acceptance criteria | Draft for Yoram's review |
+| [Product spec](superpowers/specs/2026-11-01-family-memorial-design.md) | Agreed rules, proposals, access and acceptance criteria | Consolidated; open decisions explicit |
+| [Page structure and sitemap](superpowers/specs/2026-11-01-site-structure-design.md) | Navigation, page responsibilities and family workflows | Draft for Yoram's review |
 | [Architecture](ARCHITECTURE.md) | Existing-project inspection and stack | Hosting direction accepted; details proposed |
 | [Hosting](HOSTING.md) | Provider direction, storage evidence and cost gates | Accepted direction; nothing provisioned |
 | [Data migration](DATA-MIGRATION.md) | Data locations, preservation, import and cutover | Planned; no data moved |
-| [Implementation plan](superpowers/plans/2026-11-01-family-memorial.md) | Ordered implementation tasks and verification | Not started; gated on decisions |
+| [Implementation plan](superpowers/plans/2026-11-01-family-memorial.md) | Ordered implementation tasks and verification | Development authorized; Task 0 in progress |
 | [Operations](OPERATIONS.md) | Secrets, costs, backups, releases, domain and launch gates | Planned; nothing provisioned |
 
 ## Source of truth
@@ -38,8 +39,11 @@ workflow names, and domains are not copied as kobob facts.
 
 ## Next review
 
-Yoram reviews the draft scope and architecture, settles the open decisions in
-the spec, and separately authorizes implementation. No app commands, deployment
-claims or real archive/user payloads are included at this stage. The private
-Drive brief and catalog informed the revised scope; raw files and private
-source identifiers remain outside GitHub.
+Yoram authorized starting development on 2026-11-01. Public/private rules,
+shared editing, archive/restore, conflicts, sources and domain flexibility are
+consolidated in the spec and revised plan. Public-item edits are approved to
+remain private until explicit publication. Review the page proposal, choose
+email sign-in, then prove compatible packages before building further flows.
+Budget/provisioning/import/launch gates remain
+separate. No application tests or real archive/user payloads exist here; private
+source evidence stays outside GitHub.

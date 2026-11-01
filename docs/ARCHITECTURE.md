@@ -54,22 +54,74 @@ and record the alternative before proceeding.
 
 ## Trust boundary
 
-The browser is untrusted. A central server service verifies the current
-session, verified identity, active membership and role before data access.
-Server Actions validate input and call those services. Media routes apply the
-same checks. Layout checks and hosting deployment protection are additional
+### Task 0 compatibility review, 2026-11-01
+
+Documentation review is underway; no integration has been installed or proved.
+The local Node runtime is 20.20.2. Next.js currently documents a minimum of
+20.9; the selected Prisma and auth package engines must also be checked before
+pinning a compatible set. Do not treat that runtime check as an integration test.
+
+The existing Auth.js/Resend approach remains a candidate. Better Auth is an
+alternative with documented Prisma/PostgreSQL integration, email links and
+email codes. Both Better Auth email plugins default to automatic signup unless
+explicitly disabled. Its session documentation exposes refresh control and
+cookie-cache settings; disable stale session caching and enforce an absolute
+seven-day limit if retaining the spec's proposed lifetime.
+
+Code versus link and library selection remain open. A link implementation
+must prevent direct verification GETs from bypassing explicit confirmation.
+Task 0 selects a supported candidate and the sign-in design. Task 1 must then
+prove generic issuance responses, membership checks at issuance/consumption,
+atomic replay prevention, durable throttling and revocation of credentials and
+sessions against an isolated database before family flows depend on it.
+These requirements are application integration work, not guarantees supplied
+by a library's feature list. No additional managed auth service is selected.
+
+Primary documentation inspected:
+
+- [Next.js installation](https://nextjs.org/docs/app/getting-started/installation).
+- [Auth.js Resend provider](https://authjs.dev/getting-started/providers/resend).
+- [Better Auth email OTP](https://better-auth.com/docs/plugins/email-otp).
+- [Better Auth magic links](https://better-auth.com/docs/plugins/magic-link).
+- [Better Auth Prisma adapter](https://better-auth.com/docs/adapters/prisma).
+- [Better Auth sessions](https://better-auth.com/docs/concepts/session-management).
+
+### Public and family access
+
+The browser is untrusted. Public services return explicit field projections
+only for currently public, non-archived items and permitted representations.
+Family services verify the current session, email verification and active
+membership before every private read or mutation. All family members may read
+all private items and edit/publish/unpublish/archive/restore everyone's items.
+User management and permanent deletion additionally require Yoram's admin role.
+Server Actions validate input and call these services; media routes enforce the
+same visibility boundary. Layout checks or deployment protection are additional
 conveniences, never the family authorization mechanism.
+
+Search filters visibility before results, counts and suggestions. Public page,
+achievement and related-item queries never expose private titles or thumbnails.
+An archive flag is separate from visibility; restore always sets private.
+Atomic revision comparisons protect saves and lifecycle transitions, returning
+a conflict without overwriting newer work. Preserve unsaved browser input.
+Yoram approved private working revisions for public-item edits. Public queries
+use only published fields and media/source associations; draft saves do not
+alter them. Explicit publication switches the public revision atomically.
+Unpublishing/archiving blocks old published revisions too; restore stays private.
+Audit actions without storing sensitive bodies in logs.
 
 Private responses use `Cache-Control: private, no-store`; no private static
 generation, shared ISR/CDN cache, public image optimization source, public
 object URL, or service-worker offline cache. Media objects and transformed
-thumbnails remain private. Initial media delivery is through an authorized
-server route, rather than a durable public or bearer URL. Test that deployment
-aliases and preview hosts cannot bypass membership.
+thumbnails remain in private storage. Delivery routes check public visibility
+or active verified membership as appropriate; originals are never implicitly
+public. Avoid durable public/bearer URLs that bypass later visibility changes.
+Initially propose no shared cache for revocable public item responses until
+invalidation is proven. Test that every deployment alias/preview host enforces
+the same public/private boundary.
 
 Verify host request-body and execution limits before choosing upload transport;
 do not send 20 MiB images through a Server Action by assumption. If needed,
-issue short-lived admin-authorized, write-only grants to a private quarantine
+issue short-lived family-authorized, write-only grants to a private quarantine
 object, then validate actual size/type and finalize server-side before any
 publication. Such upload-only grants are distinct from public download URLs.
 
@@ -80,13 +132,14 @@ visitor, a hard-coded guessed address, or an email-domain match.
 
 ## Operational cost and evidence
 
-No current bill, free-tier fit, storage estimate, or provider account capacity
-has been verified. Expected cost drivers are hosting, database, media storage
+No current bill, free-tier fit or provider account capacity has been verified.
+HOSTING.md records catalog byte values, not a complete measured storage or
+traffic estimate. Expected cost drivers are hosting, database, media storage
 and egress, transactional email, backups, domain renewal and CI minutes. Record
 dated estimates and an owner-approved cap before provisioning. Prefer existing
 provider familiarity while keeping credentials and data isolated from Sana
 and Passus. There is no reason for AI APIs, a CMS service, a search service, a
-mobile builds or an always-on worker by default. Choose any background
+mobile build or an always-on worker by default. Choose any background
 execution mechanism only after the archive conversion feasibility check.
 
 ## External references
@@ -113,6 +166,23 @@ mechanism may be needed; choose it after testing representative media against
 Vercel limits. No persistent worker is authorized or assumed.
 
 Large authenticated downloads and audio/video need verified streaming/range
-behavior, current membership checks on every new request, and measured host
-transfer costs. Do not replace this boundary with public bucket links to work
-around function limits.
+behavior, current visibility/membership checks on every new request, and
+measured host transfer costs. Do not replace this boundary with public bucket
+links to work around function limits.
+
+### Sources, playback and portability
+
+Keep archive identity, sources and delivery representations separate. A record
+can reference several files/external sources; achievements reuse relationships.
+Use one searchable archive with type/period/tag filters. Audio/video supports
+selected external players and hosted playback with attribution, original links
+and honest unavailable states. Articles support links and later approved
+representations. External access rules remain the publisher's; Kobob privacy
+cannot make an external URL private. No arbitrary iframe HTML, unrestricted
+preview fetches or private metadata in provider requests.
+
+Use relative navigation, stable KOB/item IDs and domain-independent object keys.
+Canonical origin and trusted auth origins are validated server configuration,
+not request-host input. Initial `kobobhetz.org` may change; document pending-link,
+session/cookie, sender, canonical and redirect migration in operations. This
+flexibility needs no generic plugin framework or extra application service.
