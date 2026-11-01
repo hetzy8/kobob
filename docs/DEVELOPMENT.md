@@ -161,5 +161,7 @@ With Node 24 selected and dependencies installed, run either
 Both start the development server at `http://127.0.0.1:3000` in the foreground;
 Ctrl+C stops it. Extra Next.js arguments are forwarded, for example
 `./scripts/start-server.sh --port 3200`. The Bash entry point requires Python 3.
-The launchers check Node 24 and installed dependencies; they do not install
-packages, start a database or configure services.
+The launchers check installed project dependencies. If the active Node is not
+24, they select Node 24 through `npm exec --yes --package=node@24`, using npm's
+cache or downloading that runtime when necessary. This leaves global Node
+unchanged. They do not start a database or configure services.
