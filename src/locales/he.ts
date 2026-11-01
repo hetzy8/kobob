@@ -27,7 +27,6 @@ export const copy = {
 	achievements: "הישגים",
 	archive: "ארכיון",
 	navigation: [
-		{ href: "/", label: "דף הבית" },
 		{ href: "/about", label: "סיפור חיים" },
 		{ href: "/achievements", label: "הישגים" },
 		{ href: "/archive", label: "ארכיון" },

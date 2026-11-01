@@ -15,7 +15,7 @@ export default function Home() {
 				className="home-collage"
 			/>
 			<div className="section-links">
-				{copy.navigation.slice(1).map((item) => (
+				{copy.navigation.map((item) => (
 					<Link key={item.href} href={item.href}>
 						{item.label}
 					</Link>
