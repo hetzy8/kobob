@@ -164,3 +164,15 @@ session; this path already passed before any housekeeping-hook change.
 The broader internal-lock/deletion-hook follow-up remains under investigation.
 Full local verification passed: 18 unit, 33 integration, seven browser tests,
 lint, types and production build, using synthetic data and mocked delivery.
+
+## Server launchers
+
+With Node 24 selected and dependencies installed, run either
+`./scripts/start-server.sh` or `python3 scripts/start-server.py` from any directory.
+Both start the development server at `http://127.0.0.1:3000` in the foreground;
+Ctrl+C stops it. Extra Next.js arguments are forwarded, for example
+`./scripts/start-server.sh --port 3200`. The Bash entry point requires Python 3.
+The launchers check installed project dependencies. If the active Node is not
+24, they select Node 24 through `npm exec --yes --package=node@24`, using npm's
+cache or downloading that runtime when necessary. This leaves global Node
+unchanged. They do not start a database or configure services.
