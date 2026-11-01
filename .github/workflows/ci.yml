@@ -1,8 +1,14 @@
 name: Verify
 on:
+  # PRs only (into dev for features, into main for releases), as in sana. main
+  # receives only release merges that were already green on their PR, and
+  # vercel-deploy.yml smoke-tests the deployment, so re-running on push to main
+  # spends metered minutes on a commit that just passed. Docs-only PRs run
+  # nothing; a PR touching docs and code still runs.
   pull_request:
-  push:
-    branches: [main]
+    paths-ignore:
+      - "docs/**"
+      - "**.md"
 permissions:
   contents: read
 concurrency:
