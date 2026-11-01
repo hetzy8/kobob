@@ -6,15 +6,19 @@ or machine-local memory for product decisions.
 
 ## Purpose and current scope
 
-Kobob is a Hebrew RTL family memorial for Yaki Hetz at the intended domain
-`kobobhetz.org`. Yoram manages users. Access needs both verified email and
-active membership.
+Kobob is a public Hebrew RTL family memorial for Yaki Hetz, initially intended
+for `kobobhetz.org`; the domain may change. Visitors see only explicitly public
+content. Family access requires verified email and active membership managed
+by Yoram. All active verified family members can read private items and edit,
+publish, unpublish, archive and restore everyone's items. Restoration is private;
+only Yoram manages users or permanently deletes items.
 
-The repository is at the **documentation-only** stage. Do not scaffold an app,
-install packages, create infrastructure, edit DNS, send invitations, or deploy
-until that work is requested. A draft spec or plan is not implementation
-approval. Preserve requirements, proposals, open decisions, and implemented
-behavior as different statuses.
+The repository currently contains documentation only. Yoram authorized starting
+development on 2026-11-01; Task 0 design/compatibility decisions remain in progress.
+The current work is consolidated planning and page design, not scaffolding.
+Do not provision services, import real data, change DNS, send invitations or deploy
+without the corresponding explicit instruction. Preserve requirements, proposals,
+open decisions and implemented behavior as different statuses.
 
 ## Language and family content
 
@@ -32,7 +36,8 @@ behavior as different statuses.
 
 ## Product invariants for later implementation
 
-1. Email verification proves mailbox control, not permission to enter.
+1. Email verification proves mailbox control, not family membership. Public
+   visibility is an explicit content decision, not an authentication bypass.
 2. Only Yoram's explicitly authorized administration grants or removes access.
    No public signup, domain-based membership, or automatic first-user admin.
 3. Every protected read and mutation checks a current server-side session and
@@ -46,6 +51,12 @@ behavior as different statuses.
 6. Missing data and failed operations are reported honestly. No invented
    success, fabricated family content, or claim that a backup is restorable
    without a tested restore.
+7. New/imported/restored items are private. Public reads check current visibility;
+   private reads and all family mutations require active verified membership.
+   Concurrent edits/transitions check revisions atomically and preserve unsaved input.
+8. Public delivery, external embeds and domain changes must not expose private
+   metadata or originals. An external source retains its publisher's access rules;
+   unpublishing cannot recall downloaded copies or remove an external source.
 
 ## Development and documentation
 
@@ -64,8 +75,8 @@ behavior as different statuses.
   revocation, role boundaries, private media, and Hebrew RTL behavior. Use
   isolated test databases and mocked delivery; never a production `.env`.
 - Keep CI bounded and relevant. No workflows or dependencies are introduced
-  for this documentation-only initialization. Never claim a check was run
-  without its actual result.
+  during planning work; add only those needed by an authorized implementation
+  slice. Never claim a check was run without its actual result.
 
 ## Secrets, costs, and operations
 

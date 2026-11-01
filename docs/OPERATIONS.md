@@ -5,8 +5,26 @@ domain configuration were created during documentation initialization.
 
 ## Ownership
 
-Yoram owns membership, content approval, provider/budget decisions and launch.
-The person implementing a release records evidence and remaining limitations.
+### Development direction confirmed by Yoram, 2026-11-01
+
+Yoram reports that ops is now familiar with Kobob and directs daily tracking
+alongside the other projects. This is the operating expectation; the actual
+ops registration, scheduled checks and reporting coverage have not been
+verified in this repository. No ops configuration is changed by this update.
+
+Keep development small and strict, with low monthly recurring cost as an
+explicit goal. Retain the accepted single-app hosting direction, focused
+dependencies and bounded CI. Do not add optional services, persistent workers
+or paid upgrades without a demonstrated need and explicit authorization.
+Cost savings must preserve membership checks, private media and restore
+verification. A numeric monthly cap, account capacity and incremental costs
+remain unconfirmed; do not describe the proposed stack as free.
+
+Yoram owns membership, permanent deletion, provider/budget decisions and launch.
+All active verified family members share editorial authority: edit/publish/
+unpublish/archive anyone's items and restore as private. Rights/consent must
+still be reviewed. The person implementing a release records actual evidence
+and remaining limitations.
 Do not infer ownership of a provider account or permission to contact family
 members from the existence of this repository.
 
@@ -29,6 +47,11 @@ production checks to make the monitor appear complete.
 
 ## Before provisioning
 
+- Treat `kobobhetz.org` as the initial domain, not a permanent dependency.
+  Maintain a domain-change runbook covering configured/trusted origins,
+  canonical URLs, DNS/TLS, sender verification and auth callbacks/cookies.
+  Explicitly handle pending sign-in links and old-domain redirects if the old
+  domain remains controlled; do not promise seamless session/link continuity.
 - Confirm `kobobhetz.org` control, registrar/renewal ownership and canonical
   hostname. Proposed canonical origin is `https://kobobhetz.org`; redirect
   `www` only once configured. No DNS changes are part of this task.
@@ -38,6 +61,9 @@ production checks to make the monitor appear complete.
   before adding a kobob scope; do not assume a fourth free project exists.
 - Keep dev/test/production data and credentials isolated. Preview deployments
   use synthetic content and never the production member list or media bucket.
+- Define permanent-deletion/object cleanup and backup retention before enabling
+  Yoram's destructive action. Individual item recovery restores as private; public
+  access must not expose archived records, including their safe media copies.
 
 ## Names-only configuration proposal
 
@@ -68,7 +94,10 @@ The proposal is daily encrypted database and media backups, RPO 24 hours and
 RTO 1 working day. Before launch, approve backup retention and costs, record
 where keys live, document database/object-store restore order, and rehearse
 restoring to a separate environment. The rehearsal verifies representative
-content, ordering, media, draft privacy and revoked-member denial. Rotate
+content, ordering, media, private/public/archive states, revisions and
+revoked-member denial on protected operations. Normal item recovery returns to
+private. Disaster recovery must reconcile later unpublishing/revocation actions
+before reopening traffic; do not resurrect stale public visibility or access. Rotate
 session/token secrets after a restore when required to prevent old access
 from becoming valid again. Never commit backup payloads to GitHub.
 
@@ -78,13 +107,16 @@ Adding a replacement admin revokes obsolete access and records an audit event.
 
 ## Launch checklist (not completed)
 
-- [ ] Yoram approves scope, content, Hebrew copy and publication permissions.
+- [ ] Page design, approved content/Hebrew copy, rights and selected public
+  material are ready; confirmed shared-family publication rules are implemented.
 - [ ] Admin email and recovery process are established privately.
 - [ ] Budget, data/storage regions, retention and provider limits are approved.
 - [ ] Sender domain is verified and SPF/DKIM/DMARC reviewed; mail tested with an
   approved address, never a bulk invitation run.
 - [ ] DNS/TLS/canonical redirects are verified on the intended domain.
-- [ ] Anonymous, member, revoked-member and admin flows pass on every hostname.
+- [ ] Anonymous, member, revoked-member and admin flows pass on every hostname;
+  anonymous reads succeed only for public content and revoked users retain only
+  public access. Metadata, relationships and media obey the same boundary.
 - [ ] Private media, caches, metadata and preview data boundaries are checked.
 - [ ] Restore drill and rollback procedure are recorded.
 - [ ] Ops monitoring/configuration is added in a separate authorized PR.

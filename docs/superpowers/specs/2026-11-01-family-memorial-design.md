@@ -2,230 +2,253 @@
 
 **Date:** 2026-11-01
 **Repository:** hetzy8/kobob
-**Status:** draft for Yoram's review; documentation only; implementation not authorized
-**Intended domain:** kobobhetz.org (ownership, DNS and deployment not verified)
+**Status:** development authorized; agreed rules consolidated; page design and remaining engineering choices under review; no application code yet
+**Initial intended domain:** kobobhetz.org; ownership, DNS and deployment unverified
 
-## 1. Intent
+## 1. Intent and evidence
 
-Give the family a respectful, lasting place to remember Yaki Hetz, read his
-story, and revisit approved photographs and memories. The experience should
-feel like a family archive, work comfortably in Hebrew on a phone, and remain
-straightforward for Yoram to maintain.
+A public Hebrew RTL memorial for Yaki Hetz, with a private family workspace
+for preserving, describing and publishing an archive. It must work well on
+phones and stay straightforward to maintain at low recurring cost. All content
+begins private; a public website does not publish the source collection.
 
-The private Drive project brief and catalog have been inspected. Source
-material is evidence for review, not permission to publish or fill gaps with
-invented memories. Preserve original Hebrew metadata and uncertainty.
+The private Drive brief and catalog informed the scope. Their raw contents,
+private identifiers, member addresses and media do not belong in this public
+repository. Preserve original Hebrew metadata, provenance and uncertainty.
+Never invent facts, names, dates, relationships, descriptions or permission.
 
-## 2. Confirmed requirements and proposed scope
+This document replaces the earlier fully private site and read-only member
+proposal. Confirmed rules are requirements; proposed defaults and open decisions
+remain separate from approved scope and implemented behavior.
 
-Confirmed by Yoram's request:
+## 2. Confirmed decisions
 
-- A family memorial for Yaki Hetz at `kobobhetz.org`.
-- A Hebrew, right-to-left website.
-- Verified email access; users managed by Yoram.
-- Existing projects inspected before selecting a stack.
-- Import all 1,374 catalog records into private administration; family viewers
-  see only items explicitly approved by Yoram. Importing is not publication.
-- After launch, manage catalog, media, editorial decisions and users through
-  the website. Drive is the preserved migration source, not a second live CMS.
-- Hosting direction accepted: Vercel, with Neon PostgreSQL, private Cloudflare
-  R2 storage and Resend. Account plans, budget and provisioning remain open.
-- English-only GitHub work, with repository conventions, README, docs, spec
-  and implementation plan established before code.
+- Public visitors can read only explicitly public content.
+- Verified email and active membership are both required for family access.
+  Yoram manages membership; verification alone never grants membership.
+- Every active verified family member can browse every private item, add items,
+  edit everyone's items, publish any item and return any item to private.
+- Members can archive any item recoverably and restore any archived item.
+  Restoration always returns it to private; publication is a separate action.
+- Only Yoram can permanently delete items or manage users.
+- Concurrent editing must not silently overwrite work: stale saves require
+  review and preserve the second editor's unsaved input.
+- One unified searchable archive uses media-type filters rather than separate
+  photo, audio, video, article and memory sections. Mixed-media items retain
+  one identity with multiple sources or delivery representations.
+- A dedicated **Achievements and prizes** section covers recognition across
+  the years and links to supporting archive items and external sources.
+- Much material lives on other websites. External-source entries are first-class
+  archive items; links do not imply permission to copy content.
+- Video and audio play inside item pages using supported external players or
+  hosted playback. Keep attribution and original-source links, with honest
+  unavailable/unsupported states and a source-link fallback.
+- Article presentation stays flexible: link-only entries are supported;
+  excerpts, hosted copies or embedded reading require review of capabilities
+  and permission. No automatic scraping or copying is approved.
+- Import all 1,374 catalog records privately, preserving source information.
+  Importing and appearance confirmation never imply publication approval.
+- After launch the website manages content, media and users. Drive remains a
+  preserved migration source, not a second editable production catalog.
+- Keep a small monolith, focused dependencies, bounded CI and low recurring cost.
+  Vercel, Neon PostgreSQL, private R2 and Resend are the accepted direction.
+  Plans, capacity and numeric budget remain unconfirmed; nothing is provisioned.
+- Ops is familiar with the project per Yoram; daily tracking is requested.
+  Actual registration and reporting coverage have not been verified here.
 
-Proposed defaults, subject to review:
+Comments, face recognition, AI-generated content and native apps are outside
+the first release unless separately requested. Shared family editing does not
+introduce public contributions or public signup.
 
-- All memorial content is private. Anonymous visitors see a minimal Hebrew
-  sign-in page without family media, biography, member identities, or excerpts.
-- Yoram is the initial administrator and publisher. Approved members can read;
-  they cannot publish, upload, invite, or manage other members in the first
-  version. Contribution/moderation is a later choice, not an assumed feature.
-- The archive supports photos, video, audio, documents, illustrations and
-  articles, with Hebrew search and filters by type, period and tags. Source
-  formats may need safe browser-friendly derivatives before publication.
-- Home and biography use curated approved content. Timeline entries require
-  verified event dates; publication dates and filename years are not substitutes.
-- Comments, family contributions, public search, face recognition, AI-generated
-  content and native apps are not included without a separate decision.
+## 3. Access and editorial rules
 
-The accepted hosting direction and alternatives are recorded in
-[ARCHITECTURE.md](../../ARCHITECTURE.md). This accepts a planning direction,
-not implementation, a paid subscription, or a production migration.
+| Capability | Public visitor, including revoked/unverified users | Active verified family member | Yoram / active administrator |
+|---|---|---|---|
+| Read public items and approved delivery media | Yes | Yes | Yes |
+| Read private items and protected media | No | Yes, all items | Yes |
+| Add/edit any item; publish or return to private | No | Yes | Yes |
+| Archive/restore any item | No | Yes; restore as private | Yes; restore as private |
+| Manage membership or permanently delete | No | No | Yes |
 
-## 3. Access and roles
+Revocation removes family privileges on the next protected request; it does
+not prevent reading deliberately public content. No public member directory,
+public signup, domain-based membership or automatic first-user administrator.
 
-| Actor | Permitted behavior |
+Every protected read and mutation checks a current server-side session,
+verified identity and active membership. User management and permanent deletion
+add an administrator role check. Route/layout visibility is not authorization.
+
+| Action | Required result |
 |---|---|
-| Anonymous visitor | Request sign-in and consume a valid emailed link; no memorial reads |
-| Active verified member | Read published memorial content and approved private media; sign out |
-| Yoram / active administrator | Member management, publication, content/media administration, audit access |
-| Invited but unverified, revoked, or suspended member | No protected content, even with an old session/link |
+| Add/import | Private item; no automatic publication |
+| Publish | Deliberate action; only safe, rights-reviewed representations become public |
+| Return to private | Next public request denied for item, controlled media, metadata and previews |
+| Archive | Remove from normal browsing and public delivery; keep recoverable record |
+| Restore | Return to private regardless of former visibility |
+| Permanently delete | Yoram only; retention/object cleanup defined before enabling |
 
-Membership is an explicit allowlist, not a signup application. Email
-verification alone never creates membership. Another administrator may only be
-added by an explicit future owner decision; there is no self-promotion.
+Archived records need a family recovery view. Originals stay private. Neither
+unpublishing nor deletion recalls downloaded copies or deletes an external
+publisher's source. Permanent deletion cannot promise immediate removal from
+retained backups.
 
-### Email sign-in proposal
+Saves and lifecycle actions check the current revision atomically. A stale
+request fails visibly, preserves unsaved input and requires review; it must
+not reverse a newer publication, archiving or restoration decision. Audit events
+record actor, target, action and time without sensitive content bodies.
 
-Code versus link remains open; the following is the proposed link approach.
-If codes are selected, revise the flow and tests before implementation.
+**Approved by Yoram:** edits to a public item create a private working revision;
+the existing public revision stays visible until explicit publication. Public
+queries and media/source associations must use that published revision, never
+unpublished edits. Restoring or returning to private must not resurrect an older
+public revision. A full version-history browser is not assumed.
 
-1. Yoram adds an email to the member list. Addresses are trimmed and consistently
-   case-normalized; provider-specific dots or plus aliases are not collapsed.
-2. The visitor requests a sign-in link. The response does not disclose whether
-   the address is a member. Only an active invited member receives a link.
-3. A maintained auth library issues a random, single-use token, stored hashed,
-   tied to the member and its current access version, expiring in **15 minutes**.
-4. Link opening leads to a confirmation step; only the explicit confirmation
-   consumes it, so email scanners/prefetch do not silently use it up. Consumption
-   is atomic. Reject expired, reused, revoked, or email-mismatched tokens.
-5. On successful confirmation, mark the email verified and issue a server-side
-   revocable session. Proposed maximum session lifetime is **7 days**. Session
-   cookies are HttpOnly, Secure in production, and SameSite appropriate to the
-   flow. Redirect targets are restricted to local approved paths.
-6. Every private operation checks that the session and member are still active.
-   Successful sign-out revokes that session and clears the browser cookie.
-   If the network fails, hide private UI on that device, show a retry state,
-   and do not claim the server session or HttpOnly cookie has been revoked. A revoked member's existing session must fail on
-   its next request; re-inviting does not revive old links or sessions.
+## 4. Site structure and experience
 
-Token/session durations are engineering proposals, not family preferences.
-Before production, set configurable per-address and per-IP issuance throttles
-and a delivery budget; they must work across server instances. Do not log link
-tokens, sign-in URLs, mailbox codes, request credentials or real member lists.
-Auth callback pages load no third-party resources and use a no-referrer policy.
-Email delivery failure never creates an authenticated session.
+See [page structure and sitemap](2026-11-01-site-structure-design.md) for
+proposed navigation and page responsibilities. The unified archive and dedicated
+achievements section are accepted; detailed layouts, route names, homepage
+selection and visual direction remain proposals.
 
-Yoram's actual admin email is not known. Bootstrap is an operator action after
-that address is supplied and verified; no seeded public credentials and no
-automatic administrator on an empty database. Admin email changes require
-fresh verification and revoke prior sessions/links. Protect the last active
-administrator from accidental removal.
+Use root `lang="he"` and `dir="rtl"`, logical CSS properties, directional
+isolation for emails/URLs/codes, visible focus, semantic headings, labelled forms,
+contrast, alt text and reduced-motion support. Aim for WCAG 2.2 AA and verify
+actual phone/desktop flows. GitHub engineering work is English; Hebrew copy,
+exact name, biography, imagery and achievement facts require family approval.
 
-## 4. Memorial experience and editorial workflow
+Search applies visibility before returning results, counts, snippets or
+suggestions. Public relationships cannot reveal a linked private item's title,
+thumbnail or metadata. Family browsing includes public/private items; archived
+items belong in recovery. Unknown dates remain unknown; filenames/publication
+dates are not substitutes for event evidence. Show honest empty/error states.
 
-- Global `lang="he"` and `dir="rtl"`; use logical spacing/alignment properties.
-  Email fields, URLs, codes and dates use directional isolation where needed.
-- Mobile-first reading, comfortable typography, visible focus, semantic
-  headings, keyboard navigation, labelled forms, sufficient contrast, alt text,
-  and reduced-motion support. Aim for WCAG 2.2 AA and verify the actual flows.
-- Home: approved name/portrait, a short introduction and clear navigation.
-  Biography and memories are factual/editorial content supplied by the family.
-- Archive: searchable approved items with captions, provenance, date precision,
-  rights and relationships; admin search also covers unpublished records.
-- Gallery: ordered photos with approved captions and alt text; no public
-  object links. Strip location/EXIF metadata from delivery copies. Preserve
-  originals privately only under an agreed retention policy.
-- Yoram can save drafts and publish/unpublish. A member sees published content
-  only; unpublished content and media are not reachable by guessing IDs or URLs.
-- Show honest empty, loading, denied, expired-link and delivery-error states.
-  Do not use invented biography or real-looking family placeholder identities.
-- Keep editorial audit records of who published/unpublished, changed access,
-  or removed media. Logs contain IDs and actions, not sensitive content bodies.
-- Archived/unpublished media is inaccessible to readers. Permanent deletion
-  and backup retention require a documented policy; avoid irreversible deletion
-  as the only editorial control.
+## 5. Logical data and service boundaries
 
-Hebrew wording, Yaki's exact Hebrew name, dates, images, chronology, visual
-tone, and permissions require family approval. No Hebrew text is invented in
-this documentation bootstrap.
-
-## 5. Proposed data and service boundaries
-
-| Concept | Essential fields / rules |
+| Concept | Essential fields / boundary |
 |---|---|
-| Member | Stable ID, normalized unique email, role, status, verified timestamp, access version; no public directory |
-| Verification token | Library-compatible hashed token, member/access version, expiry, atomic single-use state |
-| Session | Member ID, revocable session identity, expiry and access version; use the library's supported format |
-| Memorial page / memory | Stable ID/slug, Hebrew title/body, draft/published state, ordered position, editor timestamps |
-| Media asset | Private object key, type/size, caption/alt text, publication association, processing state; no public URL |
-| Audit event | Actor ID, action, target ID, UTC timestamp, minimal non-secret metadata |
+| Member | Stable ID, unique normalized email, role, status, verified timestamp, access version |
+| Verification credential/session | Library-supported hashed credentials, expiry, atomic use, revocation; server-side revocable sessions |
+| Archive item | Stable ID/KOB ID, title/description, type/tags, date evidence/precision, visibility, archive state, revision |
+| Source | Original reference, publisher/creator/contributor, attribution, rights, availability; separate from delivery |
+| Media representation | Item association, original/derivative or external player, private object key, hash, validation/processing state |
+| Achievement | Approved name/description, date evidence, awarding body if known, supporting items/sources, editorial state |
+| Memorial page | Approved editable content and ordering; page-editing interface still proposed |
+| Import run/review | Source version/values, per-record outcomes, conflicts and reconciliation |
+| Audit event | Actor/target IDs, action, UTC timestamp, minimal non-secret metadata |
 
-These are logical models, not a frozen Prisma schema. Validate auth-library
-compatibility before final schema design. Do not duplicate session or token
-tables just to match these names.
+These are logical concepts, not a frozen Prisma schema. Avoid duplicated auth
+models or a generic plugin platform. Thin validated route/action adapters call
+server services; client input never proves identity or authorization.
+Transactions protect membership, token consumption and editorial transitions.
 
-All private access goes through server services. Route handlers or Server
-Actions are thin validated adapters. Every member lookup, content write,
-media read and admin action checks permissions at its own server boundary.
-Use transactions for membership changes, token consumption and publication
-updates where consistency matters. Never trust a client-supplied role or email
-as proof of identity.
+Preserve filenames, KOB IDs, source/folder provenance, original Hebrew values,
+rights, contributors, review coverage/notes, appearance confirmations, SHA-256
+and duplicate groups. Never merge duplicates automatically or infer identity
+from faces. Original and derivative hashes remain separate.
 
-## 6. Privacy and operational requirements
+## 6. Authentication proposal and compatibility gate
 
-- A public code repository is not the archive. Real content, assets, member
-  data and exports belong only in approved private storage.
-- App authorization covers the domain, previews, deployment aliases, metadata,
-  thumbnails and errors. `robots.txt` and `noindex` are additional guidance,
-  not access control. Public social cards contain no private portrait/excerpt.
-- Private pages and media must not enter shared caches or public image/CDN
-  storage. No analytics, tracking pixels or third-party embeds in the first
-  release without a separate decision.
-- Validate uploads by actual format and size. Preserve legacy originals in
-  private quarantine; never render active or unvalidated formats directly.
-  JPEG/PNG/WebP are proposed image display formats, not an import restriction.
-  Define format-specific limits and safe PDF/document/audio/video delivery
-  before implementation; unsupported items remain private with explicit status.
-- Back up the database and private originals, encrypt backups, test restoration
-  into an isolated environment, and preserve content order and access controls.
-  Proposed recovery targets: **RPO 24 hours, RTO 1 working day**. Retention and
-  provider costs must be agreed before collecting real family material.
-- Minimal health checks expose no identities/content. Ops integration and
-  budget registration are later changes, never claimed as configured now.
+Code versus link and the maintained auth-library choice remain open.
+Auth.js/Prisma and Better Auth are candidates; documentation is not integration
+proof. Verify compatible supported versions and pin them. No copied beta version
+or custom cryptography by default.
 
-See [OPERATIONS.md](../../OPERATIONS.md) for launch gates and ownership.
+The proposed link flow sends only to active members with a generic public
+request result. Random hashed single-use credentials bind to member/access
+version with proposed **15-minute** expiry. GET/prefetch does not consume them;
+explicit confirmation does. If codes are selected, revise attempt limits,
+flow and tests before implementation.
 
-## 7. Acceptance criteria
+Proposed absolute session lifetime: **7 days**, without indefinite refresh.
+Cookies are HttpOnly, Secure in production and appropriately SameSite. No stale
+session/cache may extend revoked access. Revocation and verified email changes
+invalidate sessions and pending credentials; re-invitation never revives them.
 
-1. Anonymous requests to memorial pages, actions, media, metadata endpoints and
-   alternate hosts reveal no private content.
-2. An uninvited but mailbox-verified person cannot enter. Active invited members
-   can enter only after verification; replayed/expired links fail.
-3. Revocation blocks the next protected request and outstanding links. Changing
-   an email cannot preserve access through the previous address.
-4. Members cannot read drafts, mutate content, enumerate users, or elevate roles
-   by direct endpoint calls. Yoram can manage users and publish approved content.
-5. Hebrew reading, mixed-direction fields, keyboard navigation and touch flows
-   work at narrow mobile widths and on desktop without horizontal overflow.
-6. A photo cannot be retrieved anonymously by its object key or transformation
-   URL. Unpublishing blocks member access to the asset on the next request.
-7. Delivery failures, offline logout, expired links, empty galleries and unknown
-   content IDs have clear Hebrew states and no sensitive diagnostic output.
-8. A database/media restore drill succeeds before real launch; the deployed SHA,
-   release tag, costs and operator recovery steps are recorded.
+Use durable per-address/IP throttles and a delivery budget. Reject malicious
+redirects, expired/replayed credentials and concurrent replay. Callback pages
+load no third-party resources and use no-referrer. Never log tokens, mailbox
+codes, auth URLs or member lists. Delivery failure issues no session. Successful
+logout revokes the session/clears the cookie; offline failure hides private UI
+with retry without falsely claiming server revocation.
 
-## 8. Decisions for Yoram before implementation
+Bootstrap Yoram explicitly using a privately supplied verified address. Protect
+the last active administrator. Recovery is an owner-verified operator procedure,
+not a public administrator-creation endpoint.
 
-- Confirm fully private content versus a deliberately public introduction.
-- Approve or adjust the proposed first-release sections and read-only member
-  role; decide whether family contributions are needed now.
-- Supply the exact Hebrew name, approved facts/content, rights/consents, and
-  desired visual references. No biography or life dates are assumed.
-- Supply the initial verified admin email and recovery contact/process; do not
-  put the real member list in GitHub.
-- Confirm provider account plans, a recurring budget, media processing, backup
-  retention, and recovery targets. Confirm domain control and sender authority.
+## 7. Privacy, media, operations and domain flexibility
 
-This specification records a coherent proposal for review. None of those
-unanswered items authorizes code, content publication, provisioning or launch.
+Private data never enters public Git, `public/`, public storage, shared caches,
+public image optimization or offline service-worker caches. Private responses
+use `Cache-Control: private, no-store`. All deployment hosts enforce the same
+rules. Propose no shared caching for revocable public item responses initially
+until invalidation is designed and tested.
 
-## 9. Archive migration and authority
+Public media reads check current public visibility and permitted representation;
+private reads also require membership. R2 originals/derivatives remain in a
+private bucket. Public presentation does not expose original keys or permanent
+public object URLs. Strip EXIF/location from delivery copies. Public search and
+social metadata contain only deliberately public fields, never private notes.
 
-See [DATA-MIGRATION.md](../../DATA-MIGRATION.md) for the phased transition.
-Preserve KOB identifiers, original filenames, source references, contributors,
-creator/rights, date evidence and precision, review coverage, Yoram's notes,
-appearance confirmations, SHA-256 values and duplicate groups. Appearance
-confirmation and publication approval are separate fields. Never infer identity
-from faces or treat discovery of an external source as publication permission.
+External access rules remain the publisher's. Support selected players rather
+than arbitrary iframe HTML. Validate URLs, avoid unrestricted server fetches,
+and prevent private metadata/referrers leaking to providers. Provider selection,
+privacy controls and failures need representative-source tests. Analytics and
+tracking features are not approved; third-party player behavior needs review.
 
-Logical models also include ArchiveItem, Source, EditorialReview, MediaVariant
-and ImportRun. Original and derivative objects have separate keys, hashes,
-processing states and relationships. Import all records as non-public; preserve
-source statuses without automatically promoting them to publication approval.
+Validate actual formats/sizes; quarantine uploads before finalization. Preserve
+legacy originals privately and derive safe browser representations. Failed or
+unsupported assets cannot publish. Verify host upload/streaming/range limits
+and conversion feasibility before selecting transport/background processing.
+No persistent worker or extra managed service is assumed.
 
-Additional acceptance criteria: rerunning an import creates no duplicate KOB
-records and does not overwrite subsequent website edits; failed transfers remain
-visible to the administrator and cannot publish. Hebrew search and filters
-return only approved records to viewers. Counts and file hashes reconcile
-before cutover; restoration preserves editorial decisions and access rules.
+`kobobhetz.org` is initial and may change. Use validated server-side canonical
+origin, relative navigation and domain-independent item IDs/storage keys.
+Never trust request hosts for auth URLs. Explicit trusted origins and local
+redirect checks remain mandatory. Document DNS/TLS, canonical URLs, sender,
+callbacks/cookies, pending-link and old-domain redirect migration. Invalidate
+and reissue when needed; do not promise seamless session continuity.
+
+Proposed recovery: **RPO 24 hours, RTO 1 working day**. Agree retention, backup
+destination, budget and regions before provisioning/import. Test isolated
+restore including states, media, revisions and revoked-access denial. See
+[operations](../../OPERATIONS.md), [hosting](../../HOSTING.md) and
+[migration](../../DATA-MIGRATION.md). Paid services, provisioning, real-data
+imports, DNS changes and launch remain separately authorized work.
+
+## 8. Acceptance criteria for later implementation
+
+1. Public reads, media, previews, relationships, counts and alternate hosts reveal
+   no private/archived content. Explicitly public reads succeed without membership.
+2. Uninvited verified people have no family privileges. Active verified members
+   read all private items and edit everyone's items.
+3. Revocation/email change blocks the next protected request and old credentials;
+   expiry/replay fail. Deliberately public reads remain available.
+4. Members cannot manage users, elevate roles or permanently delete. Yoram can.
+5. New/imported items are private. Lifecycle actions enforce public/private/archive
+   states across content/media; restoration is always private.
+6. Concurrent saves/transitions reject stale revisions without losing unsaved
+   input or silently reversing newer changes.
+7. Search, achievements and external players enforce visibility without metadata leaks.
+8. Supported embedded/hosted audio/video works; unavailable sources, unsupported
+   files, delivery failures and empty pages have honest states.
+9. Hebrew RTL, mixed direction, keyboard/touch and narrow widths work. Real content
+   replaces synthetic fixtures only when authorized.
+10. Imports are idempotent and preserve website edits; counts/hashes reconcile.
+    Restore rehearsal preserves privacy and revoked-user denial.
+11. Origin changes need no content-ID/internal-link rewrite. Unsafe callback hosts
+    fail and pending links have explicit migration handling.
+12. Launch records deployed SHA, checks, rollback/restore evidence, actual costs
+    and an annotated version tag on the verified deployed main commit.
+
+## 9. Remaining decisions
+
+Before editorial implementation: review page structure, select the sign-in
+method, define permanent-deletion/retention behavior and
+prove compatible packages/provider integrations. Engineering can choose focused
+schema/service details within these boundaries.
+
+Before final visual/content work: approved Hebrew copy/name, biography, imagery,
+achievement facts, rights and visual references. Before provisioning/import/launch:
+numeric budget, provider capacity/regions, privately supplied admin/recovery
+details, retention and sender/domain authority. Repository visibility is separate;
+never add private data to the currently public repository.
