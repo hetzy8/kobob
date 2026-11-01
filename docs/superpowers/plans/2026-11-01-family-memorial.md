@@ -272,7 +272,8 @@ This is planning work for review, not a claim that any test or service exists.
 The first slice implements the local portions of Task 1, with empty public
 routes ahead of Task 4 so the shell and access flow can be browser-tested.
 Task 1 is not marked fully complete: live delivery is deliberately disconnected,
-final Hebrew copy is pending and CI has not yet run remotely. Explicit bootstrap/
+final Hebrew copy is pending. Remote CI outcomes are tracked on
+[PR #3](https://github.com/hetzy8/kobob/pull/3). Explicit bootstrap/
 member administration is Task 2. Auth is a testable factory in
 `src/lib/auth-system.ts`, with server-only runtime configuration and thin
 `src/services/access.ts` adapters; this replaces the proposed `src/lib/auth.ts`

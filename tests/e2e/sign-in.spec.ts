@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { createDatabase } from "../../src/lib/database";
 import { createAuthSystem } from "../../src/lib/auth-system";
 import { readServerConfig, requireTestDatabaseUrl } from "../../src/lib/config";
@@ -38,6 +38,18 @@ async function emailLink() {
 	);
 	return link;
 }
+async function confirmSignIn(page: Page) {
+	const confirmation = page.waitForResponse(
+		(response) => new URL(response.url()).pathname === "/api/access/confirm",
+	);
+	await page.getByRole("button", { name: "Confirm sign-in" }).click();
+	const response = await confirmation;
+	expect(response.status()).toBe(303);
+	expect(response.headers().location).toBe(`${config.origin}/family`);
+	// Follow the complete asynchronous fetch + navigation. A cold development
+	// route on a small CI runner can compile beyond the 5-second assertion limit.
+	await page.waitForURL(/\/family$/);
+}
 test("public foundation has Hebrew RTL root, relative navigation and no private family content", async ({
 	page,
 }) => {
@@ -70,8 +82,7 @@ test("requires explicit confirmation, removes the token from the address bar, th
 	).toBeVisible();
 	expect(new URL(page.url()).hash).toBe("");
 	expect(await db.session.count()).toBe(0);
-	await page.getByRole("button", { name: "Confirm sign-in" }).click();
-	await expect(page).toHaveURL(/\/family$/);
+	await confirmSignIn(page);
 	await expect(
 		page.getByRole("heading", { name: "Family workspace" }),
 	).toBeVisible();
@@ -89,8 +100,7 @@ test("locks private UI when logout fails without claiming server revocation, the
 	page,
 }) => {
 	await page.goto(await emailLink());
-	await page.getByRole("button", { name: "Confirm sign-in" }).click();
-	await expect(page).toHaveURL(/\/family$/);
+	await confirmSignIn(page);
 	await page.route("**/api/access/sign-out", (route) => route.abort());
 	await page.getByRole("button", { name: "Sign out", exact: true }).click();
 	await expect(
