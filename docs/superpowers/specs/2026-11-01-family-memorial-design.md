@@ -12,8 +12,9 @@ story, and revisit approved photographs and memories. The experience should
 feel like a family archive, work comfortably in Hebrew on a phone, and remain
 straightforward for Yoram to maintain.
 
-No biographical facts or personal material have been supplied. The product
-must never fill those gaps with invented or generated memories.
+The private Drive project brief and catalog have been inspected. Source
+material is evidence for review, not permission to publish or fill gaps with
+invented memories. Preserve original Hebrew metadata and uncertainty.
 
 ## 2. Confirmed requirements and proposed scope
 
@@ -23,6 +24,12 @@ Confirmed by Yoram's request:
 - A Hebrew, right-to-left website.
 - Verified email access; users managed by Yoram.
 - Existing projects inspected before selecting a stack.
+- Import all 1,374 catalog records into private administration; family viewers
+  see only items explicitly approved by Yoram. Importing is not publication.
+- After launch, manage catalog, media, editorial decisions and users through
+  the website. Drive is the preserved migration source, not a second live CMS.
+- Hosting direction accepted: Vercel, with Neon PostgreSQL, private Cloudflare
+  R2 storage and Resend. Account plans, budget and provisioning remain open.
 - English-only GitHub work, with repository conventions, README, docs, spec
   and implementation plan established before code.
 
@@ -33,14 +40,17 @@ Proposed defaults, subject to review:
 - Yoram is the initial administrator and publisher. Approved members can read;
   they cannot publish, upload, invite, or manage other members in the first
   version. Contribution/moderation is a later choice, not an assumed feature.
-- First release contains a memorial home page, biography, photo gallery, and
-  a simple collection of memories. Yoram can draft, edit, publish and unpublish
-  these. A timeline is optional and requires approved dates.
-- Photos and text are the initial media scope. Video hosting, audio,
-  downloads of full archives, comments, social reactions, public search,
-  face recognition, AI-generated content, and native apps are out of scope.
-- Select the Next.js monolith recommended in [ARCHITECTURE.md](../../ARCHITECTURE.md).
-  Alternatives and tradeoffs are recorded there, not presented as owner approval.
+- The archive supports photos, video, audio, documents, illustrations and
+  articles, with Hebrew search and filters by type, period and tags. Source
+  formats may need safe browser-friendly derivatives before publication.
+- Home and biography use curated approved content. Timeline entries require
+  verified event dates; publication dates and filename years are not substitutes.
+- Comments, family contributions, public search, face recognition, AI-generated
+  content and native apps are not included without a separate decision.
+
+The accepted hosting direction and alternatives are recorded in
+[ARCHITECTURE.md](../../ARCHITECTURE.md). This accepts a planning direction,
+not implementation, a paid subscription, or a production migration.
 
 ## 3. Access and roles
 
@@ -56,6 +66,9 @@ verification alone never creates membership. Another administrator may only be
 added by an explicit future owner decision; there is no self-promotion.
 
 ### Email sign-in proposal
+
+Code versus link remains open; the following is the proposed link approach.
+If codes are selected, revise the flow and tests before implementation.
 
 1. Yoram adds an email to the member list. Addresses are trimmed and consistently
    case-normalized; provider-specific dots or plus aliases are not collapsed.
@@ -98,6 +111,8 @@ administrator from accidental removal.
   and reduced-motion support. Aim for WCAG 2.2 AA and verify the actual flows.
 - Home: approved name/portrait, a short introduction and clear navigation.
   Biography and memories are factual/editorial content supplied by the family.
+- Archive: searchable approved items with captions, provenance, date precision,
+  rights and relationships; admin search also covers unpublished records.
 - Gallery: ordered photos with approved captions and alt text; no public
   object links. Strip location/EXIF metadata from delivery copies. Preserve
   originals privately only under an agreed retention policy.
@@ -147,9 +162,11 @@ as proof of identity.
 - Private pages and media must not enter shared caches or public image/CDN
   storage. No analytics, tracking pixels or third-party embeds in the first
   release without a separate decision.
-- Validate uploads by content type and size, restrict initial formats to JPEG,
-  PNG and WebP, reject SVG/HTML/executables, and prevent active content in text.
-  Proposed limit: **20 MiB per image**; keep media-size policies configurable.
+- Validate uploads by actual format and size. Preserve legacy originals in
+  private quarantine; never render active or unvalidated formats directly.
+  JPEG/PNG/WebP are proposed image display formats, not an import restriction.
+  Define format-specific limits and safe PDF/document/audio/video delivery
+  before implementation; unsupported items remain private with explicit status.
 - Back up the database and private originals, encrypt backups, test restoration
   into an isolated environment, and preserve content order and access controls.
   Proposed recovery targets: **RPO 24 hours, RTO 1 working day**. Retention and
@@ -187,8 +204,28 @@ See [OPERATIONS.md](../../OPERATIONS.md) for launch gates and ownership.
   desired visual references. No biography or life dates are assumed.
 - Supply the initial verified admin email and recovery contact/process; do not
   put the real member list in GitHub.
-- Approve stack/providers, a recurring budget, expected media volume, backup
+- Confirm provider account plans, a recurring budget, media processing, backup
   retention, and recovery targets. Confirm domain control and sender authority.
 
 This specification records a coherent proposal for review. None of those
 unanswered items authorizes code, content publication, provisioning or launch.
+
+## 9. Archive migration and authority
+
+See [DATA-MIGRATION.md](../../DATA-MIGRATION.md) for the phased transition.
+Preserve KOB identifiers, original filenames, source references, contributors,
+creator/rights, date evidence and precision, review coverage, Yoram's notes,
+appearance confirmations, SHA-256 values and duplicate groups. Appearance
+confirmation and publication approval are separate fields. Never infer identity
+from faces or treat discovery of an external source as publication permission.
+
+Logical models also include ArchiveItem, Source, EditorialReview, MediaVariant
+and ImportRun. Original and derivative objects have separate keys, hashes,
+processing states and relationships. Import all records as non-public; preserve
+source statuses without automatically promoting them to publication approval.
+
+Additional acceptance criteria: rerunning an import creates no duplicate KOB
+records and does not overwrite subsequent website edits; failed transfers remain
+visible to the administrator and cannot publish. Hebrew search and filters
+return only approved records to viewers. Counts and file hashes reconcile
+before cutover; restoration preserves editorial decisions and access rules.

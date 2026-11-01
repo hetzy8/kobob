@@ -6,7 +6,9 @@ All documents are English. The website itself will be Hebrew RTL.
 |---|---|---|
 | [AGENTS.md](../AGENTS.md) | Contributor invariants and workflow | Applies now |
 | [Product spec](superpowers/specs/2026-11-01-family-memorial-design.md) | Requirements, proposed scope, access rules, acceptance criteria | Draft for Yoram's review |
-| [Architecture](ARCHITECTURE.md) | Existing-project inspection and stack recommendation | Proposed |
+| [Architecture](ARCHITECTURE.md) | Existing-project inspection and stack | Hosting direction accepted; details proposed |
+| [Hosting](HOSTING.md) | Provider direction, storage evidence and cost gates | Accepted direction; nothing provisioned |
+| [Data migration](DATA-MIGRATION.md) | Data locations, preservation, import and cutover | Planned; no data moved |
 | [Implementation plan](superpowers/plans/2026-11-01-family-memorial.md) | Ordered implementation tasks and verification | Not started; gated on decisions |
 | [Operations](OPERATIONS.md) | Secrets, costs, backups, releases, domain and launch gates | Planned; nothing provisioned |
 
@@ -38,4 +40,6 @@ workflow names, and domains are not copied as kobob facts.
 
 Yoram reviews the draft scope and architecture, settles the open decisions in
 the spec, and separately authorizes implementation. No app commands, deployment
-claims, biography, photographs, or real user lists are included at this stage.
+claims or real archive/user payloads are included at this stage. The private
+Drive brief and catalog informed the revised scope; raw files and private
+source identifiers remain outside GitHub.
