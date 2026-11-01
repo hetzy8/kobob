@@ -455,3 +455,22 @@ it("cleans expired credentials without authorizing a session", async () => {
 	expect(await db.session.count()).toBe(0);
 	expect(await db.verification.count()).toBe(0);
 });
+
+it("cleans expired unbound housekeeping rows during verification", async () => {
+	await invite();
+	const { auth, token } = await issue();
+	await db.verification.create({
+		data: {
+			identifier: "synthetic-expired-housekeeping",
+			value: "synthetic",
+			expiresAt: new Date(0),
+		},
+	});
+	await auth.handle(post("/api/access/confirm", { token }));
+	expect(
+		await db.verification.findUnique({
+			where: { identifier: "synthetic-expired-housekeeping" },
+		}),
+	).toBeNull();
+	expect(await db.session.count()).toBe(1);
+});

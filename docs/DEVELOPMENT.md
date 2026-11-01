@@ -176,3 +176,16 @@ The launchers check installed project dependencies. If the active Node is not
 24, they select Node 24 through `npm exec --yes --package=node@24`, using npm's
 cache or downloading that runtime when necessary. This leaves global Node
 unchanged. They do not start a database or configure services.
+
+## Verification housekeeping investigation
+
+The remaining cleanup issue was reproduced with an expired unbound verification
+row: library housekeeping left it behind because the deletion hook rejected its
+missing membership fields. Expired rows may now be deleted before membership
+proof is considered; that path never sets session-creation proof. Valid credential
+consumption still requires current active membership and matching access version.
+The unbound-row regression failed before the fix and passed afterward. The full
+local check passed: 18 unit, 34 integration and seven browser tests, lint, types
+and build. Earlier follow-up notes above describe historical findings; the
+expired-row housekeeping issue is now resolved. Member administration remains
+unimplemented.
