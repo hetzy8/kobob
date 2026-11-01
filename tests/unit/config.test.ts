@@ -1,0 +1,96 @@
+import { describe, expect, it } from "vitest";
+import { readServerConfig, requireTestDatabaseUrl } from "../../src/lib/config";
+
+const env = {
+	SITE_ORIGIN: "https://memorial.example.org",
+	DATABASE_URL: "postgresql://runtime:synthetic@db.example.org/kobob",
+	AUTH_SECRET: "synthetic-test-secret-that-is-long-enough",
+};
+
+describe("server configuration", () => {
+	it("uses a configured canonical origin, independent of deployment host", () => {
+		expect(
+			readServerConfig({ ...env, SITE_ORIGIN: "https://new.example.org/" })
+				.origin,
+		).toBe("https://new.example.org");
+	});
+	it.each([
+		"http://example.org",
+		"https://example.org/path",
+		"https://user:pass@example.org",
+		"https://example.org/?token=x",
+		"//example.org",
+		"https://example.org/#x",
+	])("rejects unsafe origin %s", (origin) => {
+		expect(() => readServerConfig({ ...env, SITE_ORIGIN: origin })).toThrow();
+	});
+	it("permits plain HTTP only for local development", () => {
+		expect(
+			readServerConfig({ ...env, SITE_ORIGIN: "http://127.0.0.1:3000" }).origin,
+		).toBe("http://127.0.0.1:3000");
+		expect(() =>
+			readServerConfig({
+				...env,
+				NODE_ENV: "production",
+				SITE_ORIGIN: "http://localhost:3000",
+			}),
+		).toThrow();
+	});
+	it("rejects absent settings without exposing values", () => {
+		for (const key of ["SITE_ORIGIN", "DATABASE_URL", "AUTH_SECRET"]) {
+			const values = { ...env, [key]: "" };
+			expect(() => readServerConfig(values)).toThrow(key);
+			try {
+				readServerConfig(values);
+			} catch (error) {
+				expect(String(error)).not.toContain("synthetic");
+				expect(String(error)).not.toContain("runtime:");
+			}
+		}
+	});
+	it("rejects weak secrets and non-PostgreSQL connections without leaking values", () => {
+		expect(() => readServerConfig({ ...env, AUTH_SECRET: "short" })).toThrow(
+			"AUTH_SECRET",
+		);
+		expect(() =>
+			readServerConfig({
+				...env,
+				DATABASE_URL: "https://user:synthetic@example.org",
+			}),
+		).toThrow("DATABASE_URL");
+	});
+});
+
+describe("isolated test database guard", () => {
+	it("accepts only an explicitly supplied local dedicated test database", () => {
+		expect(
+			requireTestDatabaseUrl({
+				TEST_DATABASE_URL:
+					"postgresql://kobob_test:synthetic@127.0.0.1:55439/kobob_test",
+			}),
+		).toBe("postgresql://kobob_test:synthetic@127.0.0.1:55439/kobob_test");
+	});
+	it.each([
+		{},
+		{ DATABASE_URL: "postgresql://kobob_test:synthetic@localhost/kobob_test" },
+		{
+			TEST_DATABASE_URL:
+				"postgresql://kobob_test:synthetic@prod.example.org/kobob_test",
+		},
+		{
+			TEST_DATABASE_URL:
+				"postgresql://kobob_test:synthetic@localhost/production",
+		},
+		{ TEST_DATABASE_URL: "postgresql://admin:synthetic@localhost/kobob_test" },
+		{
+			TEST_DATABASE_URL:
+				"postgresql://kobob_test:synthetic@localhost.evil.org/kobob_test",
+		},
+		{
+			TEST_DATABASE_URL:
+				"postgresql://kobob_test:synthetic@localhost/kobob_test?host=prod.example.org",
+		},
+	])("refuses non-isolated targets before any connection", (values) => {
+		expect(() => requireTestDatabaseUrl(values)).toThrow("TEST_DATABASE_URL");
+	});
+});

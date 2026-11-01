@@ -17,9 +17,11 @@ compatible versions and auth library remain to select and prove.
 
 **Spec:** [Product rules](../specs/2026-11-01-family-memorial-design.md).
 **Page proposal:** [Sitemap](../specs/2026-11-01-site-structure-design.md).
-**Status:** revised planning draft; development authorized; Task 0 in progress.
-No app, dependencies, infrastructure or real-data import exists. This replaces
-the earlier fully private/read-only implementation tasks.
+**Status:** local foundation slice in progress; later tasks not started.
+Next.js, Prisma, Better Auth and isolated tests now exist; no provider resources,
+real-data import, live delivery or deployment. See [development](../../DEVELOPMENT.md)
+for exact scope and engineering decisions. This replaces the earlier fully
+private/read-only implementation tasks.
 
 ## Global constraints
 
@@ -264,3 +266,15 @@ operations. Tasks cover all product acceptance criteria; the page proposal maps
 to Tasks 3–5, and domain/cost/restore work maps to Task 7. Remaining decisions
 are explicit in Task 0 rather than replaced with old read-only assumptions.
 This is planning work for review, not a claim that any test or service exists.
+
+## Foundation execution note
+
+The first slice implements the local portions of Task 1, with empty public
+routes ahead of Task 4 so the shell and access flow can be browser-tested.
+Task 1 is not marked fully complete: live delivery is deliberately disconnected,
+final Hebrew copy is pending and CI has not yet run remotely. Explicit bootstrap/
+member administration is Task 2. Auth is a testable factory in
+`src/lib/auth-system.ts`, with server-only runtime configuration and thin
+`src/services/access.ts` adapters; this replaces the proposed `src/lib/auth.ts`
+filename without changing the required service boundary. Biome replaces ESLint;
+Node 24 and Webpack are recorded in DEVELOPMENT.md with the reasons.

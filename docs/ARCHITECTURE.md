@@ -1,7 +1,7 @@
 # Architecture and stack recommendation
 
 **Date:** 2026-11-01
-**Status:** hosting direction accepted by Yoram; implementation details proposed; no services provisioned
+**Status:** hosting direction accepted; initial local application/auth foundation implemented; no services provisioned
 
 ## Evidence before selection
 
@@ -40,7 +40,7 @@ engineering proposals; account plans and provisioning are not approved.
 | App | Next.js App Router, TypeScript, React | Reuse the existing web development approach; one deployable application |
 | UI | Tailwind CSS, accessible primitives only as needed | Logical CSS properties and RTL testing; avoid importing Sana's whole UI dependency set |
 | Database | PostgreSQL with Prisma; Neon selected for planning | Relational membership, sessions, content and audit records; isolated dev/test/production databases |
-| Authentication | Maintained email-verification library; code/link choice open; Auth.js/Prisma is the existing-project candidate | Verify compatibility and invite-only integration first; no custom cryptography or copied beta version by default |
+| Authentication | Better Auth with Prisma and confirmation links for the local foundation | Verify compatibility and invite-only integration first; no custom cryptography or copied beta version by default |
 | Email | Resend with a verified sender for the memorial domain | Existing operational experience; separate sender/configuration and no production delivery in tests |
 | Media | Private S3-compatible storage; R2 selected for planning | Existing tooling experience; authorized delivery of originals and safe display derivatives |
 | Hosting | Vercel selected for planning | Existing monolith deployment practice; app auth protects every hostname |
@@ -56,26 +56,18 @@ and record the alternative before proceeding.
 
 ### Task 0 compatibility review, 2026-11-01
 
-Documentation review is underway; no integration has been installed or proved.
-The local Node runtime is 20.20.2. Next.js currently documents a minimum of
-20.9; the selected Prisma and auth package engines must also be checked before
-pinning a compatible set. Do not treat that runtime check as an integration test.
+The initial compatibility review led to the pinned Next.js 16.4.3, React 19.3.1,
+Prisma 7.10.1 and Better Auth 1.7.15 integration. Node 24 is the selected runtime.
+See DEVELOPMENT.md for the local implementation, tests and engineering choices;
+this is not evidence of provisioning, live delivery or production readiness.
 
-The existing Auth.js/Resend approach remains a candidate. Better Auth is an
-alternative with documented Prisma/PostgreSQL integration, email links and
-email codes. Both Better Auth email plugins default to automatic signup unless
-explicitly disabled. Its session documentation exposes refresh control and
-cookie-cache settings; disable stale session caching and enforce an absolute
-seven-day limit if retaining the spec's proposed lifetime.
-
-Code versus link and library selection remain open. A link implementation
-must prevent direct verification GETs from bypassing explicit confirmation.
-Task 0 selects a supported candidate and the sign-in design. Task 1 must then
-prove generic issuance responses, membership checks at issuance/consumption,
-atomic replay prevention, durable throttling and revocation of credentials and
-sessions against an isolated database before family flows depend on it.
-These requirements are application integration work, not guarantees supplied
-by a library's feature list. No additional managed auth service is selected.
+Auth.js/Prisma was the existing-project candidate. Better Auth was selected
+for this local slice after source/documentation inspection and isolated contract
+tests of atomic consumption, membership-version binding, session revocation and
+signup prevention. The initial flow uses confirmation links with hashed tokens,
+fragment-only transport, no cookie cache and a seven-day absolute session limit.
+Raw auth endpoints remain unexposed. Live email and trusted deployment address
+resolution are not connected. See the development guide for exact limitations.
 
 Primary documentation inspected:
 

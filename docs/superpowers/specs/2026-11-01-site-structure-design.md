@@ -1,7 +1,7 @@
 # Site structure and sitemap proposal
 
 **Date:** 2026-11-01
-**Status:** draft for Yoram's review; no UI implemented
+**Status:** page-composition proposal; initial empty page/access shells implemented; final Hebrew copy and visual direction pending
 **Product rules:** [memorial specification](2026-11-01-family-memorial-design.md)
 
 ## Intent and approach
@@ -134,7 +134,8 @@ without a plugin framework, extra service or duplicate catalog.
 ## Review still needed
 
 - Page composition and navigation labels are proposed, not approved visual design.
-- Choose email code versus confirmation link; select compatible auth integration.
+- Confirmation links/Better Auth are the initial engineering default; changing
+  to typed codes requires revising the flow and tests.
 - Identify actual external player providers and their privacy/fallback behavior.
 - Supply approved content/visual references before final Hebrew copy and layouts.
 

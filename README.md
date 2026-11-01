@@ -6,10 +6,11 @@ access requires verified email and active membership managed by Yoram.
 The domain may change; keep site URLs configurable and item identities stable.
 GitHub work is English; approved product content and interface copy will be Hebrew.
 
-**Status: development authorized; Task 0 and page-design review in progress.**
-The repository contains documentation only: no application, dependencies,
-services, data import or production release. Yoram authorized development on
-2026-11-01. Design/compatibility gates remain; provisioning and launch are separate.
+**Status: initial application/access foundation implemented locally; not deployed.**
+Empty public page shells and a tested invitation-only access boundary now exist.
+Shared editing, archive data/media, member administration and live email remain
+future work. Temporary interface copy is English pending Hebrew approval; no
+real family data has been imported. See [local setup and checks](docs/DEVELOPMENT.md).
 
 ## Start here
 
@@ -38,15 +39,16 @@ services, data import or production release. Yoram authorized development on
 The [sitemap proposal](docs/superpowers/specs/2026-11-01-site-structure-design.md)
 sets out Home, About Yaki, Achievements and prizes, Archive and item pages, plus
 the family workspace, recovery and Yoram-only user management. Page composition,
-visual direction and sign-in remain under review. Edits to public items stay
+visual direction remain under review. Edits to public items stay
 private working revisions until explicit publication; existing public content
 remains visible meanwhile.
 
 ## Hosting, costs and migration
 
 Accepted direction: a small Next.js App Router monolith on Vercel, Neon
-PostgreSQL, private Cloudflare R2 and Resend. Exact compatible versions, auth
-library and email code versus link remain open. Nothing has been provisioned.
+PostgreSQL, private Cloudflare R2 and Resend. Compatible versions and the auth
+library have been selected for the local foundation; confirmation links are the
+initial engineering default. Nothing has been provisioned.
 Aim for low monthly recurring cost with focused dependencies and bounded CI;
 account capacity, numeric cap and actual costs remain to verify. Yoram requests
 daily ops tracking; actual coverage has not been verified here.
@@ -60,8 +62,9 @@ source. See [migration](docs/DATA-MIGRATION.md), [hosting](docs/HOSTING.md) and
 
 The first commit established documentation on main. Subsequent work uses a
 focused branch and a PR into main. A documentation merge is not a production
-release. There are no application setup commands or tests yet. Current work
-consolidates agreed requirements and drafts page design for review.
+release. Local setup and actual verification commands are in
+[DEVELOPMENT.md](docs/DEVELOPMENT.md). Production access/content and visual
+approval remain separate from the local foundation.
 
 Conventions adapt [hetzy8/ops](https://github.com/hetzy8/ops): repository context,
 explicit invariants, dated specs/plans, verified results, cost discipline,

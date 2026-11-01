@@ -1,0 +1,17 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.6.4/schema.json",
+	"files": {
+		"includes": [
+			"**",
+			"!!**/node_modules",
+			"!!**/.next",
+			"!!**/src/generated",
+			"!!**/.superpowers",
+			"!!**/test-results",
+			"!!**/playwright-report"
+		]
+	},
+	"vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+	"css": { "parser": { "tailwindDirectives": true } },
+	"linter": { "enabled": true, "rules": { "preset": "recommended" } }
+}

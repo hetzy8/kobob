@@ -7,10 +7,11 @@ All documents are English. The website itself will be Hebrew RTL.
 | [AGENTS.md](../AGENTS.md) | Contributor invariants and workflow | Applies now |
 | [Product spec](superpowers/specs/2026-11-01-family-memorial-design.md) | Agreed rules, proposals, access and acceptance criteria | Consolidated; open decisions explicit |
 | [Page structure and sitemap](superpowers/specs/2026-11-01-site-structure-design.md) | Navigation, page responsibilities and family workflows | Draft for Yoram's review |
+| [Development](DEVELOPMENT.md) | Implemented local scope, setup, test isolation and limitations | Foundation implemented; no deployment |
 | [Architecture](ARCHITECTURE.md) | Existing-project inspection and stack | Hosting direction accepted; details proposed |
 | [Hosting](HOSTING.md) | Provider direction, storage evidence and cost gates | Accepted direction; nothing provisioned |
 | [Data migration](DATA-MIGRATION.md) | Data locations, preservation, import and cutover | Planned; no data moved |
-| [Implementation plan](superpowers/plans/2026-11-01-family-memorial.md) | Ordered implementation tasks and verification | Development authorized; Task 0 in progress |
+| [Implementation plan](superpowers/plans/2026-11-01-family-memorial.md) | Ordered implementation tasks and verification | Initial foundation in progress; later slices not started |
 | [Operations](OPERATIONS.md) | Secrets, costs, backups, releases, domain and launch gates | Planned; nothing provisioned |
 
 ## Source of truth
@@ -39,11 +40,9 @@ workflow names, and domains are not copied as kobob facts.
 
 ## Next review
 
-Yoram authorized starting development on 2026-11-01. Public/private rules,
-shared editing, archive/restore, conflicts, sources and domain flexibility are
-consolidated in the spec and revised plan. Public-item edits are approved to
-remain private until explicit publication. Review the page proposal, choose
-email sign-in, then prove compatible packages before building further flows.
-Budget/provisioning/import/launch gates remain
-separate. No application tests or real archive/user payloads exist here; private
-source evidence stays outside GitHub.
+Yoram authorized development and resumed building after merging the consolidated
+plan. See DEVELOPMENT.md for the implemented local foundation and outstanding
+scope. Public-item edits remain private until explicit publication. Page shells
+are not final visual design or a populated archive. Provider, numeric budget,
+retention, import and launch gates remain separate; raw private source evidence
+stays outside GitHub.
