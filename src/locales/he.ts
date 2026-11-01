@@ -1,6 +1,7 @@
 // Hebrew interface copy. The display name was supplied by Yoram.
 // Biography and archive content remain unpopulated until supplied and approved.
 export const copy = {
+	homeCollageAlt: "קולאז׳ תמונות",
 	preview: "גרסת פיתוח — התוכן המשפחתי עדיין לא נוסף.",
 	title: "יקי חץ",
 	documentTitle: "יקי חץ — גרסת פיתוח",

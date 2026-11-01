@@ -176,3 +176,12 @@ The launchers check installed project dependencies. If the active Node is not
 24, they select Node 24 through `npm exec --yes --package=node@24`, using npm's
 cache or downloading that runtime when necessary. This leaves global Node
 unchanged. They do not start a database or configure services.
+
+## First public homepage image
+
+Yoram selected a Downloads collage for the public site on 2026-11-01.
+The homepage now displays its full composition with generic Hebrew alt text
+and no invented caption, identities or dates. Only a 1600-square WebP derivative
+is stored in public/images; EXIF/XMP are stripped. The source remains outside
+Git. This explicit selection applies to this collage, not the remaining archive.
+Production build passed; lint completed with the three existing cookie warnings.

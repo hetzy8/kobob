@@ -159,3 +159,10 @@ button:disabled {
 		scroll-behavior: auto;
 	}
 }
+
+.home-collage {
+	display: block;
+	width: 100%;
+	height: auto;
+	margin-block: 2rem;
+}
