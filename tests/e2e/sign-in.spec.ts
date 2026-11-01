@@ -209,10 +209,11 @@ test("reads a fresh verification fragment in the same document", async ({
 	page,
 }) => {
 	const link = await emailLink();
-	await page.goto("/verify");
-	await expect(
-		page.getByRole("link", { name: expected.requestAnother }),
-	).toBeVisible();
+	await page.goto("/verify#token=synthetic-invalid");
+	await page.getByRole("button", { name: expected.confirm }).click();
+	// A completed invalid confirmation proves client handlers are attached and
+	// also verifies that the next fragment clears the previous error.
+	await expect(page.locator("main").getByRole("alert")).toHaveText(expected.invalid);
 	await page.evaluate((url) => {
 		window.location.href = url;
 	}, link);
