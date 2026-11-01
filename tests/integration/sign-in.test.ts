@@ -415,3 +415,43 @@ it("cancels oversized streamed bodies before reading further chunks", async () =
 	expect(cancelled).toBe(true);
 	expect(pulls).toBeLessThanOrEqual(2);
 });
+
+it("preserves a delivered link when an overlapping send fails", async () => {
+	await invite();
+	let entered!: () => void;
+	const sending = new Promise<void>((resolve) => {
+		entered = resolve;
+	});
+	let fail!: () => void;
+	const gate = new Promise<void>((resolve) => {
+		fail = resolve;
+	});
+	const failing = createAuthSystem({
+		db,
+		config,
+		sendLink: async () => {
+			entered();
+			await gate;
+			throw new Error("synthetic delivery failure");
+		},
+	});
+	const pending = failing.handle(
+		post("/api/access/request", { email: "family@example.test" }),
+	);
+	await sending;
+	const { auth, token } = await issue();
+	fail();
+	await pending;
+	const response = await auth.handle(post("/api/access/confirm", { token }));
+	expect(response.headers.get("location")).toBe(`${config.origin}/family`);
+	expect(await db.session.count()).toBe(1);
+});
+
+it("cleans expired credentials without authorizing a session", async () => {
+	await invite();
+	const { auth, token } = await issue();
+	await db.verification.updateMany({ data: { expiresAt: new Date(0) } });
+	await auth.handle(post("/api/access/confirm", { token }));
+	expect(await db.session.count()).toBe(0);
+	expect(await db.verification.count()).toBe(0);
+});
