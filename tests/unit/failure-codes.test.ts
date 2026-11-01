@@ -31,6 +31,34 @@ describe("failureCodes", () => {
 		expect(codes).toEqual(["name=Error"]);
 	});
 
+	it("drops dotted or hyphenated values such as hostnames", () => {
+		const error = Object.assign(new Error("x"), {
+			code: "ep-host-pooler.eu-central-1.aws.neon.tech",
+			kind: "db.example.org",
+		});
+		expect(failureCodes(error)).toEqual(["name=Error"]);
+	});
+
+	it("reads Prisma driver adapter details from meta", () => {
+		const error = Object.assign(new Error("x"), {
+			name: "PrismaClientKnownRequestError",
+			code: "P2010",
+			meta: {
+				driverAdapterError: Object.assign(new Error("y"), {
+					name: "DriverAdapterError",
+					cause: { kind: "DatabaseDoesNotExist", originalCode: "3D000" },
+				}),
+			},
+		});
+		expect(failureCodes(error)).toEqual([
+			"name=PrismaClientKnownRequestError",
+			"code=P2010",
+			"name=DriverAdapterError",
+			"kind=DatabaseDoesNotExist",
+			"originalCode=3D000",
+		]);
+	});
+
 	it("tolerates non-errors", () => {
 		expect(failureCodes("boom")).toEqual([]);
 		expect(failureCodes(null)).toEqual([]);

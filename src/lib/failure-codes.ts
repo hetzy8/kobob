@@ -1,13 +1,18 @@
 // Reduces an error to identifying codes that are safe to log. Driver and
 // library messages can contain hostnames, usernames or connection strings, so
-// only short code-like fields along the `cause` chain are kept, never text.
+// only short code-like fields are kept, never text. Allowed characters exclude
+// "." and "-" so a hostname or dotted value placed in a code field is dropped.
 const fields = ["name", "code", "kind", "originalCode"] as const;
-const codeLike = /^[\w.-]{1,40}$/;
+const codeLike = /^[A-Za-z0-9_]{1,40}$/;
+const maxNodes = 8;
 export function failureCodes(error: unknown): string[] {
 	const codes: string[] = [];
-	let current: unknown = error;
-	for (let depth = 0; depth < 5; depth++) {
-		if (!current || typeof current !== "object") break;
+	// Prisma 7 driver adapters keep the database detail (SQLSTATE, `kind`) in
+	// meta.driverAdapterError and its cause, not only in `.cause`.
+	const queue: unknown[] = [error];
+	for (let seen = 0; queue.length && seen < maxNodes; seen++) {
+		const current = queue.shift();
+		if (!current || typeof current !== "object") continue;
 		const record = current as Record<string, unknown>;
 		for (const key of fields) {
 			const value = record[key];
@@ -16,11 +21,12 @@ export function failureCodes(error: unknown): string[] {
 		}
 		const meta = record.meta;
 		if (meta && typeof meta === "object") {
-			const code = (meta as Record<string, unknown>).code;
-			if (typeof code === "string" && codeLike.test(code))
-				codes.push(`meta.code=${code}`);
+			const metaRecord = meta as Record<string, unknown>;
+			if (typeof metaRecord.code === "string" && codeLike.test(metaRecord.code))
+				codes.push(`meta.code=${metaRecord.code}`);
+			queue.push(metaRecord.driverAdapterError);
 		}
-		current = record.cause;
+		queue.push(record.cause);
 	}
 	return codes;
 }

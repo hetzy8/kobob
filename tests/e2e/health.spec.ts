@@ -20,4 +20,5 @@ test("health reports a reachable database without caching or leaking detail", as
 		expect(typeof value).toBe("boolean");
 	expect(body.config.siteOrigin).toBe(true);
 	expect(body.config.authSecret).toBe(true);
+	expect(body.config.databaseUrl).toBe(true);
 });
