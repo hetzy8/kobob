@@ -83,3 +83,37 @@ export function requireTestDatabaseUrl(env: Environment): string {
 	}
 	return value;
 }
+
+// Email settings are validated apart from readServerConfig so a missing sender
+// never blocks pages or the database. Errors name the setting, never its value.
+const senderForm = /^(?:[^<>\r\n]+<([^<>\s]+)>|([^<>\s]+))$/;
+const address = /^[^@\s]+@[^@\s]+\.[^@\s.]+$/;
+export function readEmailConfig(env: Environment) {
+	const apiKey = setting(env, "RESEND_API_KEY");
+	if (!/^re_\S+$/.test(apiKey))
+		throw new Error("Missing or invalid RESEND_API_KEY");
+	const from = setting(env, "EMAIL_FROM");
+	const match = /[\r\n]/.test(from) ? null : senderForm.exec(from);
+	const sender = match?.[1] ?? match?.[2];
+	if (!sender || !address.test(sender))
+		throw new Error("Missing or invalid EMAIL_FROM");
+	return Object.freeze({ apiKey, from });
+}
+const validEmailBaseline = Object.freeze({
+	RESEND_API_KEY: "re_valid",
+	EMAIL_FROM: "valid@mail.valid.example",
+});
+export function emailConfigValidity(env: Environment) {
+	const passes = (name: string) => {
+		try {
+			readEmailConfig({ ...validEmailBaseline, [name]: env[name] });
+			return true;
+		} catch {
+			return false;
+		}
+	};
+	return {
+		resend: passes("RESEND_API_KEY"),
+		emailFrom: passes("EMAIL_FROM"),
+	};
+}
