@@ -39,6 +39,33 @@ export function readServerConfig(env: Environment) {
 	return Object.freeze({ origin: origin.origin, databaseUrl, authSecret });
 }
 
+// Which production settings pass readServerConfig's own rules, as booleans
+// only (for the public health check). Each setting is checked in isolation by
+// substituting known-good synthetic values for the others. A unit test asserts
+// this baseline passes readServerConfig, so a newly required setting must be
+// added here or every flag would read false and blame valid settings.
+export const validConfigBaseline = Object.freeze({
+	SITE_ORIGIN: "https://valid.example",
+	DATABASE_URL: "postgresql://valid.example/db",
+	AUTH_SECRET: "x".repeat(32),
+});
+export function serverConfigValidity(env: Environment) {
+	const valid: Environment = { ...validConfigBaseline, NODE_ENV: env.NODE_ENV };
+	const passes = (name: string) => {
+		try {
+			readServerConfig({ ...valid, [name]: env[name] });
+			return true;
+		} catch {
+			return false;
+		}
+	};
+	return {
+		siteOrigin: passes("SITE_ORIGIN"),
+		databaseUrl: passes("DATABASE_URL"),
+		authSecret: passes("AUTH_SECRET"),
+	};
+}
+
 export function requireTestDatabaseUrl(env: Environment): string {
 	const value = setting(env, "TEST_DATABASE_URL");
 	const url = parseUrl(value, "TEST_DATABASE_URL");

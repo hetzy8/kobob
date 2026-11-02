@@ -1,3 +1,5 @@
+import { serverConfigValidity } from "@/lib/config";
+import { failureCodes } from "@/lib/failure-codes";
 import { database } from "@/lib/runtime";
 export const runtime = "nodejs";
 // No HTTP caching: the post-deploy smoke gate (.github/workflows/vercel-deploy.yml)
@@ -14,14 +16,15 @@ const headers = { "Cache-Control": "private, no-store" };
 // per deployment, so it can delay the smoke gate briefly but never mislead it.
 const databaseCheckTtlMs = 15_000;
 let lastCheck: { ok: boolean; at: number } | undefined;
-// Booleans only, never values (hetzy8 standards rule 7), so a vanished
-// production key is visible from a plain curl instead of a user-facing error.
+// Booleans only, never values (hetzy8 standards rule 7). Required settings
+// report whether they pass the app's own validation, not mere presence: a
+// malformed SITE_ORIGIN or DATABASE_URL fails every protected request exactly
+// like an unreachable database, and only this tells the two apart.
 // Email is not wired yet (src/lib/runtime.ts), so its keys are informational.
 function configPresence() {
 	const env = process.env;
 	return {
-		siteOrigin: Boolean(env.SITE_ORIGIN?.trim()),
-		authSecret: (env.AUTH_SECRET?.trim().length ?? 0) >= 32,
+		...serverConfigValidity(env),
 		resend: Boolean(env.RESEND_API_KEY?.trim()),
 		emailFrom: Boolean(env.EMAIL_FROM?.trim()),
 	};
@@ -36,9 +39,13 @@ async function databaseReady(): Promise<boolean> {
 		// against must fail the gate instead of answering `SELECT 1`.
 		await database().$queryRaw`SELECT 1 FROM "_prisma_migrations" LIMIT 1`;
 		ok = true;
-	} catch {
+	} catch (error) {
 		// Driver and configuration errors can contain hostnames or credentials;
-		// this endpoint reports only a generic failure.
+		// the response stays generic. The private runtime log gets identifying
+		// codes only (never the message), so a failed gate can be diagnosed:
+		// e.g. 42P01 = migrated table missing (wrong database), 28P01 = bad
+		// password, ECONNREFUSED/ENOTFOUND = unreachable host.
+		console.error("[health] database check failed", failureCodes(error));
 		ok = false;
 	}
 	lastCheck = { ok, at: Date.now() };
