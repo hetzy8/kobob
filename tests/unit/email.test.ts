@@ -62,11 +62,14 @@ describe("createResendSender", () => {
 			client,
 		});
 		await sendLink({ email, url });
-		expect(send).toHaveBeenCalledWith({
-			from: "קובוב <no-reply@mail.kobob.example>",
-			to: email,
-			...signInMessage(url),
-		});
+		expect(send).toHaveBeenCalledWith(
+			{
+				from: "קובוב <no-reply@mail.kobob.example>",
+				to: email,
+				...signInMessage(url),
+			},
+			expect.objectContaining({ signal: expect.any(AbortSignal) }),
+		);
 	});
 	it("skips reserved test addresses without calling Resend", async () => {
 		const { client, send } = fakeClient();

@@ -1,8 +1,10 @@
 import "server-only";
-import { readEmailConfig, readServerConfig } from "./config";
+import { after } from "next/server";
+import { readServerConfig } from "./config";
 import { createDatabase, type Database } from "./database";
 import { createAuthSystem } from "./auth-system";
 import { createResendSender } from "./email";
+import { createLinkSender } from "./link-sender";
 let instance: ReturnType<typeof createAuthSystem> | undefined;
 let db: Database | undefined;
 // One client (and connection pool) per server instance, shared by the access
@@ -12,33 +14,23 @@ export function database(): Database {
 	db = createDatabase(readServerConfig(process.env).databaseUrl);
 	return db;
 }
-// Live mail only in production with valid settings; development and tests
-// never construct the Resend client. A missing setting is visible on
-// /api/health (resend/emailFrom) and in the log below.
-function linkSender() {
-	if (process.env.NODE_ENV === "production") {
-		try {
-			const email = readEmailConfig(process.env);
-			return createResendSender({ apiKey: email.apiKey, from: email.from });
-		} catch {
-			console.error("[email] delivery not configured");
-		}
-	}
-	return async () => {
-		throw new Error("EMAIL_DELIVERY_NOT_CONFIGURED");
-	};
-}
 export function accessSystem() {
 	if (instance) return instance;
 	const config = readServerConfig(process.env);
 	instance = createAuthSystem({
 		db: database(),
 		config,
-		sendLink: linkSender(),
-		// The member sees the same confirmation either way (no membership
-		// oracle); the sender has already logged codes for a provider failure.
+		// Live mail is sent after the response (see link-sender), so the member
+		// sees the same confirmation, in the same time, as a non-member.
+		sendLink: createLinkSender({
+			env: process.env,
+			schedule: after,
+			makeSender: createResendSender,
+		}),
+		// Reached only when delivery is not configured: scheduled deliveries
+		// report their own failures after the response.
 		onDeliveryError: () => {
-			console.error("[email] sign-in link not delivered");
+			console.error("[email] delivery not configured");
 		},
 	});
 	return instance;

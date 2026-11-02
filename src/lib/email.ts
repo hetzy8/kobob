@@ -6,13 +6,16 @@ import { failureCodes } from "./failure-codes";
 // The slice of the Resend SDK this module uses; injectable for unit tests.
 export type EmailClient = {
 	emails: {
-		send(options: {
-			from: string;
-			to: string;
-			subject: string;
-			text: string;
-			html: string;
-		}): Promise<{
+		send(
+			options: {
+				from: string;
+				to: string;
+				subject: string;
+				text: string;
+				html: string;
+			},
+			requestOptions?: { signal?: AbortSignal },
+		): Promise<{
 			error: { name?: string; statusCode?: number | null } | null;
 		}>;
 	};
@@ -76,14 +79,15 @@ export function createResendSender({
 	let resend = client;
 	return async ({ email, url }: { email: string; url: string }) => {
 		if (isReservedTestAddress(email)) return;
-		resend ??= new Resend(apiKey);
 		let codes: string[] | undefined;
 		try {
-			const { error } = await resend.emails.send({
-				from,
-				to: email,
-				...signInMessage(url),
-			});
+			resend ??= new Resend(apiKey);
+			// The SDK spreads request options into fetch, so the signal aborts a
+			// stalled request instead of holding the after-response task open.
+			const { error } = await resend.emails.send(
+				{ from, to: email, ...signInMessage(url) },
+				{ signal: AbortSignal.timeout(10_000) },
+			);
 			if (error)
 				codes = [
 					...failureCodes({ name: error.name }),
