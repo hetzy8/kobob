@@ -79,9 +79,11 @@ and `EMAIL_FROM` pass `readEmailConfig` (`src/lib/runtime.ts`). Development
 and tests never construct the Resend client: browser tests issue synthetic
 links through an injected mock sender, and there is no test mailbox or
 production bypass. Reserved test domains (`example.*`, `test.com`, `.test`,
-`.invalid`, `.local`…) are never sent to, even in production. Delivery
-failures are logged as codes only; the member always sees the same
-confirmation so the form cannot reveal membership.
+`.invalid`, `.local`…) are never sent to, even in production. In production
+delivery runs after the response (`src/lib/link-sender.ts`, Next's `after`),
+so response time cannot reveal membership. Delivery failures are logged as
+codes only; the member always sees the same confirmation so the form cannot
+reveal membership.
 
 ## Isolated test database
 

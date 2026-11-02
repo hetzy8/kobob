@@ -137,6 +137,9 @@ After the release that ships the code, Yoram runs:
 6. `npm run admin:bootstrap` against production, then sign in with that
    address to prove delivery end to end.
 
+Never set `RESEND_DEBUG` in Vercel: the SDK then logs full provider errors,
+which can include the recipient address.
+
 Private media (R2) is a later slice with its own map entries.
 
 ## Verification and release

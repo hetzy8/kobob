@@ -64,7 +64,11 @@ the SDK client once.
   once and for 15 minutes, and that the email can be ignored if the reader did
   not ask for it. The link is the only inserted value, and it is HTML-escaped.
   All copy lives in `src/locales/he.ts`.
-- **Failure:** a Resend error or rejection throws
+- **Timeout:** each send aborts after 10 seconds (`AbortSignal.timeout`,
+  passed to the SDK as a request option), so a stalled provider cannot hold
+  the after-response task open.
+- **Failure:** a Resend error, timeout or rejection (including a constructor
+  failure) throws
   `Error("EMAIL_DELIVERY_FAILED")` with no message text, address or link. The
   Resend error's `name` and HTTP `statusCode` are logged through
   `failureCodes`, never the message.
@@ -73,11 +77,16 @@ the SDK client once.
 
 ### `src/lib/runtime.ts`
 
-`accessSystem()` picks the sender:
+`accessSystem()` builds its sender with `createLinkSender`
+(`src/lib/link-sender.ts`):
 
 - Production (`NODE_ENV === "production"`) with valid email config: the
-  Resend sender.
-- Otherwise: today's sender, which throws `EMAIL_DELIVERY_NOT_CONFIGURED`.
+  request answers without waiting. The Resend send is scheduled with Next's
+  `after` (Vercel `waitUntil`) and runs after the response, with a 10-second
+  timeout. Reason: a member's request must take as long as a non-member's,
+  so response time cannot reveal membership (owner decision 2026-11-02, from
+  the final review).
+- Otherwise: a sender that throws `EMAIL_DELIVERY_NOT_CONFIGURED`.
   In production that is logged once per instance as a code, so a missing
   setting is visible in the runtime log as well as on `/api/health`.
 
@@ -100,11 +109,16 @@ cannot be used to test whether an address is a member.
 | Resend rejects or is down | The same confirmation; no email arrives | `[email] delivery failed` with name and status code |
 | Rate limit reached | Existing rate-limit response | Nothing new |
 
-This is the existing behaviour of `requestLink` in `auth-system.ts`, kept on
-purpose: on a delivery failure it deletes the unused verification row, calls
-`onDeliveryError`, and still answers `accepted`, so a failure cannot reveal
-membership. The `sent` copy already tells the member to try again if no link
-arrives. `runtime.ts` passes an `onDeliveryError` that logs a code only.
+In production the request does not wait for Resend, so a delivery failure
+happens after the response: it is logged as codes (`[email] delivery failed`,
+then `[email] sign-in link not delivered`). The unused verification row is not
+deleted; the link was never revealed and expires after 15 minutes.
+
+When email is not configured, the existing path in `requestLink`
+(`auth-system.ts`) applies: the sender throws, the unused verification row is
+deleted, `onDeliveryError` logs `[email] delivery not configured`, and the
+answer is still `accepted`. The `sent` copy already tells the member to try
+again if no link arrives.
 
 ## Tests
 
