@@ -1,4 +1,4 @@
-import { serverConfigValidity } from "@/lib/config";
+import { emailConfigValidity, serverConfigValidity } from "@/lib/config";
 import { failureCodes } from "@/lib/failure-codes";
 import { database } from "@/lib/runtime";
 export const runtime = "nodejs";
@@ -20,13 +20,11 @@ let lastCheck: { ok: boolean; at: number } | undefined;
 // report whether they pass the app's own validation, not mere presence: a
 // malformed SITE_ORIGIN or DATABASE_URL fails every protected request exactly
 // like an unreachable database, and only this tells the two apart.
-// Email is not wired yet (src/lib/runtime.ts), so its keys are informational.
-function configPresence() {
-	const env = process.env;
+// Email validity never affects status: pages and the database work without it.
+function configValidity() {
 	return {
-		...serverConfigValidity(env),
-		resend: Boolean(env.RESEND_API_KEY?.trim()),
-		emailFrom: Boolean(env.EMAIL_FROM?.trim()),
+		...serverConfigValidity(process.env),
+		...emailConfigValidity(process.env),
 	};
 }
 async function databaseReady(): Promise<boolean> {
@@ -59,7 +57,7 @@ export async function GET() {
 			commit,
 			deploymentId,
 			timestamp: new Date().toISOString(),
-			config: configPresence(),
+			config: configValidity(),
 		},
 		{ status: ok ? 200 : 503, headers },
 	);

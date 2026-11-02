@@ -75,6 +75,13 @@ decisions and implemented behavior as different statuses.
   recreated from that commit and open PRs are retargeted to it. Agents cannot
   push to `dev`/`main` (hetzy8-eng command guard); Yoram runs those pushes.
   See docs/OPERATIONS.md → Branch and release flow.
+- Reviews (owner rule 2026-11-02, every hetzy8 project): never request a
+  Copilot review; Copilot is off because AI-credit spend is capped at $0. Yoram
+  runs one Codex review per code PR and posts it as a PR issue comment from
+  `hetzy8` (read `gh api repos/hetzy8/kobob/issues/N/comments`). Merge on CI
+  green plus a reply on the PR answering each point (fixed, or why not, with
+  evidence). Pushing fixes does not earn a second review. Docs-only PRs need
+  no review.
 - Keep README.md as the human entry point and docs/README.md as the map.
   Dated designs live in `docs/superpowers/specs/`; dated executable plans live
   in `docs/superpowers/plans/`. Update status and affected docs with behavior.

@@ -91,6 +91,8 @@ secrets, so Yoram runs each step; agents prepare and verify.
 | `SITE_ORIGIN` | plain setting: the production origin | not a secret |
 | `VERCEL_DEPLOY_HOOK_URL` (GitHub secret) | Vercel deploy hook for `main` | `KOBOB_VERCEL_DEPLOY_HOOK_URL` |
 | `PROD_URL` (GitHub variable) | same origin as `SITE_ORIGIN` | not a secret |
+| `RESEND_API_KEY` | Resend key, sending access only, restricted to `mail.kobob.org` | `KOBOB_RESEND_API_KEY` |
+| `EMAIL_FROM` | plain setting: `קובוב <no-reply@mail.kobob.org>` | not a secret |
 
 Steps, in order:
 
@@ -117,8 +119,28 @@ Steps, in order:
    entry in `ops/projects.json`, and Vercel/Neon entries in `services.json`
    (plan, allowance, declared cost) — neither has an entry today, Sana's included.
 
-Live email (Resend) and private media (R2) are later slices with their own
-map entries; until then sign-in links cannot be delivered in production.
+### Email delivery (Resend)
+
+Sign-in links go out from `mail.kobob.org` (design:
+[2026-11-02-resend-email-design.md](superpowers/specs/2026-11-02-resend-email-design.md)).
+After the release that ships the code, Yoram runs:
+
+1. Resend: add domain `mail.kobob.org`; create an API key with sending access
+   restricted to it.
+2. GoDaddy DNS for `kobob.org`: add the SPF, DKIM and DMARC records Resend
+   lists; wait until Resend shows the domain verified.
+3. Merge the ops map PR for `KOBOB_RESEND_API_KEY`, then from `~/ops`:
+   `node scripts/secrets.mjs rotate KOBOB_RESEND_API_KEY --apply`.
+4. Vercel Production: set `EMAIL_FROM` (value in the table above), then
+   `gh workflow run vercel-deploy.yml --repo hetzy8/kobob --ref main`.
+5. Check `/api/health` shows `resend` and `emailFrom` true.
+6. `npm run admin:bootstrap` against production, then sign in with that
+   address to prove delivery end to end.
+
+Never set `RESEND_DEBUG` in Vercel: the SDK then logs full provider errors,
+which can include the recipient address.
+
+Private media (R2) is a later slice with its own map entries.
 
 ## Verification and release
 
