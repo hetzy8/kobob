@@ -1,5 +1,51 @@
 import { describe, expect, it } from "vitest";
-import { readServerConfig, requireTestDatabaseUrl } from "../../src/lib/config";
+import {
+	readServerConfig,
+	requireTestDatabaseUrl,
+	serverConfigValidity,
+	validConfigBaseline,
+} from "../../src/lib/config";
+
+describe("serverConfigValidity", () => {
+	const good = {
+		NODE_ENV: "production",
+		SITE_ORIGIN: "https://memorial.example.org",
+		DATABASE_URL: "postgresql://runtime:synthetic@db.example.org/kobob",
+		AUTH_SECRET: "synthetic-test-secret-that-is-long-enough",
+	};
+	it("keeps a baseline that passes production validation", () => {
+		expect(() =>
+			readServerConfig({ ...validConfigBaseline, NODE_ENV: "production" }),
+		).not.toThrow();
+	});
+	it("follows the environment's loopback-http rule", () => {
+		const local = { ...good, SITE_ORIGIN: "http://localhost:3000" };
+		expect(
+			serverConfigValidity({ ...local, NODE_ENV: "development" }).siteOrigin,
+		).toBe(true);
+		expect(serverConfigValidity(local).siteOrigin).toBe(false);
+	});
+	it("reports each valid setting", () => {
+		expect(serverConfigValidity(good)).toEqual({
+			siteOrigin: true,
+			databaseUrl: true,
+			authSecret: true,
+		});
+	});
+	it.each([
+		["SITE_ORIGIN", "kobob.example.org", "siteOrigin"],
+		["SITE_ORIGIN", "http://kobob.example.org", "siteOrigin"],
+		["DATABASE_URL", "psql 'postgresql://x@h/db'", "databaseUrl"],
+		["AUTH_SECRET", "short", "authSecret"],
+		["SITE_ORIGIN", undefined, "siteOrigin"],
+		["DATABASE_URL", undefined, "databaseUrl"],
+	])("isolates an invalid %s", (name, value, key) => {
+		const result = serverConfigValidity({ ...good, [name]: value });
+		expect(result[key as keyof typeof result]).toBe(false);
+		const others = Object.entries(result).filter(([k]) => k !== key);
+		for (const [, ok] of others) expect(ok).toBe(true);
+	});
+});
 
 const env = {
 	SITE_ORIGIN: "https://memorial.example.org",
