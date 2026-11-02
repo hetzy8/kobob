@@ -74,11 +74,16 @@ use an isolated development database, a locally generated secret of at least
 files, real member lists or another app's credentials. The migration scripts
 below do not load `.env` files or fall back to `DATABASE_URL`.
 
-Live email is deliberately disconnected in `src/lib/runtime.ts`. Browser tests
-issue synthetic links using an injected mock sender in test setup; there is no
-test mailbox/token endpoint or production bypass. The Hebrew sign-in page states
-that live delivery is unavailable in this preview. Configuring a real sender,
-secrets and delivery requires its separate operational work; no mail was sent.
+Live email is sent only in production, through Resend, when `RESEND_API_KEY`
+and `EMAIL_FROM` pass `readEmailConfig` (`src/lib/runtime.ts`). Development
+and tests never construct the Resend client: browser tests issue synthetic
+links through an injected mock sender, and there is no test mailbox or
+production bypass. Reserved test domains (`example.*`, `test.com`, `.test`,
+`.invalid`, `.local`…) are never sent to, even in production. In production
+delivery runs after the response (`src/lib/link-sender.ts`, Next's `after`),
+so response time cannot reveal membership. Delivery failures are logged as
+codes only; the member always sees the same confirmation so the form cannot
+reveal membership.
 
 ## Isolated test database
 

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+	emailConfigValidity,
+	readEmailConfig,
 	readServerConfig,
 	requireTestDatabaseUrl,
 	serverConfigValidity,
@@ -138,5 +140,53 @@ describe("isolated test database guard", () => {
 		},
 	])("refuses non-isolated targets before any connection", (values) => {
 		expect(() => requireTestDatabaseUrl(values)).toThrow("TEST_DATABASE_URL");
+	});
+});
+
+describe("email configuration", () => {
+	const good = {
+		RESEND_API_KEY: "re_synthetic_key_123",
+		EMAIL_FROM: "קובוב <no-reply@mail.example.org>",
+	};
+	it("accepts a named sender and a bare address", () => {
+		expect(readEmailConfig(good)).toEqual({
+			apiKey: "re_synthetic_key_123",
+			from: "קובוב <no-reply@mail.example.org>",
+		});
+		expect(
+			readEmailConfig({ ...good, EMAIL_FROM: "no-reply@mail.example.org" }).from,
+		).toBe("no-reply@mail.example.org");
+	});
+	it.each([
+		["RESEND_API_KEY", undefined],
+		["RESEND_API_KEY", "sk_synthetic"],
+		["RESEND_API_KEY", "re_has space"],
+		["EMAIL_FROM", undefined],
+		["EMAIL_FROM", "no-reply"],
+		["EMAIL_FROM", "no-reply@localhost"],
+		["EMAIL_FROM", "קובוב <no-reply@mail.example.org"],
+		["EMAIL_FROM", "קובוב\n<no-reply@mail.example.org>"],
+		["EMAIL_FROM", "a@b@mail.example.org"],
+	])("rejects %s=%s without leaking the value", (name, value) => {
+		const env = { ...good, [name]: value };
+		expect(() => readEmailConfig(env)).toThrow(name);
+		try {
+			readEmailConfig(env);
+		} catch (error) {
+			expect(String(error)).not.toContain("synthetic");
+			expect(String(error)).not.toContain("mail.example.org");
+		}
+	});
+	it("reports each email setting's validity in isolation", () => {
+		expect(emailConfigValidity(good)).toEqual({ resend: true, emailFrom: true });
+		expect(emailConfigValidity({ ...good, RESEND_API_KEY: "" })).toEqual({
+			resend: false,
+			emailFrom: true,
+		});
+		expect(emailConfigValidity({ ...good, EMAIL_FROM: "x" })).toEqual({
+			resend: true,
+			emailFrom: false,
+		});
+		expect(emailConfigValidity({})).toEqual({ resend: false, emailFrom: false });
 	});
 });
