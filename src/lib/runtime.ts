@@ -1,7 +1,8 @@
 import "server-only";
-import { readServerConfig } from "./config";
+import { readEmailConfig, readServerConfig } from "./config";
 import { createDatabase, type Database } from "./database";
 import { createAuthSystem } from "./auth-system";
+import { createResendSender } from "./email";
 let instance: ReturnType<typeof createAuthSystem> | undefined;
 let db: Database | undefined;
 // One client (and connection pool) per server instance, shared by the access
@@ -11,19 +12,33 @@ export function database(): Database {
 	db = createDatabase(readServerConfig(process.env).databaseUrl);
 	return db;
 }
+// Live mail only in production with valid settings; development and tests
+// never construct the Resend client. A missing setting is visible on
+// /api/health (resend/emailFrom) and in the log below.
+function linkSender() {
+	if (process.env.NODE_ENV === "production") {
+		try {
+			const email = readEmailConfig(process.env);
+			return createResendSender({ apiKey: email.apiKey, from: email.from });
+		} catch {
+			console.error("[email] delivery not configured");
+		}
+	}
+	return async () => {
+		throw new Error("EMAIL_DELIVERY_NOT_CONFIGURED");
+	};
+}
 export function accessSystem() {
 	if (instance) return instance;
 	const config = readServerConfig(process.env);
 	instance = createAuthSystem({
 		db: database(),
 		config,
-		// Live delivery is intentionally unavailable in this local foundation.
-		// Configure approved sender/provider integration in an authorized follow-up.
-		sendLink: async () => {
-			throw new Error("EMAIL_DELIVERY_NOT_CONFIGURED");
-		},
+		sendLink: linkSender(),
+		// The member sees the same confirmation either way (no membership
+		// oracle); the sender has already logged codes for a provider failure.
 		onDeliveryError: () => {
-			console.error("Email delivery unavailable; no session issued.");
+			console.error("[email] sign-in link not delivered");
 		},
 	});
 	return instance;

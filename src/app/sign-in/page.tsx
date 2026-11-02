@@ -4,7 +4,6 @@ export default function SignIn() {
 	return (
 		<section className="panel">
 			<h1>{copy.signIn}</h1>
-			<p>{copy.deliveryNotice}</p>
 			<SignInForm />
 		</section>
 	);

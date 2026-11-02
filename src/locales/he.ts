@@ -32,7 +32,6 @@ export const copy = {
 		{ href: "/archive", label: "ארכיון" },
 	],
 	empty: "עדיין לא נוסף תוכן ציבורי.",
-	deliveryNotice: "שליחת קישורי כניסה בדוא״ל עדיין אינה זמינה בגרסת הפיתוח.",
 	signIn: "כניסה",
 	email: "כתובת דוא״ל",
 	requestLink: "שליחת קישור כניסה",
