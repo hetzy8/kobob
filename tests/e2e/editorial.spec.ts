@@ -55,7 +55,8 @@ async function newMemberPage(browser: Browser, email: string) {
 	return page;
 }
 async function createItem(page: Page, title: string) {
-	await page.goto("/family/items/new", { waitUntil: "networkidle" });
+	await page.goto("/family/items/new");
+	await expect(page.getByRole("button", { name: copy.items.save })).toBeEnabled();
 	await page.getByLabel(copy.items.title).fill(title);
 	await page.getByLabel(copy.items.typeNames.picture).check();
 	await page.getByRole("button", { name: copy.items.save }).click();
@@ -72,14 +73,16 @@ test("publishing shows the published version until the next publish", async ({
 	await expect(
 		page.getByRole("heading", { name: copy.notFound }),
 	).toBeVisible();
-	await page.goto(`/family/items/${id}/edit`, { waitUntil: "networkidle" });
+	await page.goto(`/family/items/${id}/edit`);
+	await expect(page.getByRole("button", { name: copy.items.save })).toBeEnabled();
 	await page.getByRole("button", { name: copy.items.publish }).click();
 	await expect(page.getByText(copy.items.public).first()).toBeVisible();
 	await page.goto(`/archive/${id}`);
 	await expect(
 		page.getByRole("heading", { name: "Synthetic first" }),
 	).toBeVisible();
-	await page.goto(`/family/items/${id}/edit`, { waitUntil: "networkidle" });
+	await page.goto(`/family/items/${id}/edit`);
+	await expect(page.getByRole("button", { name: copy.items.save })).toBeEnabled();
 	await page.getByLabel(copy.items.title).fill("Synthetic second");
 	await page.getByRole("button", { name: copy.items.save }).click();
 	await expect(page.locator("form").getByRole("status").last()).toHaveText(
@@ -89,7 +92,8 @@ test("publishing shows the published version until the next publish", async ({
 	await expect(
 		page.getByRole("heading", { name: "Synthetic first" }),
 	).toBeVisible();
-	await page.goto(`/family/items/${id}/edit`, { waitUntil: "networkidle" });
+	await page.goto(`/family/items/${id}/edit`);
+	await expect(page.getByRole("button", { name: copy.items.save })).toBeEnabled();
 	await page.getByRole("button", { name: copy.items.republish }).click();
 	// Wait for the action to finish before navigating away.
 	await expect(
@@ -111,8 +115,10 @@ test("a stale save keeps the member's input and shows the latest version", async
 	const a = await newMemberPage(browser, "a@example.test");
 	const b = await newMemberPage(browser, "b@example.test");
 	const id = await createItem(a, "Synthetic original");
-	await b.goto(`/family/items/${id}/edit`, { waitUntil: "networkidle" });
-	await a.goto(`/family/items/${id}/edit`, { waitUntil: "networkidle" });
+	await b.goto(`/family/items/${id}/edit`);
+	await expect(b.getByRole("button", { name: copy.items.save })).toBeEnabled();
+	await a.goto(`/family/items/${id}/edit`);
+	await expect(a.getByRole("button", { name: copy.items.save })).toBeEnabled();
 	await a.getByLabel(copy.items.title).fill("Saved by A");
 	await a.getByRole("button", { name: copy.items.save }).click();
 	await expect(a.locator("form").getByRole("status").last()).toHaveText(
@@ -156,13 +162,82 @@ test("archive hides an item and restore brings it back as private", async ({
 	await expect(
 		page.getByRole("heading", { name: copy.notFound }),
 	).toBeVisible();
-	await page.goto(`/family/items/${id}/edit`, { waitUntil: "networkidle" });
+	await page.goto(`/family/items/${id}/edit`);
+	await expect(
+		page.getByRole("button", { name: copy.items.restore }),
+	).toBeEnabled();
 	await page.getByRole("button", { name: copy.items.restore }).click();
-	await expect(page.getByText(copy.items.private).first()).toBeVisible();
+	await expect(
+		page.getByRole("button", { name: copy.items.restore }),
+	).toHaveCount(0);
+	await expect(
+		page.getByRole("button", { name: copy.items.archive }),
+	).toBeVisible();
 	await page.goto(`/archive/${id}`);
 	await expect(
 		page.getByRole("heading", { name: copy.notFound }),
 	).toBeVisible();
+});
+
+test("a stale person form shows the latest record and keeps the newer family-only decision", async ({
+	browser,
+}) => {
+	const a = await newMemberPage(browser, "a@example.test");
+	const b = await newMemberPage(browser, "b@example.test");
+	const person = await db.person.create({
+		data: { name: "Synthetic person", otherNames: [] },
+	});
+	await a.goto("/family/people");
+	await b.goto("/family/people");
+	const panel = (page: Page) => page.locator("section.panel").first();
+	const save = (page: Page) =>
+		panel(page).getByRole("button", { name: copy.items.save });
+	const status = (page: Page) => panel(page).getByRole("status");
+	await expect(save(a)).toBeEnabled();
+	await expect(save(b)).toBeEnabled();
+	await panel(b).getByLabel(copy.items.familyOnly).check();
+	await save(b).click();
+	await expect(status(b)).toHaveText(copy.items.saved);
+	await panel(a).getByLabel(copy.items.otherNames).fill("Synthetic alias");
+	await save(a).click();
+	await expect(status(a)).toHaveText(copy.items.conflict);
+	await expect(panel(a).getByLabel(copy.items.familyOnly)).toBeChecked();
+	await expect(panel(a).getByLabel(copy.items.otherNames)).toHaveValue(
+		"Synthetic alias",
+	);
+	const aside = a.getByRole("complementary", { name: copy.items.latest });
+	await expect(aside).toContainText("Synthetic person");
+	await expect(aside).toContainText(copy.items.familyOnly);
+	await save(a).click();
+	await expect(status(a)).toHaveText(copy.items.saved);
+	const row = await db.person.findFirstOrThrow({ where: { id: person.id } });
+	expect(row.familyOnly).toBe(true);
+	expect(row.otherNames).toEqual(["Synthetic alias"]);
+});
+
+test("family sub-pages hide private content while logout is pending", async ({
+	page,
+	context,
+}) => {
+	await signIn(page, "editor@example.test");
+	const id = await createItem(page, "Synthetic locked item");
+	await db.person.create({ data: { name: "Synthetic locked person", otherNames: [] } });
+	await context.addCookies([
+		{
+			name: "kobob_logout_pending",
+			value: "1",
+			url: config.origin,
+		},
+	]);
+	for (const [path, text] of [
+		["/family/people", "Synthetic locked person"],
+		[`/family/items/${id}/edit`, "Synthetic locked item"],
+	]) {
+		await page.goto(path);
+		await expect(page.getByRole("alert")).toHaveText(copy.locked);
+		await expect(page.getByText(text)).toHaveCount(0);
+		await expect(page.getByLabel(copy.items.title)).toHaveCount(0);
+	}
 });
 
 test("family pages are Hebrew RTL and require sign-in", async ({ page }) => {

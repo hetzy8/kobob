@@ -202,6 +202,19 @@ it("refuses non-members and revoked members on every function", async () => {
 	expect((await db.item.findUniqueOrThrow({ where: { id } })).version).toBe(1);
 });
 
+it("refuses members whose email is not verified", async () => {
+	const user = await db.user.create({
+		data: { email: "unverified@example.test", emailVerified: false },
+	});
+	const service = createEditorialService(db, async () => ({
+		id: user.id,
+		role: "member",
+		accessVersion: user.accessVersion,
+	}));
+	await expect(service.createItem(input())).rejects.toThrow("FORBIDDEN");
+	expect(await db.item.count()).toBe(0);
+});
+
 it("offers members no permanent delete", async () => {
 	const a = await member("a@example.test");
 	expect(Object.keys(a)).not.toContain("deleteItem");
