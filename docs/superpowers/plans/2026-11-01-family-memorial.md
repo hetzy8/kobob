@@ -131,6 +131,8 @@ address default; the member list never enters public Git.
 
 ## Task 3: Shared editing, lifecycle and conflict handling
 
+> 2026-11-03: archive items implemented per the item-editing spec and plan; achievements and editable pages remain (roadmap phase 2).
+
 **Files:** archive/page/achievement models in `prisma/schema.prisma` and migrations,
 `src/services/editorial.ts`, `src/services/audit.ts`,
 `src/app/(family)/family/page.tsx`, `src/app/(family)/family/items/new/page.tsx`,
