@@ -1,8 +1,23 @@
 # Session handoff
 
-**Updated:** 2026-11-01, at Yoram's request before restarting the session.
+**Updated:** 2026-11-03 (current state below); the sections after it are the
+2026-11-01 record, kept for history; where they disagree, this section wins.
 **Purpose:** resume from repository evidence, not chat or machine-local memory.
 Read AGENTS.md, README.md, docs/README.md, the product spec and plan before changes.
+
+## Current state (2026-11-03)
+
+- Production: v0.2.0 (`f8eff0a`) at https://kobob.vercel.app; `dev` was
+  recreated from that commit. Release records: OPERATIONS.md → Branch and
+  release flow.
+- Sign-in email through Resend is live from `mail.kobob.org`; the first
+  administrator was bootstrapped and the first sign-in email arrived.
+- Open: hetzy8/ops#77 (ops map for `KOBOB_RESEND_API_KEY`; the key is
+  already in Bitwarden and Vercel). Postponed by Yoram: `kobob.org` as the
+  site address (order in OPERATIONS.md → Before provisioning). Still to do in
+  Vercel project settings: Node.js 24.x.
+- Next product work: shared editorial revisions/lifecycle, then archive,
+  search and achievements, then media.
 
 ## Repository and current work
 

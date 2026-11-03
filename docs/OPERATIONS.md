@@ -1,8 +1,9 @@
 # Operations, cost and launch conventions
 
-**Status:** initial local foundation exists; provider services, live email,
-secrets distribution, backups, monitoring integration and domain configuration
-remain unprovisioned. Local test data and source CI configuration are not production.
+**Status (2026-11-03):** in production at `https://kobob.vercel.app` (Vercel
+`fra1`, Neon Frankfurt), v0.2.0. Sign-in email through Resend is live and the
+first administrator exists. Backups, private media and the custom domain
+(`kobob.org`) are not set up yet.
 
 ## Ownership
 
@@ -56,6 +57,15 @@ production checks to make the monitor appear complete.
 - Confirm `kobobhetz.org` control, registrar/renewal ownership and canonical
   hostname. Proposed canonical origin is `https://kobobhetz.org`; redirect
   `www` only once configured. No DNS changes are part of this task.
+- **Decision 2026-11-03 (Yoram):** the site address will be `https://kobob.org`
+  (registered at GoDaddy, which hosts its DNS; `mail.kobob.org` already sends
+  sign-in email), replacing `kobobhetz.org`. Not configured yet; postponed.
+  Order: add `kobob.org` and `www.kobob.org` (redirect to the apex) in Vercel →
+  replace GoDaddy's parking A records with Vercel's → wait for Valid
+  Configuration → set `SITE_ORIGIN` and `PROD_URL` to `https://kobob.org` and
+  redeploy → ship a redirect from `kobob.vercel.app` (Better Auth trusts only
+  `SITE_ORIGIN`, so sign-in breaks on the old host) → move ops `healthUrl` and
+  `productionDomain`. Do not ship the redirect before `kobob.org` serves.
 - Confirm provider plan limits, regions, privacy requirements and dated costs.
   Existing provider familiarity does not mean spare capacity or zero cost.
 - Check Bitwarden organization/project capacity and the current secrets tooling
@@ -74,7 +84,7 @@ origin, email API key/from address, and private storage endpoint/bucket/key.
 No values or real addresses belong in docs. Do not add a `NEXT_PUBLIC_` prefix
 to a secret. A later `.env.example` contains empty placeholders only.
 
-## Provisioning runbook (authorized 2026-11-01, not yet carried out)
+## Provisioning runbook (authorized 2026-11-01, carried out 2026-11-02)
 
 Yoram authorized provisioning on 2026-11-01 with these decisions: a standalone
 Neon project like Sana (not the Vercel Marketplace), and secrets in Bitwarden
@@ -140,6 +150,31 @@ After the release that ships the code, Yoram runs:
 Never set `RESEND_DEBUG` in Vercel: the SDK then logs full provider errors,
 which can include the recipient address.
 
+Done 2026-11-02/03. Lessons for the next domain or sender change:
+
+- Resend: add the exact sending domain (`mail.kobob.org`, not `kobob.org`) in
+  region Ireland (eu-west-1). A domain's region cannot be changed; a domain
+  first created in Tokyo was deleted and re-added. Resend now lists a DKIM TXT
+  plus two CNAMEs (`rsend.mail`, `send.mail`) instead of MX/SPF records;
+  **Auto configure** wrote them to GoDaddy.
+- `kobob.org` already has a `_dmarc` TXT (`p=quarantine`). Do not add a second
+  DMARC record: two make the check fail.
+- `EMAIL_FROM` was first stored with its Hebrew letters reversed (typed in a
+  terminal that shows Hebrew left to right). Paste the value from the table
+  above, or set it in the Vercel dashboard; check that the sender shows
+  `קובוב` in the first email.
+- `npm run admin:bootstrap` reads settings from the process environment only.
+  Run it in your own terminal (it needs a TTY), with the values taken from
+  Bitwarden for that one command:
+
+  ```zsh
+  export BWS_ACCESS_TOKEN="$(security find-generic-password -s ops-secrets-bws -w)"; P="$(bws project list --output json | jq -r '.[]|select(.name=="shared").id')"; S="$(bws secret list "$P" --output json)"; SITE_ORIGIN=https://kobob.vercel.app DATABASE_URL="$(jq -r '.[]|select(.key=="KOBOB_DIRECT_URL").value' <<<"$S")" AUTH_SECRET="$(jq -r '.[]|select(.key=="KOBOB_AUTH_SECRET").value' <<<"$S")" npm run admin:bootstrap; unset BWS_ACCESS_TOKEN P S
+  ```
+
+  Without them it prints only the generic "Bootstrap failed" message. The
+  first administrator was created this way on 2026-11-03; the sign-in email
+  arrived in the Gmail primary inbox.
+
 Private media (R2) is a later slice with its own map entries.
 
 ## Verification and release
@@ -163,8 +198,8 @@ CI (`Verify`) runs on pull requests only and skips docs-only changes.
 
 The workflow needs repository variable `PROD_URL` and secret
 `VERCEL_DEPLOY_HOOK_URL`, mapped in `hetzy8/ops/secrets/targets.json` and
-pushed from Bitwarden. Neither exists yet; they belong to the authorized
-provisioning step, and a release before then fails the workflow loudly.
+pushed from Bitwarden. Both were set during provisioning (2026-11-02); without
+them the workflow fails loudly.
 
 Release checklist:
 
@@ -179,6 +214,14 @@ Release checklist:
    (`gh run list --workflow=vercel-deploy.yml --limit 1`, then
    `gh run view <id> --json conclusion`).
 5. Tag the deployed `main` commit and record SHA, run and verification here.
+   - `v0.1.0`, 2026-11-02: `78b3f2e`, first production release (access
+     foundation and member administration). The first deploys failed health
+     because `DATABASE_URL` pointed at Sana's Neon project and `SITE_ORIGIN`
+     was malformed; both were corrected in Vercel. Check a database host's
+     endpoint and region against the kobob Neon project before releasing.
+   - `v0.2.0`, 2026-11-02: `f8eff0a` (PR #17), sign-in email through Resend.
+     [Deploy run 41489102123](https://github.com/hetzy8/kobob/actions/runs/41489102123)
+     green; health `ok` with every config flag true.
 6. Delete `dev` and recreate it from the release commit, then retarget any
    open PRs to the new `dev` (`gh pr edit <n> --base dev`). This is the hetzy8
    standards release rule (getmygoals' practice): each cycle starts level with

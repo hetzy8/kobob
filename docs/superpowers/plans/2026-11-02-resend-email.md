@@ -46,7 +46,7 @@
 **Interfaces:**
 - Produces: `readEmailConfig(env: Record<string, string | undefined>): Readonly<{ apiKey: string; from: string }>` (throws `Error("Missing or invalid RESEND_API_KEY" | "Missing or invalid EMAIL_FROM")`); `emailConfigValidity(env): { resend: boolean; emailFrom: boolean }`.
 
-- [ ] **Step 1: Write the failing tests.** In `tests/unit/config.test.ts`, extend the import to:
+- [x] **Step 1: Write the failing tests.** In `tests/unit/config.test.ts`, extend the import to:
 
 ```ts
 import {
@@ -111,9 +111,9 @@ describe("email configuration", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure.** Run: `npx vitest run tests/unit/config.test.ts`. Expected: FAIL, `readEmailConfig is not a function` (or a missing-export type error).
+- [x] **Step 2: Run to verify failure.** Run: `npx vitest run tests/unit/config.test.ts`. Expected: FAIL, `readEmailConfig is not a function` (or a missing-export type error).
 
-- [ ] **Step 3: Implement.** Append to `src/lib/config.ts` after `serverConfigValidity`:
+- [x] **Step 3: Implement.** Append to `src/lib/config.ts` after `serverConfigValidity`:
 
 ```ts
 // Email settings are validated apart from readServerConfig so a missing sender
@@ -151,9 +151,9 @@ export function emailConfigValidity(env: Environment) {
 }
 ```
 
-- [ ] **Step 4: Run to verify pass.** Run: `npx vitest run tests/unit/config.test.ts`. Expected: all tests PASS.
+- [x] **Step 4: Run to verify pass.** Run: `npx vitest run tests/unit/config.test.ts`. Expected: all tests PASS.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/lib/config.ts tests/unit/config.test.ts
@@ -178,9 +178,9 @@ git commit -m "feat: validate Resend email settings"
   - `signInMessage(url: string): { subject: string; text: string; html: string }`
   - `createResendSender(options: { apiKey: string; from: string; client?: EmailClient }): (message: { email: string; url: string }) => Promise<void>`; throws `Error("EMAIL_DELIVERY_FAILED")`.
 
-- [ ] **Step 1: Add the dependency.** Run: `npm install resend@^6`. Expected: `resend` appears under `dependencies` in `package.json`.
+- [x] **Step 1: Add the dependency.** Run: `npm install resend@^6`. Expected: `resend` appears under `dependencies` in `package.json`.
 
-- [ ] **Step 2: Add the copy.** In `src/locales/he.ts`, add this property inside `copy` directly after `sent`:
+- [x] **Step 2: Add the copy.** In `src/locales/he.ts`, add this property inside `copy` directly after `sent`:
 
 ```ts
 	signInEmail: {
@@ -191,7 +191,7 @@ git commit -m "feat: validate Resend email settings"
 	},
 ```
 
-- [ ] **Step 3: Write the failing tests.** Create `tests/unit/email.test.ts`:
+- [x] **Step 3: Write the failing tests.** Create `tests/unit/email.test.ts`:
 
 ```ts
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -301,9 +301,9 @@ describe("createResendSender", () => {
 });
 ```
 
-- [ ] **Step 4: Run to verify failure.** Run: `npx vitest run tests/unit/email.test.ts`. Expected: FAIL, cannot resolve `../../src/lib/email`.
+- [x] **Step 4: Run to verify failure.** Run: `npx vitest run tests/unit/email.test.ts`. Expected: FAIL, cannot resolve `../../src/lib/email`.
 
-- [ ] **Step 5: Implement.** Create `src/lib/email.ts`:
+- [x] **Step 5: Implement.** Create `src/lib/email.ts`:
 
 ```ts
 import "server-only";
@@ -395,11 +395,11 @@ export function createResendSender({
 }
 ```
 
-- [ ] **Step 6: Run to verify pass.** Run: `npx vitest run tests/unit/email.test.ts`. Expected: all PASS. Then `npm run typecheck`. Expected: no errors (if `satisfies`/`as never` in the test trips the checker, keep the runtime shape and adjust only the test's typing).
+- [x] **Step 6: Run to verify pass.** Run: `npx vitest run tests/unit/email.test.ts`. Expected: all PASS. Then `npm run typecheck`. Expected: no errors (if `satisfies`/`as never` in the test trips the checker, keep the runtime shape and adjust only the test's typing).
 
-- [ ] **Step 7: Lint and format.** Run: `npx biome check --write src/lib/email.ts src/locales/he.ts tests/unit/email.test.ts` then `npm run lint`. Expected: clean. `git status` must show only this task's files plus `package*.json`.
+- [x] **Step 7: Lint and format.** Run: `npx biome check --write src/lib/email.ts src/locales/he.ts tests/unit/email.test.ts` then `npm run lint`. Expected: clean. `git status` must show only this task's files plus `package*.json`.
 
-- [ ] **Step 8: Commit.**
+- [x] **Step 8: Commit.**
 
 ```bash
 git add package.json package-lock.json src/locales/he.ts src/lib/email.ts tests/unit/email.test.ts
@@ -420,7 +420,7 @@ git commit -m "feat: Resend sender for Hebrew sign-in links"
 - Consumes: `readEmailConfig`, `emailConfigValidity` (Task 1); `createResendSender` (Task 2).
 - Produces: no new exports.
 
-- [ ] **Step 1: Wire the runtime.** Replace `accessSystem()` in `src/lib/runtime.ts` and its imports so the file reads:
+- [x] **Step 1: Wire the runtime.** Replace `accessSystem()` in `src/lib/runtime.ts` and its imports so the file reads:
 
 ```ts
 import "server-only";
@@ -472,7 +472,7 @@ export function accessSystem() {
 
 (Keep any lines below `accessSystem()` in the current file unchanged.)
 
-- [ ] **Step 2: Health flags become validity.** In `src/app/api/health/route.ts`, change the import to `import { emailConfigValidity, serverConfigValidity } from "@/lib/config";`, replace the comment line `// Email is not wired yet (src/lib/runtime.ts), so its keys are informational.` with `// Email validity never affects status: pages and the database work without it.`, and replace `configPresence` with:
+- [x] **Step 2: Health flags become validity.** In `src/app/api/health/route.ts`, change the import to `import { emailConfigValidity, serverConfigValidity } from "@/lib/config";`, replace the comment line `// Email is not wired yet (src/lib/runtime.ts), so its keys are informational.` with `// Email validity never affects status: pages and the database work without it.`, and replace `configPresence` with:
 
 ```ts
 function configValidity() {
@@ -485,16 +485,16 @@ function configValidity() {
 
 and in `GET` use `config: configValidity(),`.
 
-- [ ] **Step 3: Remove the preview notice.** In `src/app/sign-in/page.tsx` delete the line `<p>{copy.deliveryNotice}</p>`. In `src/locales/he.ts` delete the `deliveryNotice: …,` line. Run `grep -rn deliveryNotice src tests` — expected: no output.
+- [x] **Step 3: Remove the preview notice.** In `src/app/sign-in/page.tsx` delete the line `<p>{copy.deliveryNotice}</p>`. In `src/locales/he.ts` delete the `deliveryNotice: …,` line. Run `grep -rn deliveryNotice src tests` — expected: no output.
 
-- [ ] **Step 4: Verify.** Run, in order:
+- [x] **Step 4: Verify.** Run, in order:
   - `npm run lint` — expected clean.
   - `npm run typecheck` — expected no errors.
   - `npm run test:unit` — expected all PASS.
   - `npm run test:e2e` — expected all PASS (health still reports booleans; `resend`/`emailFrom` are false in CI because neither is set).
   Then `git status`; if `next-env.d.ts` or `tests/e2e/sign-in.spec.ts` changed without your edit, `git checkout -- <file>`.
 
-- [ ] **Step 5: Commit.**
+- [x] **Step 5: Commit.**
 
 ```bash
 git add src/lib/runtime.ts src/app/api/health/route.ts src/app/sign-in/page.tsx src/locales/he.ts
@@ -509,7 +509,7 @@ git commit -m "feat: send sign-in links through Resend in production"
 - Modify: `docs/DEVELOPMENT.md` (the "Live email is deliberately disconnected" paragraph, around line 77)
 - Modify: `docs/OPERATIONS.md` (provisioning table and the closing "Live email (Resend)… later slices" paragraph, around lines 85-121)
 
-- [ ] **Step 1: DEVELOPMENT.md.** Replace the paragraph starting "Live email is deliberately disconnected" with:
+- [x] **Step 1: DEVELOPMENT.md.** Replace the paragraph starting "Live email is deliberately disconnected" with:
 
 ```markdown
 Live email is sent only in production, through Resend, when `RESEND_API_KEY`
@@ -522,7 +522,7 @@ failures are logged as codes only; the member always sees the same
 confirmation so the form cannot reveal membership.
 ```
 
-- [ ] **Step 2: OPERATIONS.md.** Add two rows to the provisioning table:
+- [x] **Step 2: OPERATIONS.md.** Add two rows to the provisioning table:
 
 ```markdown
 | `RESEND_API_KEY` | Resend key, sending access only, restricted to `mail.kobob.org` | `KOBOB_RESEND_API_KEY` |
@@ -553,16 +553,16 @@ After the release that ships the code, Yoram runs:
 Private media (R2) is a later slice with its own map entries.
 ```
 
-- [ ] **Step 3: Check links.** Run: `ls docs/superpowers/specs/2026-11-02-resend-email-design.md`. Expected: file exists.
+- [x] **Step 3: Check links.** Run: `ls docs/superpowers/specs/2026-11-02-resend-email-design.md`. Expected: file exists.
 
-- [ ] **Step 4: Commit.**
+- [x] **Step 4: Commit.**
 
 ```bash
 git add docs/DEVELOPMENT.md docs/OPERATIONS.md
 git commit -m "docs: live email delivery and Resend provisioning steps"
 ```
 
-- [ ] **Step 5: Push and open the PR into `dev`.**
+- [x] **Step 5: Push and open the PR into `dev`.**
 
 ```bash
 git push -u origin feat/resend-email
@@ -571,4 +571,4 @@ gh pr create --repo hetzy8/kobob --base dev --title "feat: sign-in email deliver
 
 (Write the body as real prose, not this instruction text.)
 
-- [ ] **Step 6: Review.** Dispatch a fresh-subagent code review of the PR diff (hetzy8 standards: code PRs get one), address findings, and wait for the `verify` check to pass.
+- [x] **Step 6: Review.** Dispatch a fresh-subagent code review of the PR diff (hetzy8 standards: code PRs get one), address findings, and wait for the `verify` check to pass.
