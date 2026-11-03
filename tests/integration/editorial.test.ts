@@ -264,3 +264,102 @@ it("returns NOT_FOUND for an unknown item", async () => {
 		"NOT_FOUND",
 	);
 });
+
+it("creates and edits people and places with version checks", async () => {
+	const a = await member("a@example.test");
+	const b = await member("b@example.test");
+	const person = await a.savePerson({
+		name: "Synthetic Person",
+		otherNames: ["Synthetic Alias"],
+		familyOnly: false,
+	});
+	expect(person.version).toBe(1);
+	await b.savePerson(
+		{ name: "Synthetic Person B", otherNames: [], familyOnly: true },
+		{ id: person.id, expectedVersion: 1 },
+	);
+	await expect(
+		a.savePerson(
+			{ name: "Stale", otherNames: [], familyOnly: false },
+			{ id: person.id, expectedVersion: 1 },
+		),
+	).rejects.toThrow("CONFLICT");
+	expect(await a.listPeople()).toEqual([
+		{
+			id: person.id,
+			name: "Synthetic Person B",
+			otherNames: [],
+			familyOnly: true,
+			version: 2,
+		},
+	]);
+	const place = await a.savePlace({
+		name: "Synthetic Place",
+		otherNames: [],
+		latitude: 32.5,
+		longitude: 35.1,
+	});
+	await a.savePlace(
+		{ name: "Synthetic Place", otherNames: [], latitude: null, longitude: null },
+		{ id: place.id, expectedVersion: 1 },
+	);
+	expect(await a.listPlaces()).toEqual([
+		{
+			id: place.id,
+			name: "Synthetic Place",
+			otherNames: [],
+			latitude: null,
+			longitude: null,
+			version: 2,
+		},
+	]);
+	await expect(
+		a.savePlace(
+			{ name: "x", otherNames: [], latitude: null, longitude: null },
+			{ id: "missing", expectedVersion: 1 },
+		),
+	).rejects.toThrow("NOT_FOUND");
+	const actions = (await db.editorialAudit.findMany()).map(
+		(row) => `${row.targetType}:${row.action}`,
+	);
+	expect(actions.sort()).toEqual(
+		["person:create", "person:save", "place:create", "place:save"].sort(),
+	);
+	expect(JSON.stringify(await db.editorialAudit.findMany())).not.toContain("Synthetic");
+});
+
+it("links people and places to the working revision only", async () => {
+	const a = await member("a@example.test");
+	const person = await a.savePerson({ name: "Synthetic Person", otherNames: [], familyOnly: false });
+	const place = await a.savePlace({
+		name: "Synthetic Place",
+		otherNames: [],
+		latitude: null,
+		longitude: null,
+	});
+	const { id } = await a.createItem({ ...input(), personIds: [person.id], placeIds: [place.id] });
+	await a.transitionItem(id, 1, "publish");
+	await a.updateItem(id, 2, { ...input(), personIds: [], placeIds: [] });
+	const item = await a.getItem(id);
+	expect(item.working.people).toEqual([]);
+	const published = await db.item.findUniqueOrThrow({
+		where: { id },
+		include: { publishedRevision: { include: { people: true, places: true } } },
+	});
+	expect(published.publishedRevision?.people.map((p) => p.personId)).toEqual([person.id]);
+	expect(published.publishedRevision?.places.map((p) => p.placeId)).toEqual([place.id]);
+});
+
+it("refuses non-members on people and places", async () => {
+	const anonymous = createEditorialService(db, async () => {
+		throw new Error("UNAUTHORIZED");
+	});
+	for (const operation of [
+		() => anonymous.listPeople(),
+		() => anonymous.listPlaces(),
+		() => anonymous.savePerson({ name: "x", otherNames: [], familyOnly: false }),
+		() =>
+			anonymous.savePlace({ name: "x", otherNames: [], latitude: null, longitude: null }),
+	])
+		await expect(operation()).rejects.toThrow("UNAUTHORIZED");
+});

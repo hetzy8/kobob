@@ -2,7 +2,15 @@ import "server-only";
 import type { Prisma } from "../generated/prisma/client";
 import type { Database } from "../lib/database";
 import type { MemberContext } from "../lib/auth-system";
-import { itemInputSchema, type ItemInput, type ParsedItem } from "./item-input";
+import {
+	itemInputSchema,
+	personInputSchema,
+	placeInputSchema,
+	type ItemInput,
+	type ParsedItem,
+	type PersonInput,
+	type PlaceInput,
+} from "./item-input";
 import {
 	dateToRow,
 	revisionInclude,
@@ -29,6 +37,22 @@ export type FamilyItem = {
 	hasUnpublishedEdits: boolean;
 	working: RevisionView;
 };
+export type PersonRecord = {
+	id: string;
+	name: string;
+	otherNames: string[];
+	familyOnly: boolean;
+	version: number;
+};
+export type PlaceRecord = {
+	id: string;
+	name: string;
+	otherNames: string[];
+	latitude: number | null;
+	longitude: number | null;
+	version: number;
+};
+type Target = { id: string; expectedVersion: number };
 type Tx = Prisma.TransactionClient;
 type ItemRow = {
 	id: string;
@@ -157,6 +181,54 @@ export function createEditorialService(
 		);
 	}
 
+	// People and places share this shape: create, or update only if the row
+	// still has the expected version. Two explicit copies keep the Prisma
+	// delegates fully typed.
+	async function savePersonRecord(
+		tx: Tx,
+		actorId: string,
+		data: PersonInput,
+		target?: Target,
+	) {
+		if (!target) {
+			const created = await tx.person.create({ data });
+			await audit(tx, actorId, "person", created.id, "create");
+			return { id: created.id, version: 1 };
+		}
+		const { count } = await tx.person.updateMany({
+			where: { id: target.id, version: target.expectedVersion },
+			data: { ...data, version: { increment: 1 } },
+		});
+		if (count !== 1) {
+			const exists = await tx.person.count({ where: { id: target.id } });
+			throw new Error(exists ? "CONFLICT" : "NOT_FOUND");
+		}
+		await audit(tx, actorId, "person", target.id, "save");
+		return { id: target.id, version: target.expectedVersion + 1 };
+	}
+	async function savePlaceRecord(
+		tx: Tx,
+		actorId: string,
+		data: PlaceInput,
+		target?: Target,
+	) {
+		if (!target) {
+			const created = await tx.place.create({ data });
+			await audit(tx, actorId, "place", created.id, "create");
+			return { id: created.id, version: 1 };
+		}
+		const { count } = await tx.place.updateMany({
+			where: { id: target.id, version: target.expectedVersion },
+			data: { ...data, version: { increment: 1 } },
+		});
+		if (count !== 1) {
+			const exists = await tx.place.count({ where: { id: target.id } });
+			throw new Error(exists ? "CONFLICT" : "NOT_FOUND");
+		}
+		await audit(tx, actorId, "place", target.id, "save");
+		return { id: target.id, version: target.expectedVersion + 1 };
+	}
+
 	return {
 		createItem: (input: ItemInput) => {
 			const parsed = itemInputSchema.parse(input);
@@ -234,5 +306,42 @@ export function createEditorialService(
 			}),
 		listItems: () => run((tx) => summaries(tx, "active")),
 		listArchived: () => run((tx) => summaries(tx, "archived")),
+		listPeople: (): Promise<PersonRecord[]> =>
+			run((tx) =>
+				tx.person.findMany({
+					select: {
+						id: true,
+						name: true,
+						otherNames: true,
+						familyOnly: true,
+						version: true,
+					},
+					orderBy: { name: "asc" },
+				}),
+			),
+		savePerson: (input: PersonInput, target?: Target) => {
+			const parsed = personInputSchema.parse(input);
+			return run((tx, actor) =>
+				savePersonRecord(tx, actor.id, parsed, target),
+			);
+		},
+		listPlaces: (): Promise<PlaceRecord[]> =>
+			run((tx) =>
+				tx.place.findMany({
+					select: {
+						id: true,
+						name: true,
+						otherNames: true,
+						latitude: true,
+						longitude: true,
+						version: true,
+					},
+					orderBy: { name: "asc" },
+				}),
+			),
+		savePlace: (input: PlaceInput, target?: Target) => {
+			const parsed = placeInputSchema.parse(input);
+			return run((tx, actor) => savePlaceRecord(tx, actor.id, parsed, target));
+		},
 	};
 }
