@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { copy } from "@/locales/he";
+import { useClientReady } from "./use-client-ready";
 
 type Option = { id: string; name: string };
 
@@ -21,6 +22,7 @@ export function RecordPicker({
 	onSelectedChange: (ids: string[]) => void;
 	create: (name: string) => Promise<Option | null>;
 }) {
+	const ready = useClientReady();
 	const [options, setOptions] = useState(initialOptions);
 	const [query, setQuery] = useState("");
 	const [busy, setBusy] = useState(false);
@@ -88,7 +90,7 @@ export function RecordPicker({
 				</ul>
 			)}
 			{needle && !options.some((option) => option.name === needle) && (
-				<button type="button" onClick={add} disabled={busy}>
+				<button type="button" onClick={add} disabled={!ready || busy}>
 					{copy.items.addNew}: {needle}
 				</button>
 			)}

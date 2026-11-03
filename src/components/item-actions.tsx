@@ -3,12 +3,14 @@ import { useActionState } from "react";
 import { changeItemState, type ItemFormState } from "@/app/family/items/actions";
 import type { EditorialAction, FamilyItem } from "@/services/editorial";
 import { copy } from "@/locales/he";
+import { useClientReady } from "./use-client-ready";
 
 // Shows only the actions the item's state allows.
 export function ItemActions({ item }: { item: FamilyItem }) {
 	const [state, submit, pending] = useActionState(changeItemState, {
 		status: "idle",
 	} as ItemFormState);
+	const ready = useClientReady();
 	const actions: [EditorialAction, string][] =
 		item.state === "archived"
 			? [["restore", copy.items.restore]]
@@ -31,7 +33,7 @@ export function ItemActions({ item }: { item: FamilyItem }) {
 					<input type="hidden" name="id" value={item.id} />
 					<input type="hidden" name="version" value={item.version} />
 					<input type="hidden" name="action" value={action} />
-					<button type="submit" disabled={pending}>
+					<button type="submit" disabled={!ready || pending}>
 						{label}
 					</button>
 				</form>

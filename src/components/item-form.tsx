@@ -6,6 +6,7 @@ import { itemTypes } from "@/services/item-input";
 import { formatDate } from "@/lib/format-date";
 import { copy } from "@/locales/he";
 import { RecordPicker } from "./record-picker";
+import { useClientReady } from "./use-client-ready";
 
 type Option = { id: string; name: string };
 const empty: RevisionView = {
@@ -37,6 +38,7 @@ export function ItemForm({
 		status: "idle",
 		version,
 	} as ItemFormState);
+	const ready = useClientReady();
 	const [title, setTitle] = useState(initial.title);
 	const [description, setDescription] = useState(initial.description);
 	const [types, setTypes] = useState<string[]>(initial.types);
@@ -189,7 +191,7 @@ export function ItemForm({
 				onSelectedChange={setPlaceIds}
 				create={addPlace}
 			/>
-			<button type="submit" disabled={pending}>
+			<button type="submit" disabled={!ready || pending}>
 				{copy.items.save}
 			</button>
 			<p role="status">

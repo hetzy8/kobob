@@ -24,7 +24,7 @@ export function createArchiveReader(db: Database) {
 			const items = await db.item.findMany({
 				where: publicWhere,
 				include: { publishedRevision: true },
-				orderBy: { publishedAt: "desc" },
+				orderBy: [{ publishedAt: "desc" }, { id: "asc" }],
 			});
 			return items.flatMap((item) =>
 				item.publishedRevision

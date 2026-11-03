@@ -1,5 +1,10 @@
 import "server-only";
+import type { ItemType } from "../generated/prisma/enums";
 import type { DateValue, ItemTypeValue } from "./item-input";
+
+// Compile-time only: fails typecheck if itemTypes and the Prisma ItemType enum drift.
+type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : never) : never;
+export const itemTypesMatchPrisma: Same<ItemTypeValue, ItemType> = true;
 
 export const revisionInclude = {
 	people: { include: { person: true } },

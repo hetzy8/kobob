@@ -89,12 +89,14 @@ function transition(
 		return item.visibility === "public"
 			? { visibility: "private", publishedRevisionId: null, publishedAt: null }
 			: null;
-	return {
-		state: "archived",
-		visibility: "private",
-		publishedRevisionId: null,
-		publishedAt: null,
-	};
+	if (action === "archive")
+		return {
+			state: "archived",
+			visibility: "private",
+			publishedRevisionId: null,
+			publishedAt: null,
+		};
+	return null;
 }
 
 function revisionData(parsed: ParsedItem, authorId: string) {
