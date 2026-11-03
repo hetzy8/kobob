@@ -24,18 +24,28 @@ export function RecordPicker({
 	const [options, setOptions] = useState(initialOptions);
 	const [query, setQuery] = useState("");
 	const [busy, setBusy] = useState(false);
+	const [failed, setFailed] = useState(false);
 	const needle = query.trim();
 	const matches = options.filter(
 		(option) => !selected.includes(option.id) && option.name.includes(needle),
 	);
 	async function add() {
 		setBusy(true);
-		const created = await create(needle);
-		setBusy(false);
-		if (!created) return;
-		setOptions((current) => [...current, created]);
-		onSelectedChange([...selected, created.id]);
-		setQuery("");
+		setFailed(false);
+		try {
+			const created = await create(needle);
+			if (!created) {
+				setFailed(true);
+				return;
+			}
+			setOptions((current) => [...current, created]);
+			onSelectedChange([...selected, created.id]);
+			setQuery("");
+		} catch {
+			setFailed(true);
+		} finally {
+			setBusy(false);
+		}
 	}
 	return (
 		<fieldset>

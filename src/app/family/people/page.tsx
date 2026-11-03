@@ -20,7 +20,7 @@ export default async function People() {
 			<h1>{copy.items.people}</h1>
 			<PersonForm />
 			{people.map((person) => (
-				<section className="panel" key={`${person.id}:${person.version}`}>
+				<section className="panel" key={person.id}>
 					<PersonForm person={person} />
 				</section>
 			))}

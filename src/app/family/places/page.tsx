@@ -20,7 +20,7 @@ export default async function Places() {
 			<h1>{copy.items.places}</h1>
 			<PlaceForm />
 			{places.map((place) => (
-				<section className="panel" key={`${place.id}:${place.version}`}>
+				<section className="panel" key={place.id}>
 					<PlaceForm place={place} />
 				</section>
 			))}

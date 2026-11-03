@@ -136,42 +136,61 @@ function target(data: FormData) {
 	const id = String(data.get("id") ?? "");
 	return id ? { id, expectedVersion: Number(data.get("version")) } : undefined;
 }
-async function saveRecord(path: string, work: () => Promise<unknown>): Promise<ItemFormState> {
+async function saveRecord(
+	path: string,
+	id: string,
+	work: () => Promise<{ id: string; version: number }>,
+	currentVersion: () => Promise<number | undefined>,
+): Promise<ItemFormState> {
 	try {
-		await work();
+		const { version } = await work();
 		revalidatePath(path);
-		return { status: "saved" };
+		return { status: "saved", version };
 	} catch (error) {
 		if (isAccessError(error)) redirect("/sign-in");
 		if (error instanceof ZodError) return { status: "invalid" };
-		if (error instanceof Error && error.message === "CONFLICT") return { status: "conflict" };
+		if (error instanceof Error && error.message === "CONFLICT") {
+			const version = id ? await currentVersion().catch(() => undefined) : undefined;
+			revalidatePath(path);
+			return { status: "conflict", version };
+		}
 		return { status: "failed" };
 	}
 }
 
 export async function savePersonForm(_previous: ItemFormState, data: FormData) {
-	return saveRecord("/family/people", () =>
-		editorialService().savePerson(
-			{
-				name: String(data.get("name") ?? ""),
-				otherNames: list(data.get("otherNames")),
-				familyOnly: data.get("familyOnly") === "on",
-			},
-			target(data),
-		),
+	const id = String(data.get("id") ?? "");
+	return saveRecord(
+		"/family/people",
+		id,
+		() =>
+			editorialService().savePerson(
+				{
+					name: String(data.get("name") ?? ""),
+					otherNames: list(data.get("otherNames")),
+					familyOnly: data.get("familyOnly") === "on",
+				},
+				target(data),
+			),
+		async () => (await editorialService().listPeople()).find((p) => p.id === id)?.version,
 	);
 }
 
 export async function savePlaceForm(_previous: ItemFormState, data: FormData) {
-	return saveRecord("/family/places", () =>
-		editorialService().savePlace(
-			{
-				name: String(data.get("name") ?? ""),
-				otherNames: list(data.get("otherNames")),
-				latitude: number(data.get("latitude")),
-				longitude: number(data.get("longitude")),
-			},
-			target(data),
-		),
+	const id = String(data.get("id") ?? "");
+	return saveRecord(
+		"/family/places",
+		id,
+		() =>
+			editorialService().savePlace(
+				{
+					name: String(data.get("name") ?? ""),
+					otherNames: list(data.get("otherNames")),
+					latitude: number(data.get("latitude")),
+					longitude: number(data.get("longitude")),
+				},
+				target(data),
+			),
+		async () => (await editorialService().listPlaces()).find((p) => p.id === id)?.version,
 	);
 }

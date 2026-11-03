@@ -6,13 +6,21 @@ import { copy } from "@/locales/he";
 
 export function PersonForm({ person }: { person?: PersonRecord }) {
 	const [state, submit, pending] = useActionState(savePersonForm, { status: "idle" } as ItemFormState);
+	const version = Math.max(person?.version ?? 0, state.version ?? 0);
 	const [name, setName] = useState(person?.name ?? "");
 	const [otherNames, setOtherNames] = useState(person?.otherNames.join(", ") ?? "");
 	const [familyOnly, setFamilyOnly] = useState(person?.familyOnly ?? false);
+	const [handled, setHandled] = useState(state);
+	if (!person && state.status === "saved" && handled !== state) {
+		setHandled(state);
+		setName("");
+		setOtherNames("");
+		setFamilyOnly(false);
+	}
 	return (
 		<form action={submit}>
 			{person && <input type="hidden" name="id" value={person.id} />}
-			{person && <input type="hidden" name="version" value={person.version} />}
+			{person && <input type="hidden" name="version" value={version} />}
 			<label>
 				{copy.items.name}
 				<input name="name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} />

@@ -6,14 +6,23 @@ import { copy } from "@/locales/he";
 
 export function PlaceForm({ place }: { place?: PlaceRecord }) {
 	const [state, submit, pending] = useActionState(savePlaceForm, { status: "idle" } as ItemFormState);
+	const version = Math.max(place?.version ?? 0, state.version ?? 0);
 	const [name, setName] = useState(place?.name ?? "");
 	const [otherNames, setOtherNames] = useState(place?.otherNames.join(", ") ?? "");
 	const [latitude, setLatitude] = useState(place?.latitude?.toString() ?? "");
 	const [longitude, setLongitude] = useState(place?.longitude?.toString() ?? "");
+	const [handled, setHandled] = useState(state);
+	if (!place && state.status === "saved" && handled !== state) {
+		setHandled(state);
+		setName("");
+		setOtherNames("");
+		setLatitude("");
+		setLongitude("");
+	}
 	return (
 		<form action={submit}>
 			{place && <input type="hidden" name="id" value={place.id} />}
-			{place && <input type="hidden" name="version" value={place.version} />}
+			{place && <input type="hidden" name="version" value={version} />}
 			<label>
 				{copy.items.name}
 				<input name="name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} />
