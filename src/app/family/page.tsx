@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireMember } from "@/services/access";
 import { editorialService } from "@/services/editorial-runtime";
 import { SessionPanel } from "@/components/session-panel";
 import { copy } from "@/locales/he";
+import { isAccessError, logoutPending } from "./access";
 export const dynamic = "force-dynamic";
 export default async function Family() {
 	let member: Awaited<ReturnType<typeof requireMember>>;
@@ -13,18 +13,13 @@ export default async function Family() {
 		member = await requireMember();
 		items = await editorialService().listItems();
 	} catch (error) {
-		if (
-			error instanceof Error &&
-			["UNAUTHORIZED", "FORBIDDEN"].includes(error.message)
-		)
-			redirect("/sign-in");
+		if (isAccessError(error)) redirect("/sign-in");
 		throw new Error(copy.error);
 	}
-	const logoutPending =
-		(await cookies()).get("kobob_logout_pending")?.value === "1";
+	const locked = await logoutPending();
 	return (
-		<SessionPanel logoutPending={logoutPending}>
-			{!logoutPending && (
+		<SessionPanel logoutPending={locked}>
+			{!locked && (
 				<>
 					<h1>{copy.family}</h1>
 					<nav aria-label={copy.items.list}>
