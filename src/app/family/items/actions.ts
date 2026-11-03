@@ -75,10 +75,15 @@ export async function saveItem(
 			const latest = await editorialService()
 				.getItem(id)
 				.catch(() => undefined);
-			revalidatePath("/family");
 			// An archived item's edit page renders without the form, which would
-			// drop the member's input and the conflict message.
-			if (latest?.state !== "archived") revalidatePath(`/family/items/${id}/edit`);
+			// drop the member's input and the conflict message. Any
+			// revalidatePath in an action makes Next re-render the current page
+			// into the response (whatever path is named), so revalidate nothing;
+			// every family page is force-dynamic and reads fresh on its next load.
+			if (latest?.state !== "archived") {
+				revalidatePath("/family");
+				revalidatePath(`/family/items/${id}/edit`);
+			}
 			return { status: "conflict", latest };
 		}
 		return { status: "failed" };
