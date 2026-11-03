@@ -12,14 +12,15 @@ validated server configuration; Prisma membership/session/verification schema
 and migration; Better Auth confirmation links; fresh membership/role checks;
 durable issuance throttles; logout retry that hides private UI on failure.
 
-The public pages are honest empty shells, not the completed archive. Interface
+Home, About and Achievements are honest empty shells; `/archive` and
+`/archive/[id]` show published items. Interface
 copy is Hebrew in `src/locales/he.ts`, including navigation, sign-in and error
 states. Yoram requested the shorter Achievements label and plain Sign in.
 The Hebrew display name was supplied explicitly by Yoram. No biography,
 awards, dates or rights are invented.
-User management/bootstrap, content search, media, embeds and imports remain future slices. The access service's
-revocation behavior is tested through synthetic database changes; the admin
-revocation workflow does not exist yet.
+Content search, media, embeds and imports remain future slices. Member
+administration exists at `/admin/members`; the access service's revocation
+behavior is also tested through synthetic database changes.
 
 Item editing (2026-11-03): family members create, edit, publish, make private,
 archive and restore archive items with dates, people, places, types and tags.
@@ -28,8 +29,8 @@ Routes: `/family`, `/family/items/new`, `/family/items/[id]/edit`,
 `/archive` and `/archive/[id]`, which show only the published revision. Models:
 `Item`, `ItemRevision`, `Person`, `Place` and `EditorialAudit`. The Hebrew
 strings under `copy.items` are proposed wording and await Yoram's approval.
-Checks at this slice: 76 unit tests, 59 integration tests, 15 browser tests
-(11 existing and 4 for item editing), lint, typecheck and the webpack build
+Checks at this slice: 76 unit tests, 60 integration tests, 17 browser tests
+(11 existing and 6 for item editing), lint, typecheck and the webpack build
 pass (Node 20 locally; the project targets Node 24).
 
 ## Toolchain and engineering choices
