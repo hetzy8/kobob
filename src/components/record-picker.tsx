@@ -92,6 +92,7 @@ export function RecordPicker({
 					{copy.items.addNew}: {needle}
 				</button>
 			)}
+			<p role="status">{failed && copy.items.failed}</p>
 		</fieldset>
 	);
 }

@@ -68,6 +68,8 @@ export async function saveItem(
 			const latest = await editorialService()
 				.getItem(id)
 				.catch(() => undefined);
+			revalidatePath("/family");
+			revalidatePath(`/family/items/${id}/edit`);
 			return { status: "conflict", latest };
 		}
 		return { status: "failed" };
@@ -97,8 +99,12 @@ export async function changeItemState(
 		return { status: "saved", version };
 	} catch (error) {
 		if (isAccessError(error)) redirect("/sign-in");
-		if (error instanceof Error && error.message === "CONFLICT")
+		if (error instanceof Error && error.message === "CONFLICT") {
+			revalidatePath("/family");
+			revalidatePath("/family/archived");
+			revalidatePath(`/family/items/${id}/edit`);
 			return { status: "conflict" };
+		}
 		return { status: "failed" };
 	}
 }
