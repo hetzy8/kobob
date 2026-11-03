@@ -1,8 +1,9 @@
 "use client";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { savePersonForm, type ItemFormState } from "@/app/family/items/actions";
 import type { PersonRecord } from "@/services/editorial";
 import { copy } from "@/locales/he";
+import { submitWithoutReset } from "./submit-without-reset";
 import { useClientReady } from "./use-client-ready";
 
 export function PersonForm({ person }: { person?: PersonRecord }) {
@@ -14,21 +15,19 @@ export function PersonForm({ person }: { person?: PersonRecord }) {
 	const [otherNames, setOtherNames] = useState(person?.otherNames.join(", ") ?? "");
 	const [familyOnly, setFamilyOnly] = useState(person?.familyOnly ?? false);
 	const [handled, setHandled] = useState(state);
-	if (!person && state.status === "saved" && handled !== state) {
+	if (handled !== state) {
 		setHandled(state);
-		setName("");
-		setOtherNames("");
-		setFamilyOnly(false);
-	}
-	// The privacy switch must show the newest decision after a conflict; the
-	// member re-ticks it on purpose if they want to change it.
-	// An effect (not a render-time update) so it runs after React's post-action
-	// form reset, which would otherwise clear the checkbox again.
-	useEffect(() => {
+		if (!person && state.status === "saved") {
+			setName("");
+			setOtherNames("");
+			setFamilyOnly(false);
+		}
+		// The privacy switch must show the newest decision after a conflict;
+		// the member re-ticks it on purpose if they want to change it.
 		if (latest) setFamilyOnly(latest.familyOnly);
-	}, [latest]);
+	}
 	return (
-		<form action={submit}>
+		<form onSubmit={submitWithoutReset(submit)}>
 			{person && <input type="hidden" name="id" value={person.id} />}
 			{person && <input type="hidden" name="version" value={version} />}
 			<label>

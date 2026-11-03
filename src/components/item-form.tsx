@@ -6,6 +6,7 @@ import { itemTypes } from "@/services/item-input";
 import { formatDate } from "@/lib/format-date";
 import { copy } from "@/locales/he";
 import { RecordPicker } from "./record-picker";
+import { submitWithoutReset } from "./submit-without-reset";
 import { useClientReady } from "./use-client-ready";
 
 type Option = { id: string; name: string };
@@ -20,7 +21,8 @@ const empty: RevisionView = {
 };
 
 // Every field lives in React state, so a conflict or a failed save never
-// clears what the member typed (React resets uncontrolled forms after actions).
+// clears what the member typed; submitWithoutReset keeps React's post-action
+// form reset from reverting checkboxes in the DOM.
 export function ItemForm({
 	id,
 	version,
@@ -63,7 +65,7 @@ export function ItemForm({
 	const currentVersion = known.length ? Math.max(...known) : undefined;
 	const invalid = (field: string) => state.status === "invalid" && state.fields?.includes(field);
 	return (
-		<form action={submit}>
+		<form onSubmit={submitWithoutReset(submit)}>
 			{id && <input type="hidden" name="id" value={id} />}
 			{currentVersion !== undefined && (
 				<input type="hidden" name="version" value={currentVersion} />

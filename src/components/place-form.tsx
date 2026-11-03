@@ -1,8 +1,9 @@
 "use client";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { savePlaceForm, type ItemFormState } from "@/app/family/items/actions";
 import type { PlaceRecord } from "@/services/editorial";
 import { copy } from "@/locales/he";
+import { submitWithoutReset } from "./submit-without-reset";
 import { useClientReady } from "./use-client-ready";
 
 export function PlaceForm({ place }: { place?: PlaceRecord }) {
@@ -15,22 +16,21 @@ export function PlaceForm({ place }: { place?: PlaceRecord }) {
 	const [latitude, setLatitude] = useState(place?.latitude?.toString() ?? "");
 	const [longitude, setLongitude] = useState(place?.longitude?.toString() ?? "");
 	const [handled, setHandled] = useState(state);
-	if (!place && state.status === "saved" && handled !== state) {
+	if (handled !== state) {
 		setHandled(state);
-		setName("");
-		setOtherNames("");
-		setLatitude("");
-		setLongitude("");
-	}
-	// An effect so it runs after React's post-action form reset.
-	useEffect(() => {
+		if (!place && state.status === "saved") {
+			setName("");
+			setOtherNames("");
+			setLatitude("");
+			setLongitude("");
+		}
 		if (latest) {
 			setLatitude(latest.latitude?.toString() ?? "");
 			setLongitude(latest.longitude?.toString() ?? "");
 		}
-	}, [latest]);
+	}
 	return (
-		<form action={submit}>
+		<form onSubmit={submitWithoutReset(submit)}>
 			{place && <input type="hidden" name="id" value={place.id} />}
 			{place && <input type="hidden" name="version" value={version} />}
 			<label>
