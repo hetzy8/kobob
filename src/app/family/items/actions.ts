@@ -3,7 +3,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ZodError } from "zod";
 import { editorialService } from "@/services/editorial-runtime";
-import type { EditorialAction, FamilyItem } from "@/services/editorial";
+import type {
+	EditorialAction,
+	FamilyItem,
+	PersonRecord,
+	PlaceRecord,
+} from "@/services/editorial";
 import type { ItemInput } from "@/services/item-input";
 
 export type ItemFormState = {
@@ -11,6 +16,8 @@ export type ItemFormState = {
 	version?: number;
 	fields?: string[];
 	latest?: FamilyItem;
+	latestPerson?: PersonRecord;
+	latestPlace?: PlaceRecord;
 };
 
 const isAccessError = (error: unknown) =>
@@ -69,7 +76,9 @@ export async function saveItem(
 				.getItem(id)
 				.catch(() => undefined);
 			revalidatePath("/family");
-			revalidatePath(`/family/items/${id}/edit`);
+			// An archived item's edit page renders without the form, which would
+			// drop the member's input and the conflict message.
+			if (latest?.state !== "archived") revalidatePath(`/family/items/${id}/edit`);
 			return { status: "conflict", latest };
 		}
 		return { status: "failed" };
@@ -146,7 +155,7 @@ async function saveRecord(
 	path: string,
 	id: string,
 	work: () => Promise<{ id: string; version: number }>,
-	currentVersion: () => Promise<number | undefined>,
+	latest: () => Promise<Partial<ItemFormState>>,
 ): Promise<ItemFormState> {
 	try {
 		const { version } = await work();
@@ -156,9 +165,9 @@ async function saveRecord(
 		if (isAccessError(error)) redirect("/sign-in");
 		if (error instanceof ZodError) return { status: "invalid" };
 		if (error instanceof Error && error.message === "CONFLICT") {
-			const version = id ? await currentVersion().catch(() => undefined) : undefined;
+			const current = id ? await latest().catch(() => ({})) : {};
 			revalidatePath(path);
-			return { status: "conflict", version };
+			return { status: "conflict", ...current };
 		}
 		return { status: "failed" };
 	}
@@ -178,7 +187,9 @@ export async function savePersonForm(_previous: ItemFormState, data: FormData) {
 				},
 				target(data),
 			),
-		async () => (await editorialService().listPeople()).find((p) => p.id === id)?.version,
+		async () => ({
+			latestPerson: (await editorialService().listPeople()).find((p) => p.id === id),
+		}),
 	);
 }
 
@@ -197,6 +208,8 @@ export async function savePlaceForm(_previous: ItemFormState, data: FormData) {
 				},
 				target(data),
 			),
-		async () => (await editorialService().listPlaces()).find((p) => p.id === id)?.version,
+		async () => ({
+			latestPlace: (await editorialService().listPlaces()).find((p) => p.id === id),
+		}),
 	);
 }

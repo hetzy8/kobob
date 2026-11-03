@@ -1,12 +1,15 @@
 "use client";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { savePersonForm, type ItemFormState } from "@/app/family/items/actions";
 import type { PersonRecord } from "@/services/editorial";
 import { copy } from "@/locales/he";
+import { useClientReady } from "./use-client-ready";
 
 export function PersonForm({ person }: { person?: PersonRecord }) {
 	const [state, submit, pending] = useActionState(savePersonForm, { status: "idle" } as ItemFormState);
-	const version = Math.max(person?.version ?? 0, state.version ?? 0);
+	const ready = useClientReady();
+	const latest = state.status === "conflict" ? state.latestPerson : undefined;
+	const version = Math.max(person?.version ?? 0, state.version ?? 0, latest?.version ?? 0);
 	const [name, setName] = useState(person?.name ?? "");
 	const [otherNames, setOtherNames] = useState(person?.otherNames.join(", ") ?? "");
 	const [familyOnly, setFamilyOnly] = useState(person?.familyOnly ?? false);
@@ -17,6 +20,13 @@ export function PersonForm({ person }: { person?: PersonRecord }) {
 		setOtherNames("");
 		setFamilyOnly(false);
 	}
+	// The privacy switch must show the newest decision after a conflict; the
+	// member re-ticks it on purpose if they want to change it.
+	// An effect (not a render-time update) so it runs after React's post-action
+	// form reset, which would otherwise clear the checkbox again.
+	useEffect(() => {
+		if (latest) setFamilyOnly(latest.familyOnly);
+	}, [latest]);
 	return (
 		<form action={submit}>
 			{person && <input type="hidden" name="id" value={person.id} />}
@@ -38,7 +48,7 @@ export function PersonForm({ person }: { person?: PersonRecord }) {
 				/>
 				{copy.items.familyOnly}
 			</label>
-			<button type="submit" disabled={pending}>
+			<button type="submit" disabled={!ready || pending}>
 				{person ? copy.items.save : copy.items.addNew}
 			</button>
 			<p role="status">
@@ -47,6 +57,14 @@ export function PersonForm({ person }: { person?: PersonRecord }) {
 				{state.status === "conflict" && copy.items.conflict}
 				{state.status === "failed" && copy.items.failed}
 			</p>
+			{latest && (
+				<aside aria-label={copy.items.latest}>
+					<h2>{copy.items.latest}</h2>
+					<p>{latest.name}</p>
+					<p>{latest.otherNames.join(", ")}</p>
+					{latest.familyOnly && <p>{copy.items.familyOnly}</p>}
+				</aside>
+			)}
 		</form>
 	);
 }
