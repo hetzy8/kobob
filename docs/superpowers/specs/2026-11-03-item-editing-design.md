@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-03
 **Status:** approved design (Yoram, 2026-11-03, section by section)
-**Implemented:** 2026-11-03 on `feat/item-editing` (PR pending). One addition beyond this design: `Item.publishedAt`, set on publish and cleared on make-private/archive, so the public list is ordered by publication and does not reveal private edit activity.
+**Implemented:** 2026-11-03 on `feat/item-editing` (PR #20). One addition beyond this design: `Item.publishedAt`, set on publish and cleared on make-private/archive, so the public list is ordered by publication and does not reveal private edit activity.
 **Roadmap:** phase 1 in [ROADMAP.md](../../ROADMAP.md); plan Task 3, items only
 **Depends on:** v0.2.0 (sign-in, membership); rules in the
 [memorial specification](2026-11-01-family-memorial-design.md) §3 and §5
