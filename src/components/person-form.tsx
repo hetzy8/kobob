@@ -1,0 +1,44 @@
+"use client";
+import { useActionState, useState } from "react";
+import { savePersonForm, type ItemFormState } from "@/app/family/items/actions";
+import type { PersonRecord } from "@/services/editorial";
+import { copy } from "@/locales/he";
+
+export function PersonForm({ person }: { person?: PersonRecord }) {
+	const [state, submit, pending] = useActionState(savePersonForm, { status: "idle" } as ItemFormState);
+	const [name, setName] = useState(person?.name ?? "");
+	const [otherNames, setOtherNames] = useState(person?.otherNames.join(", ") ?? "");
+	const [familyOnly, setFamilyOnly] = useState(person?.familyOnly ?? false);
+	return (
+		<form action={submit}>
+			{person && <input type="hidden" name="id" value={person.id} />}
+			{person && <input type="hidden" name="version" value={person.version} />}
+			<label>
+				{copy.items.name}
+				<input name="name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} />
+			</label>
+			<label>
+				{copy.items.otherNames}
+				<input name="otherNames" value={otherNames} onChange={(e) => setOtherNames(e.target.value)} />
+			</label>
+			<label>
+				<input
+					type="checkbox"
+					name="familyOnly"
+					checked={familyOnly}
+					onChange={(e) => setFamilyOnly(e.target.checked)}
+				/>
+				{copy.items.familyOnly}
+			</label>
+			<button type="submit" disabled={pending}>
+				{person ? copy.items.save : copy.items.addNew}
+			</button>
+			<p role="status">
+				{state.status === "saved" && copy.items.saved}
+				{state.status === "invalid" && copy.items.invalid}
+				{state.status === "conflict" && copy.items.conflict}
+				{state.status === "failed" && copy.items.failed}
+			</p>
+		</form>
+	);
+}
