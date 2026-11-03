@@ -1,7 +1,8 @@
 # Local development and verification
 
-**Status:** initial local foundation implemented; not deployed. No real family
-content, production membership, provider resources or live mail delivery exists.
+**Status (2026-11-03):** access foundation, member administration and sign-in
+email are in production (v0.2.0, see OPERATIONS.md). The only production
+member is the first administrator; no real family content exists.
 
 ## Current slice
 
@@ -226,9 +227,10 @@ is still required before enabling that operation for the sole administrator.
 an isolated local database and server settings in the process environment first;
 the command does not load production `.env` files. It asks for the address and
 an explicit BOOTSTRAP confirmation, refuses an existing administrator or existing
-member, and leaves email unverified. Its code is tested with synthetic addresses;
-no real bootstrap was run. Live sign-in remains unavailable until approved email
-configuration is implemented. Never put an actual address in Git or shell history.
+member, and leaves email unverified. Its code is tested with synthetic addresses.
+The production bootstrap ran on 2026-11-03 (command in OPERATIONS.md → Email
+delivery); signing in by email then verifies the address. Never put an actual
+address in Git or shell history.
 
 Browser tests use a separate `.next-e2e` build directory so a local preview can
 remain running. `KOBOB_TEST_PORT=3310` selects a free test port when another

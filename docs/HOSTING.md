@@ -1,7 +1,9 @@
 # Hosting decision
 
 **Date:** 2026-11-01
-**Status:** direction accepted; development authorized, no resources provisioned.
+**Status:** direction accepted. Provisioned 2026-11-02: Vercel project `kobob`
+(`fra1`), Neon project `kobob` (Frankfurt); Resend domain `mail.kobob.org`
+(Ireland) on 2026-11-03. Private R2 media not provisioned.
 
 ## Decision and alternatives
 
