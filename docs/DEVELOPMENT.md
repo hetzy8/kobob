@@ -6,11 +6,12 @@ member is the first administrator; no real family content exists.
 
 ## Current slice
 
-Implemented: Next.js page shells for Home, About Yaki, Achievements,
-Archive, sign-in and verification; Hebrew RTL root; a protected family shell;
-validated server configuration; Prisma membership/session/verification schema
-and migration; Better Auth confirmation links; fresh membership/role checks;
-durable issuance throttles; logout retry that hides private UI on failure.
+Implemented: Next.js page shells for Home, About Yaki and Achievements;
+the published-item Archive pages; sign-in and verification pages; Hebrew RTL
+root; a protected family shell; validated server configuration; Prisma
+membership/session/verification schema and migration; Better Auth
+confirmation links; fresh membership/role checks; durable issuance throttles;
+logout retry that hides private UI on failure.
 
 Home, About and Achievements are honest empty shells; `/archive` and
 `/archive/[id]` show published items. Interface
@@ -29,8 +30,8 @@ Routes: `/family`, `/family/items/new`, `/family/items/[id]/edit`,
 `/archive` and `/archive/[id]`, which show only the published revision. Models:
 `Item`, `ItemRevision`, `Person`, `Place` and `EditorialAudit`. The Hebrew
 strings under `copy.items` are proposed wording and await Yoram's approval.
-Checks at this slice: 76 unit tests, 60 integration tests, 17 browser tests
-(11 existing and 6 for item editing), lint, typecheck and the webpack build
+Checks at this slice: 76 unit tests, 60 integration tests, 22 browser tests
+(11 existing and 11 for item editing), lint, typecheck and the webpack build
 pass (Node 20 locally; the project targets Node 24).
 
 ## Toolchain and engineering choices
