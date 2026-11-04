@@ -71,7 +71,7 @@ test("publishing shows the published version until the next publish", async ({
 }) => {
 	await signIn(page, "editor@example.test");
 	const id = await createItem(page, "Synthetic first");
-	await page.goto(`/archive/${id}`);
+	await page.goto(`/items/${id}`);
 	await expect(
 		page.getByRole("heading", { name: copy.notFound }),
 	).toBeVisible();
@@ -81,7 +81,7 @@ test("publishing shows the published version until the next publish", async ({
 	).toBeEnabled();
 	await page.getByRole("button", { name: copy.items.publish }).click();
 	await expect(page.getByText(copy.items.public).first()).toBeVisible();
-	await page.goto(`/archive/${id}`);
+	await page.goto(`/items/${id}`);
 	await expect(
 		page.getByRole("heading", { name: "Synthetic first" }),
 	).toBeVisible();
@@ -94,7 +94,7 @@ test("publishing shows the published version until the next publish", async ({
 	await expect(page.locator("form").getByRole("status").last()).toHaveText(
 		copy.items.saved,
 	);
-	await page.goto(`/archive/${id}`);
+	await page.goto(`/items/${id}`);
 	await expect(
 		page.getByRole("heading", { name: "Synthetic first" }),
 	).toBeVisible();
@@ -107,14 +107,28 @@ test("publishing shows the published version until the next publish", async ({
 	await expect(
 		page.getByRole("button", { name: copy.items.republish }),
 	).toHaveCount(0);
-	await page.goto(`/archive/${id}`);
+	await page.goto(`/items/${id}`);
 	await expect(
 		page.getByRole("heading", { name: "Synthetic second" }),
 	).toBeVisible();
-	await page.goto("/archive");
+	await page.goto("/search");
 	await expect(
 		page.getByRole("link", { name: "Synthetic second" }),
 	).toBeVisible();
+	await page.goto("/search?q=Synthetic+second");
+	await expect(
+		page.getByRole("link", { name: "Synthetic second" }),
+	).toBeVisible();
+	await page.goto("/search?q=nothing+like+this");
+	await expect(page.getByText(copy.searchPage.noResults)).toBeVisible();
+});
+
+test("the old public archive and achievements pages are gone", async ({ page }) => {
+	for (const path of ["/archive", "/archive/anything", "/achievements"]) {
+		const response = await page.goto(path);
+		expect(response?.status(), path).toBe(404);
+		await expect(page.getByRole("heading", { name: copy.notFound })).toBeVisible();
+	}
 });
 
 test("a stale save keeps the member's input and shows the latest version", async ({
@@ -166,7 +180,7 @@ test("archive hides an item and restore brings it back as private", async ({
 	await expect(
 		page.getByRole("link", { name: "Synthetic archived" }),
 	).toBeVisible();
-	await page.goto(`/archive/${id}`);
+	await page.goto(`/items/${id}`);
 	await expect(
 		page.getByRole("heading", { name: copy.notFound }),
 	).toBeVisible();
@@ -181,7 +195,7 @@ test("archive hides an item and restore brings it back as private", async ({
 	await expect(
 		page.getByRole("button", { name: copy.items.archive }),
 	).toBeVisible();
-	await page.goto(`/archive/${id}`);
+	await page.goto(`/items/${id}`);
 	await expect(
 		page.getByRole("heading", { name: copy.notFound }),
 	).toBeVisible();
