@@ -81,3 +81,119 @@ model MembershipAudit {
   action String
   createdAt DateTime @default(now())
 }
+enum ItemState {
+  active
+  archived
+}
+enum ItemVisibility {
+  private
+  public
+}
+enum ItemType {
+  picture
+  video
+  audio
+  drawing
+  article
+  interview
+  document
+  other
+}
+enum DateKind {
+  unknown
+  single
+  range
+}
+enum DatePrecision {
+  day
+  month
+  year
+  decade
+}
+// workingRevisionId is nullable only because the item row must exist before
+// its first revision; the editorial service always sets it in the same transaction.
+model Item {
+  id                  String         @id @default(cuid())
+  kobId               String?        @unique
+  state               ItemState      @default(active)
+  visibility          ItemVisibility @default(private)
+  version             Int            @default(1)
+  workingRevisionId   String?        @unique
+  publishedRevisionId String?        @unique
+  publishedAt         DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  revisions           ItemRevision[] @relation("ItemRevisions")
+  workingRevision     ItemRevision?  @relation("WorkingRevision", fields: [workingRevisionId], references: [id])
+  publishedRevision   ItemRevision?  @relation("PublishedRevision", fields: [publishedRevisionId], references: [id])
+  @@index([state, visibility])
+}
+model ItemRevision {
+  id              String               @id @default(cuid())
+  itemId          String
+  item            Item                 @relation("ItemRevisions", fields: [itemId], references: [id], onDelete: Cascade)
+  title           String
+  description     String               @default("")
+  types           ItemType[]
+  dateKind        DateKind             @default(unknown)
+  dateStart       DateTime?            @db.Date
+  dateEnd         DateTime?            @db.Date
+  datePrecision   DatePrecision?
+  dateApproximate Boolean              @default(false)
+  tags            String[]
+  authorId        String
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  people          ItemRevisionPerson[]
+  places          ItemRevisionPlace[]
+  workingFor      Item?                @relation("WorkingRevision")
+  publishedFor    Item?                @relation("PublishedRevision")
+  @@index([itemId])
+}
+model Person {
+  id         String               @id @default(cuid())
+  name       String
+  otherNames String[]
+  familyOnly Boolean              @default(false)
+  version    Int                  @default(1)
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+  revisions  ItemRevisionPerson[]
+}
+model Place {
+  id         String              @id @default(cuid())
+  name       String
+  otherNames String[]
+  latitude   Float?
+  longitude  Float?
+  version    Int                 @default(1)
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  revisions  ItemRevisionPlace[]
+}
+model ItemRevisionPerson {
+  revisionId String
+  personId   String
+  revision   ItemRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  person     Person       @relation(fields: [personId], references: [id], onDelete: Restrict)
+  @@id([revisionId, personId])
+  @@index([personId])
+}
+model ItemRevisionPlace {
+  revisionId String
+  placeId    String
+  revision   ItemRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
+  place      Place        @relation(fields: [placeId], references: [id], onDelete: Restrict)
+  @@id([revisionId, placeId])
+  @@index([placeId])
+}
+// Ids and action names only: never titles, descriptions or names.
+model EditorialAudit {
+  id         String   @id @default(cuid())
+  actorId    String
+  targetType String
+  targetId   String
+  action     String
+  createdAt  DateTime @default(now())
+  @@index([targetId])
+}
