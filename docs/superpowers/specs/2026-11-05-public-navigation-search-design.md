@@ -75,7 +75,8 @@ filters beyond the year; ranking; visual design.
 - An item matches when every word matches:
   - a text word matches, case-insensitively as a substring, the published
     revision's title, description or a tag, or the name or another name of a
-    linked person who is not family-only, or the name of a linked place;
+    linked person who is not family-only, or the name or another name of a
+    linked place;
   - a year matches when the item's date period overlaps that calendar year.
     The period of a single date covers its precision (a day, month, year or
     decade from its start); a range runs from its start to the end of its end
@@ -87,10 +88,13 @@ filters beyond the year; ranking; visual design.
   list). Results show title, date and types, linking to `/items/[id]`.
 - No results: an honest "nothing found" message. Nothing published: the
   existing empty-archive message.
-- Substring matching (Postgres `ILIKE`, with `%`, `_` and `\` in user input
-  escaped) handles Hebrew prefixes such as ה, ב, ל. Not chosen: Postgres
-  full-text search, which has no Hebrew dictionary. No index is added at this
-  scale; revisit if search gets slow.
+- Substring matching handles Hebrew prefixes such as ה, ב, ל. The server loads
+  the published items and matches them in one pure function, so the
+  family-only and year rules live in code that unit tests cover, and user
+  input never becomes a SQL pattern. Not chosen: Postgres `ILIKE` (pattern
+  escaping, and the year rule is awkward in SQL) and full-text search (no
+  Hebrew dictionary). At family-archive scale this is fast; move matching
+  into the database if search gets slow.
 - Query length is capped at 200 characters and 10 words; longer input is cut,
   not rejected.
 
