@@ -30,9 +30,14 @@ book is planned to premiere there.
 | 6 | The book | Yaki's book presented on the site (form to decide: reader, chapters, excerpts or download) | new | Idea; needs design |
 | 7 | The film | A film made from the book, presented on the site | new | Idea; production is outside this repository |
 | 8 | Launch | `kobob.org` as the address, backups with a rehearsed restore, costs confirmed | Task 7 | Partly done (sender domain) |
+| 9 | English version | The whole site also in English (Yoram, 2026-11-05): interface strings, left-to-right layout, and English text for published content (titles, descriptions, life story, people and place names). To decide in its design: address scheme (e.g. `/en/...`), whether English text needs its own publish step, and who translates (family, or machine translation reviewed by the family) | new | Idea; needs design |
 
 Phases 3 and 4 can overlap: import is easier once storage exists, and the
 metadata model from phase 1 decides how much an import can carry.
+
+Until phase 9, every phase keeps all interface text in `src/locales/he.ts`
+(never inline in components) and avoids left/right-specific layout, so the
+English version adds a second locale rather than rewriting pages.
 
 ## Metadata the model must support
 
