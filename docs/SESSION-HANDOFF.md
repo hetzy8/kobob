@@ -17,8 +17,8 @@ Read AGENTS.md, README.md, docs/README.md, the product spec and plan before chan
   wording and chose family-only as the default for people added from an
   item's picker (PR #22). No items have been published yet.
 - Postponed by Yoram: `kobob.org` as the site address (order in
-  OPERATIONS.md → Before provisioning). Still to do in Vercel project
-  settings: Node.js 24.x.
+  OPERATIONS.md → Before provisioning). Vercel project settings use Node.js
+  24.x (Yoram, 2026-11-05), matching the `engines` pin in package.json.
 - Next product work: see [ROADMAP.md](ROADMAP.md) (phase 2, achievements and
   memorial pages, then media in R2).
 
