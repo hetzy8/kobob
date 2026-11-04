@@ -7,20 +7,18 @@ Read AGENTS.md, README.md, docs/README.md, the product spec and plan before chan
 
 ## Current state (2026-11-04)
 
-- Production: v0.2.0 (`f8eff0a`) at https://kobob.vercel.app. Release
+- Production: v0.3.0 (`995d901`, PR #23) at https://kobob.vercel.app. Release
   records: OPERATIONS.md → Branch and release flow.
 - Sign-in email through Resend is live from `mail.kobob.org`; the first
   administrator was bootstrapped and the first sign-in email arrived.
-- `dev` holds roadmap phase 1, item editing ([PR #20](https://github.com/hetzy8/kobob/pull/20),
-  spec `docs/superpowers/specs/2026-11-03-item-editing-design.md`). Its migration only
-  adds tables, columns and enums; the production build applies it through
-  `scripts/migrate-production.mjs` as usual. Before release Yoram must approve the proposed Hebrew strings in
-  `copy.items` (`src/locales/he.ts`) and answer two questions listed in PR #20:
-  the decade-range wording and whether people added from the item picker
-  start as family-only.
+- Roadmap phase 1, item editing, is live (PR #20; spec
+  `docs/superpowers/specs/2026-11-03-item-editing-design.md`). Yoram approved
+  the `copy.items` Hebrew strings on 2026-11-04, kept the full decade-range
+  wording and chose family-only as the default for people added from an
+  item's picker (PR #22). No items have been published yet.
 - Postponed by Yoram: `kobob.org` as the site address (order in
-  OPERATIONS.md → Before provisioning). Still to do in Vercel project
-  settings: Node.js 24.x.
+  OPERATIONS.md → Before provisioning). Vercel project settings use Node.js
+  24.x (Yoram, 2026-11-05), matching the `engines` pin in package.json.
 - Next product work: see [ROADMAP.md](ROADMAP.md) (phase 2, achievements and
   memorial pages, then media in R2).
 

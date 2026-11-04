@@ -1,8 +1,8 @@
 # Local development and verification
 
-**Status (2026-11-03):** access foundation, member administration and sign-in
-email are in production (v0.2.0, see OPERATIONS.md). The only production
-member is the first administrator; no real family content exists.
+**Status (2026-11-04):** access foundation, member administration, sign-in
+email and item editing are in production (v0.3.0, see OPERATIONS.md). The only
+production member is the first administrator; no real family content exists.
 
 ## Current slice
 
