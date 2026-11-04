@@ -1,6 +1,6 @@
 # Roadmap
 
-**Updated:** 2026-11-03, from Yoram's description of the full picture.
+**Updated:** 2026-11-05 (phase 2 restructured by Yoram); first written 2026-11-03 from Yoram's description of the full picture.
 **Status:** direction. Each phase still gets its own design, plan and release;
 nothing below is implemented unless marked so. Delivery tasks are in the
 [implementation plan](superpowers/plans/2026-11-01-family-memorial.md).
@@ -23,10 +23,10 @@ book is planned to premiere there.
 |---|---|---|---|---|
 | 0 | Foundation | Hebrew RTL site, invitation-only sign-in by email, member administration, production on Vercel + Neon | Tasks 1–2 | Done (v0.2.0, 2026-11-02) |
 | 1 | Item editing | Archive items with metadata, private-by-default, shared editing with conflict checks, publish / make private / archive / restore, minimal public archive and item pages | Task 3 (items) | Done (v0.3.0, 2026-11-04) |
-| 2 | Achievements and memorial pages | The same editing and publishing rules for achievements and the About/Home content | Task 3 (rest) | Not started |
+| 2 | Public tabs | New site structure (Yoram, 2026-11-05): Home, Life story, Timeline, Map, From the internet and Search for everyone; Archive for family members only; Achievements dropped. Published items reach tabs automatically from their details. Slices: 1 navigation, family-only archive and search ([spec](superpowers/specs/2026-11-05-public-navigation-search-design.md)); 2 timeline; 3 map; 4 internet sources; 5 life-story editing | Task 3 (rest), Task 4 | Slice 1 designed |
 | 3 | Media storage | Private R2 storage, uploads with validation, safe derivatives (thumbnails, web video/audio), playback inside item pages, external sources with attribution | Task 5 | Not started |
 | 4 | Collection import | The existing collection (now in Drive) and found internet material brought in as private items with their metadata, reviewed item by item | Task 6 | Not started |
-| 5 | Discovery | Search with filters (type, period, people, places, tags); a chronological view; a geographical (map) view; people and place pages | Task 4, extended | Not started |
+| 5 | Discovery | Search filters beyond the year (type, people, places, tags); people and place pages. Basic search, timeline and map moved to phase 2 | Task 4, extended | Not started |
 | 6 | The book | Yaki's book presented on the site (form to decide: reader, chapters, excerpts or download) | new | Idea; needs design |
 | 7 | The film | A film made from the book, presented on the site | new | Idea; production is outside this repository |
 | 8 | Launch | `kobob.org` as the address, backups with a rehearsed restore, costs confirmed | Task 7 | Partly done (sender domain) |
