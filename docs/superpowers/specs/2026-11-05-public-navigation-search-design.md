@@ -106,8 +106,9 @@ notes.
 
 ## Copy
 
-New Hebrew strings need Yoram's approval before release: the Search tab label
-(proposed חיפוש), the search box label and button, and the no-results message.
+New Hebrew strings: the Search tab label (חיפוש), the search box label and
+button, and the no-results message (`copy.searchPage`); approved by Yoram on
+2026-11-05 (PR #27).
 The Archive tab reuses the approved ארכיון. Achievements strings are removed.
 
 ## Tests

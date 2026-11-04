@@ -39,7 +39,7 @@ Public navigation and search (2026-11-05, phase 2 slice 1): visitors see Life
 story and Search; signed-in members also see Archive, which opens `/family`.
 Achievements and the public `/archive` were removed. `/search` matches the
 published revision's text, tags, non-family-only people, places and years
-(`src/services/search.ts`). The `searchPage` strings await Yoram's approval.
+(`src/services/search.ts`). Yoram approved the `searchPage` strings on 2026-11-05.
 Checks at this slice: 82 unit, 65 integration and 30 browser tests, lint,
 typecheck and the webpack build pass.
 

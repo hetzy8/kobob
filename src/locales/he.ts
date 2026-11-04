@@ -33,7 +33,7 @@ export const copy = {
 	],
 	// Shown only to signed-in active members; the page keeps its own checks.
 	memberNavigation: { href: "/family", label: "ארכיון" },
-	// Pending Yoram's approval (public search, slice 1).
+	// Approved by Yoram 2026-11-05 (public search, PR #27).
 	searchPage: {
 		title: "חיפוש",
 		label: "מה לחפש",
