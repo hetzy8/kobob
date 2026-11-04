@@ -4,14 +4,19 @@ import type { DateValue } from "./item-input";
 // rules are unit-tested; callers pass only published, public text.
 const MAX_LENGTH = 200;
 const MAX_WORDS = 10;
-const YEAR = /^[12]\d{3}$/;
+// Punctuation trimmed from the ends of a word only (not % or _, not interior
+// characters); includes Hebrew geresh and gershayim.
+const EDGE_PUNCTUATION = /^[.,;:!?"'()[\]׳״]+|[.,;:!?"'()[\]׳״]+$/g;
+const YEAR =/^[12]\d{3}$/;
 
 export type SearchQuery = { words: string[]; years: number[] };
 
 export function parseQuery(text: string): SearchQuery {
 	const parts = text.slice(0, MAX_LENGTH).split(/\s+/).filter(Boolean).slice(0, MAX_WORDS);
 	const query: SearchQuery = { words: [], years: [] };
-	for (const part of parts) {
+	for (const raw of parts) {
+		const part = raw.replace(EDGE_PUNCTUATION, "");
+		if (!part) continue;
 		if (YEAR.test(part)) query.years.push(Number(part));
 		else query.words.push(part.toLocaleLowerCase());
 	}

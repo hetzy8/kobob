@@ -53,3 +53,11 @@ it("treats % and _ literally", () => {
 	expect(matches(doc(["abc"]), parseQuery("%"))).toBe(false);
 	expect(matches(doc(["abc"]), parseQuery("a_c"))).toBe(false);
 });
+
+it("strips punctuation around words but not inside them", () => {
+	expect(parseQuery("חיפה, 1985.")).toEqual({ words: ["חיפה"], years: [1985] });
+	expect(parseQuery('(race) "haifa"')).toEqual({ words: ["race", "haifa"], years: [] });
+	expect(parseQuery("צה״ל")).toEqual({ words: ["צה״ל"], years: [] });
+	expect(parseQuery(", .")).toEqual({ words: [], years: [] });
+	expect(parseQuery("50%")).toEqual({ words: ["50%"], years: [] });
+});
