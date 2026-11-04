@@ -105,3 +105,80 @@ it("orders the public list by publication, newest first", async () => {
 	await a.updateItem(older, 2, input("Older draft edit"));
 	expect((await reader.listPublicItems()).map((item) => item.id)).toEqual([newer, older]);
 });
+
+it("searches the published revision's text, tags, people and places", async () => {
+	const a = await editor();
+	const person = await a.savePerson({ name: "Synthetic Runner", otherNames: ["Nickname Runner"], familyOnly: false });
+	const place = await a.savePlace({ name: "Synthetic Harbor", otherNames: ["Old Harbor"], latitude: null, longitude: null });
+	const { id } = await a.createItem(
+		input("Race report", {
+			description: "A long morning",
+			tags: ["marathon"],
+			personIds: [person.id],
+			placeIds: [place.id],
+		}),
+	);
+	await a.createItem(input("Unrelated private"));
+	await a.transitionItem(id, 1, "publish");
+	for (const text of ["race", "MORNING", "marath", "synthetic runner", "harbor", "old harbor", "race harbor"]) {
+		expect((await reader.searchPublicItems(text)).map((item) => item.id), text).toEqual([id]);
+	}
+	expect(await reader.searchPublicItems("nickname")).toEqual([]);
+	expect(await reader.searchPublicItems("race swimming")).toEqual([]);
+	expect(await reader.searchPublicItems("unrelated")).toEqual([]);
+	expect((await reader.searchPublicItems("")).map((item) => item.id)).toEqual([id]);
+});
+
+it("matches years by the date's whole period", async () => {
+	const a = await editor();
+	const make = async (title: string, date: ItemInput["date"]) => {
+		const { id } = await a.createItem(input(title, { date }));
+		await a.transitionItem(id, 1, "publish");
+		return id;
+	};
+	const day = await make("Day", { kind: "single", start: "1985-06-01", precision: "day", approximate: false });
+	const decade = await make("Decade", { kind: "single", start: "1980-01-01", precision: "decade", approximate: true });
+	const range = await make("Range", { kind: "range", start: "1983-01-01", end: "1986-01-01", precision: "year", approximate: false });
+	await make("Undated", { kind: "unknown" });
+	const ids = async (text: string) => (await reader.searchPublicItems(text)).map((item) => item.id).sort();
+	expect(await ids("1985")).toEqual([day, decade, range].sort());
+	expect(await ids("1989")).toEqual([decade]);
+	expect(await ids("1983")).toEqual([decade, range].sort());
+	expect(await ids("1990")).toEqual([]);
+	expect(await ids("day 1985")).toEqual([day]);
+});
+
+it("never searches private, archived or unpublished text", async () => {
+	const a = await editor();
+	const { id: published } = await a.createItem(input("Visible title"));
+	await a.transitionItem(published, 1, "publish");
+	await a.updateItem(published, 2, input("Draftonly title"));
+	await a.createItem(input("Privateonly title"));
+	const { id: archived } = await a.createItem(input("Archivedonly title"));
+	await a.transitionItem(archived, 1, "publish");
+	await a.transitionItem(archived, 2, "archive");
+	expect(await reader.searchPublicItems("draftonly")).toEqual([]);
+	expect(await reader.searchPublicItems("privateonly")).toEqual([]);
+	expect(await reader.searchPublicItems("archivedonly")).toEqual([]);
+	expect((await reader.searchPublicItems("visible")).map((item) => item.id)).toEqual([published]);
+});
+
+it("never finds an item by a family-only person's names", async () => {
+	const a = await editor();
+	const hidden = await a.savePerson({ name: "Hiddenname Person", otherNames: ["Hiddenalias"], familyOnly: true });
+	const { id } = await a.createItem(input("Group photo", { personIds: [hidden.id] }));
+	await a.transitionItem(id, 1, "publish");
+	expect(await reader.searchPublicItems("hiddenname")).toEqual([]);
+	expect(await reader.searchPublicItems("hiddenalias")).toEqual([]);
+	expect((await reader.searchPublicItems("group")).map((item) => item.id)).toEqual([id]);
+	expect(JSON.stringify(await reader.searchPublicItems("group"))).not.toContain("Hidden");
+});
+
+it("matches % and _ literally", async () => {
+	const a = await editor();
+	const { id } = await a.createItem(input("Fifty 50% done"));
+	await a.transitionItem(id, 1, "publish");
+	expect((await reader.searchPublicItems("50%")).map((item) => item.id)).toEqual([id]);
+	expect(await reader.searchPublicItems("%%")).toEqual([]);
+	expect(await reader.searchPublicItems("fift_")).toEqual([]);
+});

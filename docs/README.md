@@ -16,6 +16,8 @@ All documents are English. The website itself will be Hebrew RTL.
 | [Implementation plan](superpowers/plans/2026-11-01-family-memorial.md) | Ordered implementation tasks and verification | Initial foundation in progress; later slices not started |
 | [Resend email design](superpowers/specs/2026-11-02-resend-email-design.md) | Sign-in email delivery through Resend | Implemented, v0.2.0 |
 | [Resend email plan](superpowers/plans/2026-11-02-resend-email.md) | Tasks for the Resend slice | All steps done |
+| [Public navigation and search design](superpowers/specs/2026-11-05-public-navigation-search-design.md) | Tabs, family-only Archive, public search and item pages | Approved; implemented on `feat/public-search` |
+| [Public navigation and search plan](superpowers/plans/2026-11-05-public-navigation-search.md) | Tasks for phase 2 slice 1 | All steps done |
 | [Operations](OPERATIONS.md) | Secrets, costs, backups, releases, domain and launch gates | In production; release records, Resend lessons, kobob.org plan |
 
 ## Source of truth

@@ -6,15 +6,15 @@ production member is the first administrator; no real family content exists.
 
 ## Current slice
 
-Implemented: Next.js page shells for Home, About Yaki and Achievements;
-the published-item Archive pages; sign-in and verification pages; Hebrew RTL
+Implemented: Next.js page shells for Home and Life story (About);
+public search and published-item pages; sign-in and verification pages; Hebrew RTL
 root; a protected family shell; validated server configuration; Prisma
 membership/session/verification schema and migration; Better Auth
 confirmation links; fresh membership/role checks; durable issuance throttles;
 logout retry that hides private UI on failure.
 
-Home, About and Achievements are honest empty shells; `/archive` and
-`/archive/[id]` show published items. Interface
+Home and Life story are honest empty shells; `/search` and
+`/items/[id]` show published items only. Interface
 copy is Hebrew in `src/locales/he.ts`, including navigation, sign-in and error
 states. Yoram requested the shorter Achievements label and plain Sign in.
 The Hebrew display name was supplied explicitly by Yoram. No biography,
@@ -27,12 +27,21 @@ Item editing (2026-11-03): family members create, edit, publish, make private,
 archive and restore archive items with dates, people, places, types and tags.
 Routes: `/family`, `/family/items/new`, `/family/items/[id]/edit`,
 `/family/archived`, `/family/people`, `/family/places`, and the public
-`/archive` and `/archive/[id]`, which show only the published revision. Models:
+`/archive` and `/archive/[id]` (since 2026-11-05 `/search` and `/items/[id]`),
+which show only the published revision. Models:
 `Item`, `ItemRevision`, `Person`, `Place` and `EditorialAudit`. The Hebrew
 strings under `copy.items` were approved by Yoram on 2026-11-04.
 Checks at this slice: 76 unit tests, 60 integration tests, 28 browser tests
 (11 existing and 17 for item editing), lint, typecheck and the webpack build
 pass (Node 20 locally; the project targets Node 24).
+
+Public navigation and search (2026-11-05, phase 2 slice 1): visitors see Life
+story and Search; signed-in members also see Archive, which opens `/family`.
+Achievements and the public `/archive` were removed. `/search` matches the
+published revision's text, tags, non-family-only people, places and years
+(`src/services/search.ts`). Yoram approved the `searchPage` strings on 2026-11-05.
+Checks at this slice: 82 unit, 65 integration and 30 browser tests, lint,
+typecheck and the webpack build pass.
 
 ## Toolchain and engineering choices
 
@@ -136,7 +145,7 @@ or ops mutation is included. Its remote run is not verified until GitHub execute
 ## Next work
 
 Implement explicit admin bootstrap/member management, then shared editorial
-revisions/lifecycle, visibility-filtered archive/achievements, safe media and
+revisions/lifecycle, public search and tabs (ROADMAP.md phase 2), safe media and
 supported external players. Follow the spec and plan; provider budget, real-data
 imports, domain changes and launch retain separate gates. Keep permanent deletion
 disabled until retention/cleanup policy is agreed. Family-approved Hebrew copy

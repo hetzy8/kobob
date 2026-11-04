@@ -4,7 +4,7 @@ import { copy } from "@/locales/he";
 import { archiveReader } from "@/services/editorial-runtime";
 export const dynamic = "force-dynamic";
 // Private, archived and unknown ids all get the same not-found page.
-export default async function ArchiveItem({
+export default async function PublicItem({
 	params,
 }: {
 	params: Promise<{ id: string }>;

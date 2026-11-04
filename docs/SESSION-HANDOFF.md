@@ -19,8 +19,9 @@ Read AGENTS.md, README.md, docs/README.md, the product spec and plan before chan
 - Postponed by Yoram: `kobob.org` as the site address (order in
   OPERATIONS.md → Before provisioning). Vercel project settings use Node.js
   24.x (Yoram, 2026-11-05), matching the `engines` pin in package.json.
-- Next product work: see [ROADMAP.md](ROADMAP.md) (phase 2, achievements and
-  memorial pages, then media in R2).
+- Next product work: see [ROADMAP.md](ROADMAP.md): phase 2 slice 1
+  (navigation, family-only archive and search, branch `feat/public-search`),
+  then slices 2-5 (timeline, map, internet sources, life-story editing).
 
 ## Repository and current work
 
@@ -76,8 +77,9 @@ The initial display name is approved; other family material is still absent.
 - Public-item edits remain private working revisions until explicit publication;
   the previously published version stays public meanwhile. Atomic revision
   checks reject stale edits/transitions and preserve unsaved input.
-- One searchable archive with media-type filters. Dedicated Achievements section
-  links recognition to archive evidence. Sources and delivery representations
+- One searchable archive with media-type filters. (Superseded 2026-11-05: no
+  Achievements section; recognition is a dated item on the timeline, and the
+  archive is family-only with public search.) Sources and delivery representations
   are separate so mixed media and external references need no duplicate items.
 - Embed supported video/audio; retain attribution and original-source fallback.
   Article presentation stays flexible. No arbitrary embedding, scraping or
@@ -153,7 +155,8 @@ Next planned implementation is Task 2: explicit verified admin bootstrap and
 Yoram-only member administration, using synthetic fixtures until real identities
 are privately supplied. Do not seed a guessed email or promote the first visitor.
 Then implement shared editorial revisions/lifecycle, archive/search/achievements,
-media/embeds and authorized migration. None of these later flows exists yet.
+media/embeds and authorized migration. (2026-11-01 plan; for current next work
+see the top of this file and ROADMAP.md.)
 
 Preserve separate gates for costs/capacity, sender/secrets, real-data import,
 backup/restore rehearsal, domain changes and release. Use Bitwarden/ops conventions

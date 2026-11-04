@@ -11,7 +11,7 @@ requires approval.
 An invitation-only access boundary, member administration (bootstrap,
 add/revoke/restore, member email changes), sign-in email through Resend and
 item editing (shared editing, publishing, conflict checks and the public
-archive pages) are live; Home, About and Achievements are still page shells.
+archive pages) are live; Home and About are still page shells.
 The planned site address is `kobob.org` (not configured yet). Media and import
 remain future work ([roadmap](docs/ROADMAP.md)). Interface copy is Hebrew; approved family names and content remain pending. No
 real family data has been imported. See [local setup and checks](docs/DEVELOPMENT.md).
@@ -33,16 +33,17 @@ real family data has been imported. See [local setup and checks](docs/DEVELOPMEN
   edit everyone's items, publish, return to private, archive and restore.
 - Archiving is recoverable; restoration is private. Only Yoram manages users
   and permanently deletes. Concurrent edits cannot silently overwrite work.
-- One searchable archive has media-type filters and stable item identities.
-  A dedicated Achievements section links recognition to evidence.
+- Published items are found by public search and have stable item pages; an
+  Archive tab is for signed-in family members only.
 - Video/audio plays within item pages using supported external embeds or hosted
   media. Articles keep flexible representations, including source links.
 - Preserve provenance and rights; never invent family facts or permission.
   Private content, member data and originals never enter this public repository.
 
-The [sitemap proposal](docs/superpowers/specs/2026-11-01-site-structure-design.md)
-sets out Home, About Yaki, Achievements, Archive and item pages, plus
-the family workspace, recovery and Yoram-only user management. Page composition,
+The [navigation and search design](docs/superpowers/specs/2026-11-05-public-navigation-search-design.md)
+sets public tabs Home, Life story, Timeline, Map, From the internet and Search
+(Timeline, Map and From the internet still to build), an Archive tab for family
+members only, plus the family workspace, recovery and Yoram-only user management. Page composition,
 visual direction remain under review. Edits to public items stay
 private working revisions until explicit publication; existing public content
 remains visible meanwhile.

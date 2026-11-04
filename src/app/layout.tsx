@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SiteNav } from "@/components/site-nav";
 import { copy } from "@/locales/he";
 import "./globals.css";
 export const metadata: Metadata = {
@@ -22,13 +23,7 @@ export default function RootLayout({
 					<Link href="/" className="wordmark">
 						{copy.title}
 					</Link>
-					<nav aria-label={copy.navigationLabel}>
-						{copy.navigation.map((item) => (
-							<Link key={item.href} href={item.href}>
-								{item.label}
-							</Link>
-						))}
-					</nav>
+					<SiteNav />
 					<Link href="/sign-in" className="utility">
 						{copy.signIn}
 					</Link>

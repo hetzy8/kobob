@@ -2,6 +2,7 @@
 
 **Date:** 2026-11-01
 **Status:** page-composition proposal; initial Hebrew page/access shells implemented; approved family content and visual direction pending
+**Superseded in part (2026-11-05):** the navigation and the Achievements and public Archive sections are replaced by [public navigation and search](2026-11-05-public-navigation-search-design.md).
 **Product rules:** [memorial specification](2026-11-01-family-memorial-design.md)
 
 ## Intent and approach

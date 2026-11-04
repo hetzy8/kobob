@@ -108,8 +108,8 @@ export async function changeItemState(
 		revalidatePath("/family");
 		revalidatePath("/family/archived");
 		revalidatePath(`/family/items/${id}/edit`);
-		revalidatePath("/archive");
-		revalidatePath(`/archive/${id}`);
+		revalidatePath("/search");
+		revalidatePath(`/items/${id}`);
 		return { status: "saved", version };
 	} catch (error) {
 		if (isAccessError(error)) redirect("/sign-in");
