@@ -22,7 +22,7 @@ book is planned to premiere there.
 | # | Phase | What it delivers | Plan task | Status |
 |---|---|---|---|---|
 | 0 | Foundation | Hebrew RTL site, invitation-only sign-in by email, member administration, production on Vercel + Neon | Tasks 1–2 | Done (v0.2.0, 2026-11-02) |
-| 1 | Item editing | Archive items with metadata, private-by-default, shared editing with conflict checks, publish / make private / archive / restore, minimal public archive and item pages | Task 3 (items) | Design in progress |
+| 1 | Item editing | Archive items with metadata, private-by-default, shared editing with conflict checks, publish / make private / archive / restore, minimal public archive and item pages | Task 3 (items) | Built on `dev` (PR #20, 2026-11-04); release waits for Yoram's approval of the proposed Hebrew copy |
 | 2 | Achievements and memorial pages | The same editing and publishing rules for achievements and the About/Home content | Task 3 (rest) | Not started |
 | 3 | Media storage | Private R2 storage, uploads with validation, safe derivatives (thumbnails, web video/audio), playback inside item pages, external sources with attribution | Task 5 | Not started |
 | 4 | Collection import | The existing collection (now in Drive) and found internet material brought in as private items with their metadata, reviewed item by item | Task 6 | Not started |

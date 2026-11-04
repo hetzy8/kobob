@@ -1,23 +1,28 @@
 # Session handoff
 
-**Updated:** 2026-11-03 (current state below); the sections after it are the
+**Updated:** 2026-11-04 (current state below); the sections after it are the
 2026-11-01 record, kept for history; where they disagree, this section wins.
 **Purpose:** resume from repository evidence, not chat or machine-local memory.
 Read AGENTS.md, README.md, docs/README.md, the product spec and plan before changes.
 
-## Current state (2026-11-03)
+## Current state (2026-11-04)
 
-- Production: v0.2.0 (`f8eff0a`) at https://kobob.vercel.app; `dev` was
-  recreated from that commit. Release records: OPERATIONS.md → Branch and
-  release flow.
+- Production: v0.2.0 (`f8eff0a`) at https://kobob.vercel.app. Release
+  records: OPERATIONS.md → Branch and release flow.
 - Sign-in email through Resend is live from `mail.kobob.org`; the first
   administrator was bootstrapped and the first sign-in email arrived.
-- Open: hetzy8/ops#77 (ops map for `KOBOB_RESEND_API_KEY`; the key is
-  already in Bitwarden and Vercel). Postponed by Yoram: `kobob.org` as the
-  site address (order in OPERATIONS.md → Before provisioning). Still to do in
-  Vercel project settings: Node.js 24.x.
-- Next product work: shared editorial revisions/lifecycle, then archive,
-  search and achievements, then media.
+- `dev` holds roadmap phase 1, item editing ([PR #20](https://github.com/hetzy8/kobob/pull/20),
+  spec `docs/superpowers/specs/2026-11-03-item-editing-design.md`). Its migration only
+  adds tables, columns and enums; the production build applies it through
+  `scripts/migrate-production.mjs` as usual. Before release Yoram must approve the proposed Hebrew strings in
+  `copy.items` (`src/locales/he.ts`) and answer two questions listed in PR #20:
+  the decade-range wording and whether people added from the item picker
+  start as family-only.
+- Postponed by Yoram: `kobob.org` as the site address (order in
+  OPERATIONS.md → Before provisioning). Still to do in Vercel project
+  settings: Node.js 24.x.
+- Next product work: see [ROADMAP.md](ROADMAP.md) (phase 2, achievements and
+  memorial pages, then media in R2).
 
 ## Repository and current work
 
