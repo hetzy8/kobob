@@ -7,7 +7,7 @@ import { copy } from "@/locales/he";
 import { isAccessError, logoutPending } from "../../access";
 export const dynamic = "force-dynamic";
 export default async function NewItem() {
-	let people: { id: string; name: string }[];
+	let people: { id: string; name: string; familyOnly: boolean }[];
 	let places: { id: string; name: string }[];
 	try {
 		[people, places] = await Promise.all([

@@ -108,7 +108,11 @@ Public:
   gets the same not-found page.
 
 New Hebrew interface strings are proposed in `src/locales/he.ts` and listed in
-the PR for Yoram's approval before release; they are not approved copy until then. Approved by Yoram on 2026-11-04, together with: decade ranges keep the full form (שנות ה־1970–שנות ה־1980), and a person added from the item picker starts family-only.
+the PR for Yoram's approval before release; they are not approved copy until then.
+
+**Status:** approved by Yoram on 2026-11-04 (PR #22), together with: decade
+ranges keep the full form (שנות ה־1970–שנות ה־1980), and a person added from
+the item picker starts family-only (marked as such in the picker).
 
 ## Errors and conflicts
 

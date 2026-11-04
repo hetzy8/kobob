@@ -56,7 +56,9 @@ async function newMemberPage(browser: Browser, email: string) {
 }
 async function createItem(page: Page, title: string) {
 	await page.goto("/family/items/new");
-	await expect(page.getByRole("button", { name: copy.items.save })).toBeEnabled();
+	await expect(
+		page.getByRole("button", { name: copy.items.save }),
+	).toBeEnabled();
 	await page.getByLabel(copy.items.title).fill(title);
 	await page.getByLabel(copy.items.typeNames.picture).check();
 	await page.getByRole("button", { name: copy.items.save }).click();
@@ -74,7 +76,9 @@ test("publishing shows the published version until the next publish", async ({
 		page.getByRole("heading", { name: copy.notFound }),
 	).toBeVisible();
 	await page.goto(`/family/items/${id}/edit`);
-	await expect(page.getByRole("button", { name: copy.items.save })).toBeEnabled();
+	await expect(
+		page.getByRole("button", { name: copy.items.save }),
+	).toBeEnabled();
 	await page.getByRole("button", { name: copy.items.publish }).click();
 	await expect(page.getByText(copy.items.public).first()).toBeVisible();
 	await page.goto(`/archive/${id}`);
@@ -82,7 +86,9 @@ test("publishing shows the published version until the next publish", async ({
 		page.getByRole("heading", { name: "Synthetic first" }),
 	).toBeVisible();
 	await page.goto(`/family/items/${id}/edit`);
-	await expect(page.getByRole("button", { name: copy.items.save })).toBeEnabled();
+	await expect(
+		page.getByRole("button", { name: copy.items.save }),
+	).toBeEnabled();
 	await page.getByLabel(copy.items.title).fill("Synthetic second");
 	await page.getByRole("button", { name: copy.items.save }).click();
 	await expect(page.locator("form").getByRole("status").last()).toHaveText(
@@ -93,7 +99,9 @@ test("publishing shows the published version until the next publish", async ({
 		page.getByRole("heading", { name: "Synthetic first" }),
 	).toBeVisible();
 	await page.goto(`/family/items/${id}/edit`);
-	await expect(page.getByRole("button", { name: copy.items.save })).toBeEnabled();
+	await expect(
+		page.getByRole("button", { name: copy.items.save }),
+	).toBeEnabled();
 	await page.getByRole("button", { name: copy.items.republish }).click();
 	// Wait for the action to finish before navigating away.
 	await expect(
@@ -266,7 +274,11 @@ test("family-only stays on when a saved person form is saved again", async ({
 	const before = await db.person.findFirstOrThrow({ where: { id: person.id } });
 	await save.click();
 	await expect
-		.poll(async () => (await db.person.findFirstOrThrow({ where: { id: person.id } })).version)
+		.poll(
+			async () =>
+				(await db.person.findFirstOrThrow({ where: { id: person.id } }))
+					.version,
+		)
 		.toBeGreaterThan(before.version);
 	const row = await db.person.findFirstOrThrow({ where: { id: person.id } });
 	expect(row.familyOnly).toBe(true);
@@ -278,13 +290,19 @@ test("a person added from the item picker starts family-only", async ({
 }) => {
 	await signIn(page, "editor@example.test");
 	await page.goto("/family/items/new");
-	const people = page.locator("fieldset").filter({ hasText: copy.items.people });
+	const people = page
+		.locator("fieldset")
+		.filter({ hasText: copy.items.people });
 	await people.getByLabel(copy.items.search).fill("Synthetic picked");
 	const add = people.getByRole("button", { name: copy.items.addNew });
 	await expect(add).toBeEnabled();
 	await add.click();
-	await expect(people.getByRole("listitem").filter({ hasText: "Synthetic picked" })).toBeVisible();
-	const row = await db.person.findFirstOrThrow({ where: { name: "Synthetic picked" } });
+	await expect(
+		people.getByRole("listitem").filter({ hasText: "Synthetic picked" }),
+	).toContainText(copy.items.familyOnly);
+	const row = await db.person.findFirstOrThrow({
+		where: { name: "Synthetic picked" },
+	});
 	expect(row.familyOnly).toBe(true);
 });
 
@@ -300,7 +318,9 @@ test("the new-person form clears after a successful add", async ({ page }) => {
 	await expect(form.getByRole("status")).toHaveText(copy.items.saved);
 	await expect(form.getByLabel(copy.items.name)).toHaveValue("");
 	await expect(form.getByLabel(copy.items.familyOnly)).not.toBeChecked();
-	const row = await db.person.findFirstOrThrow({ where: { name: "Synthetic added" } });
+	const row = await db.person.findFirstOrThrow({
+		where: { name: "Synthetic added" },
+	});
 	expect(row.familyOnly).toBe(true);
 });
 
@@ -309,7 +329,9 @@ test("an item type ticked on the edit page survives a second save", async ({
 }) => {
 	await signIn(page, "editor@example.test");
 	const id = await createItem(page, "Synthetic types");
-	await expect(page.getByRole("button", { name: copy.items.save })).toBeEnabled();
+	await expect(
+		page.getByRole("button", { name: copy.items.save }),
+	).toBeEnabled();
 	await page.getByLabel(copy.items.typeNames.video).check();
 	await page.getByRole("button", { name: copy.items.save }).click();
 	await expect(page.locator("form").getByRole("status").last()).toHaveText(
@@ -318,7 +340,9 @@ test("an item type ticked on the edit page survives a second save", async ({
 	const before = await db.item.findFirstOrThrow({ where: { id } });
 	await page.getByRole("button", { name: copy.items.save }).click();
 	await expect
-		.poll(async () => (await db.item.findFirstOrThrow({ where: { id } })).version)
+		.poll(
+			async () => (await db.item.findFirstOrThrow({ where: { id } })).version,
+		)
 		.toBeGreaterThan(before.version);
 	const item = await db.item.findFirstOrThrow({
 		where: { id },
@@ -339,14 +363,20 @@ test("a save on an item archived meanwhile keeps the input and shows the conflic
 	await expect(a.getByRole("button", { name: copy.items.save })).toBeEnabled();
 	await a.getByLabel(copy.items.title).fill("Typed before archive");
 	await b.goto(`/family/items/${id}/edit`);
-	await expect(b.getByRole("button", { name: copy.items.archive })).toBeEnabled();
+	await expect(
+		b.getByRole("button", { name: copy.items.archive }),
+	).toBeEnabled();
 	await b.getByRole("button", { name: copy.items.archive }).click();
-	await expect(b.getByRole("button", { name: copy.items.restore })).toBeVisible();
+	await expect(
+		b.getByRole("button", { name: copy.items.restore }),
+	).toBeVisible();
 	await a.getByRole("button", { name: copy.items.save }).click();
 	await expect(a.locator("form").getByRole("status").last()).toHaveText(
 		copy.items.conflict,
 	);
-	await expect(a.getByLabel(copy.items.title)).toHaveValue("Typed before archive");
+	await expect(a.getByLabel(copy.items.title)).toHaveValue(
+		"Typed before archive",
+	);
 });
 
 // Any action re-renders the page with fresh props. A form must keep posting
@@ -357,14 +387,18 @@ test("an edited person form conflicts after another save on the page refreshed i
 }) => {
 	const a = await newMemberPage(browser, "a@example.test");
 	const b = await newMemberPage(browser, "b@example.test");
-	const x = await db.person.create({ data: { name: "Synthetic X", otherNames: [] } });
+	const x = await db.person.create({
+		data: { name: "Synthetic X", otherNames: [] },
+	});
 	await db.person.create({ data: { name: "Synthetic Y", otherNames: [] } });
 	await a.goto("/family/people");
 	await b.goto("/family/people");
-	const panel = (page: Page, index: number) => page.locator("section.panel").nth(index);
+	const panel = (page: Page, index: number) =>
+		page.locator("section.panel").nth(index);
 	const save = (page: Page, index: number) =>
 		panel(page, index).getByRole("button", { name: copy.items.save });
-	const status = (page: Page, index: number) => panel(page, index).getByRole("status");
+	const status = (page: Page, index: number) =>
+		panel(page, index).getByRole("status");
 	await expect(save(a, 0)).toBeEnabled();
 	await expect(save(b, 0)).toBeEnabled();
 	await panel(b, 0).getByLabel(copy.items.familyOnly).check();
@@ -379,7 +413,9 @@ test("an edited person form conflicts after another save on the page refreshed i
 	await expect(
 		panel(a, 0).getByRole("complementary", { name: copy.items.latest }),
 	).toContainText(copy.items.familyOnly);
-	expect((await db.person.findFirstOrThrow({ where: { id: x.id } })).familyOnly).toBe(true);
+	expect(
+		(await db.person.findFirstOrThrow({ where: { id: x.id } })).familyOnly,
+	).toBe(true);
 	await save(a, 0).click();
 	await expect(status(a, 0)).toHaveText(copy.items.saved);
 	const row = await db.person.findFirstOrThrow({ where: { id: x.id } });
@@ -392,14 +428,18 @@ test("an unedited person form loads the refreshed record after another save on t
 }) => {
 	const a = await newMemberPage(browser, "a@example.test");
 	const b = await newMemberPage(browser, "b@example.test");
-	const x = await db.person.create({ data: { name: "Synthetic X", otherNames: [] } });
+	const x = await db.person.create({
+		data: { name: "Synthetic X", otherNames: [] },
+	});
 	await db.person.create({ data: { name: "Synthetic Y", otherNames: [] } });
 	await a.goto("/family/people");
 	await b.goto("/family/people");
-	const panel = (page: Page, index: number) => page.locator("section.panel").nth(index);
+	const panel = (page: Page, index: number) =>
+		page.locator("section.panel").nth(index);
 	const save = (page: Page, index: number) =>
 		panel(page, index).getByRole("button", { name: copy.items.save });
-	const status = (page: Page, index: number) => panel(page, index).getByRole("status");
+	const status = (page: Page, index: number) =>
+		panel(page, index).getByRole("status");
 	await expect(save(a, 0)).toBeEnabled();
 	await expect(save(b, 0)).toBeEnabled();
 	await panel(b, 0).getByLabel(copy.items.familyOnly).check();
@@ -442,7 +482,9 @@ test("an edited item form conflicts after a lifecycle action refreshed the page"
 	await expect(a.locator("form").getByRole("status").last()).toHaveText(
 		copy.items.conflict,
 	);
-	await expect(a.getByLabel(copy.items.description)).toHaveValue("Description by A");
+	await expect(a.getByLabel(copy.items.description)).toHaveValue(
+		"Description by A",
+	);
 	await expect(
 		a.getByRole("complementary", { name: copy.items.latest }),
 	).toContainText("Title by B");
@@ -483,12 +525,16 @@ test("publishing from the edit page does not make the next save conflict", async
 }) => {
 	await signIn(page, "editor@example.test");
 	const id = await createItem(page, "Synthetic published");
-	await expect(page.getByRole("button", { name: copy.items.save })).toBeEnabled();
+	await expect(
+		page.getByRole("button", { name: copy.items.save }),
+	).toBeEnabled();
 	await page.getByRole("button", { name: copy.items.publish }).click();
 	await expect(
 		page.getByRole("button", { name: copy.items.makePrivate }),
 	).toBeVisible();
-	await page.getByLabel(copy.items.title).fill("Synthetic edited after publish");
+	await page
+		.getByLabel(copy.items.title)
+		.fill("Synthetic edited after publish");
 	await page.getByRole("button", { name: copy.items.save }).click();
 	await expect(page.locator("form").getByRole("status").last()).toHaveText(
 		copy.items.saved,
@@ -506,7 +552,9 @@ test("family sub-pages hide private content while logout is pending", async ({
 }) => {
 	await signIn(page, "editor@example.test");
 	const id = await createItem(page, "Synthetic locked item");
-	await db.person.create({ data: { name: "Synthetic locked person", otherNames: [] } });
+	await db.person.create({
+		data: { name: "Synthetic locked person", otherNames: [] },
+	});
 	await context.addCookies([
 		{
 			name: "kobob_logout_pending",

@@ -129,7 +129,7 @@ export async function addPerson(name: string) {
 	try {
 		const { id } = await editorialService().savePerson({ name, otherNames: [], familyOnly: true });
 		revalidatePath("/family/people");
-		return { id, name: name.trim() };
+		return { id, name: name.trim(), familyOnly: true };
 	} catch (error) {
 		if (isAccessError(error)) redirect("/sign-in");
 		return null;

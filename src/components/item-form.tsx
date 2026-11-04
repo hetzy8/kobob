@@ -15,7 +15,7 @@ import { submitWithoutReset } from "./submit-without-reset";
 import { useClientReady } from "./use-client-ready";
 import { listOf, useFormBase } from "./use-form-base";
 
-type Option = { id: string; name: string };
+type Option = { id: string; name: string; familyOnly?: boolean };
 const empty: RevisionView = {
 	title: "",
 	description: "",
