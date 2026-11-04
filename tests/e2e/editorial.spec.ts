@@ -438,6 +438,31 @@ test("an edited item form conflicts after a lifecycle action refreshed the page"
 	expect(item.workingRevision?.title).toBe("Title by B");
 });
 
+test("the conflict aside shows the types and tags another member saved", async ({
+	browser,
+}) => {
+	const a = await newMemberPage(browser, "a@example.test");
+	const b = await newMemberPage(browser, "b@example.test");
+	const id = await createItem(a, "Synthetic aside");
+	await expect(a.getByRole("button", { name: copy.items.save })).toBeEnabled();
+	await b.goto(`/family/items/${id}/edit`);
+	await expect(b.getByRole("button", { name: copy.items.save })).toBeEnabled();
+	await b.getByLabel(copy.items.typeNames.video).check();
+	await b.getByLabel(copy.items.tags).fill("Synthetic tag by B");
+	await b.getByRole("button", { name: copy.items.save }).click();
+	await expect(b.locator("form").getByRole("status").last()).toHaveText(
+		copy.items.saved,
+	);
+	await a.getByLabel(copy.items.title).fill("Title by A");
+	await a.getByRole("button", { name: copy.items.save }).click();
+	await expect(a.locator("form").getByRole("status").last()).toHaveText(
+		copy.items.conflict,
+	);
+	const aside = a.getByRole("complementary", { name: copy.items.latest });
+	await expect(aside).toContainText("Synthetic tag by B");
+	await expect(aside).toContainText(copy.items.typeNames.video);
+});
+
 test("publishing from the edit page does not make the next save conflict", async ({
 	page,
 }) => {

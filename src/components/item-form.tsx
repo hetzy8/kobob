@@ -300,6 +300,19 @@ export function ItemForm({
 					<p>{state.latest.working.title}</p>
 					<p>{formatDate(state.latest.working.date)}</p>
 					<p>{state.latest.working.description}</p>
+						<p>
+							{copy.items.types}:{" "}
+							{state.latest.working.types.map((type) => copy.items.typeNames[type]).join(", ")}
+						</p>
+						<p>
+							{copy.items.tags}: {state.latest.working.tags.join(", ")}
+						</p>
+						<p>
+							{copy.items.people}: {state.latest.working.people.map((p) => p.name).join(", ")}
+						</p>
+						<p>
+							{copy.items.places}: {state.latest.working.places.map((p) => p.name).join(", ")}
+						</p>
 				</aside>
 			)}
 		</form>
