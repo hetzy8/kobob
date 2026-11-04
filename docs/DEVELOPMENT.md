@@ -145,7 +145,7 @@ or ops mutation is included. Its remote run is not verified until GitHub execute
 ## Next work
 
 Implement explicit admin bootstrap/member management, then shared editorial
-revisions/lifecycle, visibility-filtered archive/achievements, safe media and
+revisions/lifecycle, public search and tabs (ROADMAP.md phase 2), safe media and
 supported external players. Follow the spec and plan; provider budget, real-data
 imports, domain changes and launch retain separate gates. Keep permanent deletion
 disabled until retention/cleanup policy is agreed. Family-approved Hebrew copy

@@ -7,7 +7,7 @@ const MAX_WORDS = 10;
 // Punctuation trimmed from the ends of a word only (not % or _, not interior
 // characters); includes Hebrew geresh and gershayim.
 const EDGE_PUNCTUATION = /^[.,;:!?"'()[\]׳״]+|[.,;:!?"'()[\]׳״]+$/g;
-const YEAR =/^[12]\d{3}$/;
+const YEAR = /^[12]\d{3}$/;
 
 export type SearchQuery = { words: string[]; years: number[] };
 
