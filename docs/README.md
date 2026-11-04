@@ -6,14 +6,17 @@ All documents are English. The website itself will be Hebrew RTL.
 |---|---|---|
 | [AGENTS.md](../AGENTS.md) | Contributor invariants and workflow | Applies now |
 | [Session handoff](SESSION-HANDOFF.md) | Restart context, verified PR/head, preview state and next work | Read when resuming; recheck external state |
+| [Roadmap](ROADMAP.md) | The full picture: phases from item editing to discovery, the book and the film | Direction; phase 1 in design |
 | [Product spec](superpowers/specs/2026-11-01-family-memorial-design.md) | Agreed rules, proposals, access and acceptance criteria | Consolidated; open decisions explicit |
 | [Page structure and sitemap](superpowers/specs/2026-11-01-site-structure-design.md) | Navigation, page responsibilities and family workflows | Draft for Yoram's review |
-| [Development](DEVELOPMENT.md) | Implemented local scope, setup, test isolation and limitations | Foundation and local membership administration implemented; no deployment |
+| [Development](DEVELOPMENT.md) | Implemented local scope, setup, test isolation and limitations | Foundation, membership administration and sign-in email in production (v0.2.0) |
 | [Architecture](ARCHITECTURE.md) | Existing-project inspection and stack | Hosting direction accepted; details proposed |
-| [Hosting](HOSTING.md) | Provider direction, storage evidence and cost gates | Accepted direction; nothing provisioned |
+| [Hosting](HOSTING.md) | Provider direction, storage evidence and cost gates | Vercel, Neon and Resend provisioned; R2 not yet |
 | [Data migration](DATA-MIGRATION.md) | Data locations, preservation, import and cutover | Planned; no data moved |
 | [Implementation plan](superpowers/plans/2026-11-01-family-memorial.md) | Ordered implementation tasks and verification | Initial foundation in progress; later slices not started |
-| [Operations](OPERATIONS.md) | Secrets, costs, backups, releases, domain and launch gates | Planned; nothing provisioned |
+| [Resend email design](superpowers/specs/2026-11-02-resend-email-design.md) | Sign-in email delivery through Resend | Implemented, v0.2.0 |
+| [Resend email plan](superpowers/plans/2026-11-02-resend-email.md) | Tasks for the Resend slice | All steps done |
+| [Operations](OPERATIONS.md) | Secrets, costs, backups, releases, domain and launch gates | In production; release records, Resend lessons, kobob.org plan |
 
 ## Source of truth
 

@@ -2,6 +2,10 @@
 
 **Date:** 2026-11-02
 **Status:** approved design (Yoram, 2026-11-02); not yet implemented
+**Update 2026-11-03:** implemented in PR #16, released as v0.2.0 (`f8eff0a`);
+rollout steps 3, 4 and 6–8 done, first sign-in email delivered; step 5
+(ops map, hetzy8/ops#77) still open. Record: OPERATIONS.md
+→ Email delivery (Resend).
 **Depends on:** v0.1.0 in production (Vercel + Neon); access rules in the
 [memorial specification](2026-11-01-family-memorial-design.md)
 

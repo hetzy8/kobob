@@ -1,17 +1,19 @@
 # Kobob — Yaki Hetz family memorial
 
-A public Hebrew RTL family memorial for Yaki Hetz, initially intended for
-**kobobhetz.org**. Public visitors see only explicitly public content. Family
+A public Hebrew RTL family memorial for Yaki Hetz, planned for **kobob.org**
+(decided 2026-11-03, replacing kobobhetz.org). Public visitors see only explicitly public content. Family
 access requires verified email and active membership managed by Yoram.
 The domain may change; keep site URLs configurable and item identities stable.
 GitHub work is English; the website interface is Hebrew. Family content still
 requires approval.
 
-**Status: initial application/access foundation implemented locally; not deployed.**
-Empty public page shells and a tested invitation-only access boundary now exist.
-Member administration now exists locally with explicit bootstrap, add/revoke/restore
-and member email changes. Shared editing, archive data/media and live email remain
-future work. Interface copy is Hebrew; approved family names and content remain pending. No
+**Status (2026-11-03): v0.2.0 in production at https://kobob.vercel.app.**
+Empty public page shells, an invitation-only access boundary, member
+administration (bootstrap, add/revoke/restore, member email changes) and
+sign-in email through Resend are live. The planned site address is
+`kobob.org` (not configured yet). Item editing (shared editing, publishing,
+conflict checks and the public archive pages) is on `dev` and not yet released;
+media and import remain future work ([roadmap](docs/ROADMAP.md)). Interface copy is Hebrew; approved family names and content remain pending. No
 real family data has been imported. See [local setup and checks](docs/DEVELOPMENT.md).
 
 ## Start here

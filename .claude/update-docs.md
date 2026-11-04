@@ -11,6 +11,7 @@ this file holds only what is specific to Kobob. Keep it true: a stale line here 
 | `README.md` | Human entry point: purpose, scope, hosting, working here |
 | `docs/README.md` | Documentation map with a status column per document |
 | `docs/SESSION-HANDOFF.md` | Restart context: verified PR/head, preview state, next work |
+| `docs/ROADMAP.md` | The full picture and phases; status column per phase |
 | `docs/DEVELOPMENT.md` | Implemented scope, local setup, exact verification commands and results |
 | `docs/ARCHITECTURE.md` | Stack and structure |
 | `docs/HOSTING.md` | Provider direction, cost evidence, provisioning gates |

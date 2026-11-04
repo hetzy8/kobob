@@ -6,16 +6,16 @@ or machine-local memory for product decisions.
 
 ## Purpose and current scope
 
-Kobob is a public Hebrew RTL family memorial for Yaki Hetz, initially intended
-for `kobobhetz.org`; the domain may change. Visitors see only explicitly public
+Kobob is a public Hebrew RTL family memorial for Yaki Hetz, planned for
+`kobob.org` (Yoram, 2026-11-03; it replaced `kobobhetz.org`); the domain may change. Visitors see only explicitly public
 content. Family access requires verified email and active membership managed
 by Yoram. All active verified family members can read private items and edit,
 publish, unpublish, archive and restore everyone's items. Restoration is private;
 only Yoram manages users or permanently deletes items.
 
-The repository now has an initial local application/access foundation. Yoram
-authorized development on 2026-11-01 and resumed implementation after merging
-the consolidated plan. See docs/DEVELOPMENT.md for exact implemented scope and
+The access foundation, member administration and sign-in email are in
+production (v0.2.0, 2026-11-02; releases follow OPERATIONS.md). Yoram
+authorized development on 2026-11-01. See docs/DEVELOPMENT.md for exact implemented scope and
 checks; do not confuse page shells with a completed archive. Do not provision
 services, import real data, change DNS, send invitations or deploy without the
 corresponding explicit instruction. Preserve requirements, proposals, open
