@@ -609,3 +609,22 @@ test("family pages are Hebrew RTL and require sign-in", async ({ page }) => {
 		await expect(page.locator("html")).toHaveAttribute("lang", "he");
 	}
 });
+
+test("only signed-in members see the Archive tab, and it opens the family list", async ({
+	page,
+}) => {
+	const nav = page.getByRole("navigation", { name: copy.navigationLabel });
+	await page.goto("/");
+	await expect(nav.getByRole("link", { name: copy.searchPage.title, exact: true })).toBeVisible();
+	await expect(nav.getByRole("link", { name: copy.archive, exact: true })).toHaveCount(0);
+	await page.goto("/family");
+	await page.waitForURL(/\/sign-in$/);
+	await signIn(page, "navigator@example.test");
+	await page.goto("/search");
+	await nav.getByRole("link", { name: copy.archive, exact: true }).click();
+	await page.waitForURL(/\/family$/);
+	await expect(page.getByRole("heading", { name: copy.family })).toBeVisible();
+	await db.user.update({ where: { email: "navigator@example.test" }, data: { status: "revoked" } });
+	await page.goto("/");
+	await expect(nav.getByRole("link", { name: copy.archive, exact: true })).toHaveCount(0);
+});
