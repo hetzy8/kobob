@@ -21,7 +21,12 @@ const coordinate = (value: string) => {
 	const parsed = Number(trimmed);
 	return Number.isNaN(parsed) ? trimmed : parsed;
 };
-const content = (name: string, otherNames: string, latitude: string, longitude: string): Content => ({
+const content = (
+	name: string,
+	otherNames: string,
+	latitude: string,
+	longitude: string,
+): Content => ({
 	name: name.trim(),
 	otherNames: listOf(otherNames),
 	latitude: coordinate(latitude),
@@ -39,14 +44,24 @@ const snapshot = (place?: PlaceRecord): Snapshot<Content> | undefined =>
 	};
 
 export function PlaceForm({ place }: { place?: PlaceRecord }) {
-	const [state, submit, pending] = useActionState(savePlaceForm, { status: "idle" } as ItemFormState);
+	const [state, submit, pending] = useActionState(savePlaceForm, {
+		status: "idle",
+	} as ItemFormState);
 	const ready = useClientReady();
 	const latest = state.status === "conflict" ? state.latestPlace : undefined;
 	const [name, setName] = useState(place?.name ?? "");
-	const [otherNames, setOtherNames] = useState(place?.otherNames.join(", ") ?? "");
+	const [otherNames, setOtherNames] = useState(
+		place?.otherNames.join(", ") ?? "",
+	);
 	const [latitude, setLatitude] = useState(place?.latitude?.toString() ?? "");
-	const [longitude, setLongitude] = useState(place?.longitude?.toString() ?? "");
-	const { version, remember } = useFormBase({
+	const [longitude, setLongitude] = useState(
+		place?.longitude?.toString() ?? "",
+	);
+	const {
+		version,
+		content: base,
+		remember,
+	} = useFormBase({
 		loaded: snapshot(place),
 		current: content(name, otherNames, latitude, longitude),
 		state,
@@ -67,10 +82,11 @@ export function PlaceForm({ place }: { place?: PlaceRecord }) {
 			setLatitude("");
 			setLongitude("");
 		}
-		// Skipped when this render also loaded newer props than the latest.
-		if (latest && (version ?? 0) <= latest.version) {
-			setLatitude(latest.latitude?.toString() ?? "");
-			setLongitude(latest.longitude?.toString() ?? "");
+		// Read from the base, not `latest`: when this render also brought newer
+		// props, the base already holds them and the version posted is theirs.
+		if (latest && base) {
+			setLatitude(base.latitude?.toString() ?? "");
+			setLongitude(base.longitude?.toString() ?? "");
 		}
 	}
 	return (
@@ -84,19 +100,41 @@ export function PlaceForm({ place }: { place?: PlaceRecord }) {
 			{place && <input type="hidden" name="version" value={version} />}
 			<label>
 				{copy.items.name}
-				<input name="name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} />
+				<input
+					name="name"
+					value={name}
+					onChange={(e) => setName(e.target.value)}
+					required
+					maxLength={120}
+				/>
 			</label>
 			<label>
 				{copy.items.otherNames}
-				<input name="otherNames" value={otherNames} onChange={(e) => setOtherNames(e.target.value)} />
+				<input
+					name="otherNames"
+					value={otherNames}
+					onChange={(e) => setOtherNames(e.target.value)}
+				/>
 			</label>
 			<label>
 				{copy.items.latitude}
-				<input name="latitude" inputMode="decimal" dir="ltr" value={latitude} onChange={(e) => setLatitude(e.target.value)} />
+				<input
+					name="latitude"
+					inputMode="decimal"
+					dir="ltr"
+					value={latitude}
+					onChange={(e) => setLatitude(e.target.value)}
+				/>
 			</label>
 			<label>
 				{copy.items.longitude}
-				<input name="longitude" inputMode="decimal" dir="ltr" value={longitude} onChange={(e) => setLongitude(e.target.value)} />
+				<input
+					name="longitude"
+					inputMode="decimal"
+					dir="ltr"
+					value={longitude}
+					onChange={(e) => setLongitude(e.target.value)}
+				/>
 			</label>
 			<button type="submit" disabled={!ready || pending}>
 				{place ? copy.items.save : copy.items.addNew}

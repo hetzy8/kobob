@@ -1,6 +1,11 @@
 "use client";
 import { useActionState, useState } from "react";
-import { addPerson, addPlace, saveItem, type ItemFormState } from "@/app/family/items/actions";
+import {
+	addPerson,
+	addPlace,
+	saveItem,
+	type ItemFormState,
+} from "@/app/family/items/actions";
 import type { RevisionView } from "@/services/item-view";
 import { type DateValue, itemTypes } from "@/services/item-input";
 import { formatDate } from "@/lib/format-date";
@@ -59,7 +64,12 @@ type Fields = ReturnType<typeof fields>;
 function content(f: Fields): Content {
 	const date: DateValue =
 		f.dateKind === "single"
-			? { kind: "single", start: f.dateStart, precision: f.precision, approximate: f.approximate }
+			? {
+					kind: "single",
+					start: f.dateStart,
+					precision: f.precision,
+					approximate: f.approximate,
+				}
 			: f.dateKind === "range"
 				? {
 						kind: "range",
@@ -128,7 +138,8 @@ export function ItemForm({
 		placeIds,
 	};
 	const { version: currentVersion, remember } = useFormBase({
-		loaded: version === undefined ? undefined : { version, content: content(start) },
+		loaded:
+			version === undefined ? undefined : { version, content: content(start) },
 		current: content(current),
 		state,
 		latest: state.latest && {
@@ -150,7 +161,8 @@ export function ItemForm({
 			setPlaceIds(next.placeIds);
 		},
 	});
-	const invalid = (field: string) => state.status === "invalid" && state.fields?.includes(field);
+	const invalid = (field: string) =>
+		state.status === "invalid" && state.fields?.includes(field);
 	return (
 		<form
 			onSubmit={submitWithoutReset((data) => {
@@ -194,7 +206,9 @@ export function ItemForm({
 							checked={types.includes(type)}
 							onChange={(event) =>
 								setTypes(
-									event.target.checked ? [...types, type] : types.filter((t) => t !== type),
+									event.target.checked
+										? [...types, type]
+										: types.filter((t) => t !== type),
 								)
 							}
 						/>
@@ -207,7 +221,9 @@ export function ItemForm({
 				<select
 					name="dateKind"
 					value={dateKind}
-					onChange={(event) => setDateKind(event.target.value as typeof dateKind)}
+					onChange={(event) =>
+						setDateKind(event.target.value as typeof dateKind)
+					}
 				>
 					{(["unknown", "single", "range"] as const).map((kind) => (
 						<option key={kind} value={kind}>
@@ -244,7 +260,9 @@ export function ItemForm({
 							<select
 								name="datePrecision"
 								value={precision}
-								onChange={(event) => setPrecision(event.target.value as typeof precision)}
+								onChange={(event) =>
+									setPrecision(event.target.value as typeof precision)
+								}
 							>
 								{(["day", "month", "year", "decade"] as const).map((value) => (
 									<option key={value} value={value}>
@@ -267,7 +285,11 @@ export function ItemForm({
 			</fieldset>
 			<label>
 				{copy.items.tags}
-				<input name="tags" value={tags} onChange={(event) => setTags(event.target.value)} />
+				<input
+					name="tags"
+					value={tags}
+					onChange={(event) => setTags(event.target.value)}
+				/>
 			</label>
 			<RecordPicker
 				label={copy.items.people}
@@ -300,19 +322,23 @@ export function ItemForm({
 					<p>{state.latest.working.title}</p>
 					<p>{formatDate(state.latest.working.date)}</p>
 					<p>{state.latest.working.description}</p>
-						<p>
-							{copy.items.types}:{" "}
-							{state.latest.working.types.map((type) => copy.items.typeNames[type]).join(", ")}
-						</p>
-						<p>
-							{copy.items.tags}: {state.latest.working.tags.join(", ")}
-						</p>
-						<p>
-							{copy.items.people}: {state.latest.working.people.map((p) => p.name).join(", ")}
-						</p>
-						<p>
-							{copy.items.places}: {state.latest.working.places.map((p) => p.name).join(", ")}
-						</p>
+					<p>
+						{copy.items.types}:{" "}
+						{state.latest.working.types
+							.map((type) => copy.items.typeNames[type])
+							.join(", ")}
+					</p>
+					<p>
+						{copy.items.tags}: {state.latest.working.tags.join(", ")}
+					</p>
+					<p>
+						{copy.items.people}:{" "}
+						{state.latest.working.people.map((p) => p.name).join(", ")}
+					</p>
+					<p>
+						{copy.items.places}:{" "}
+						{state.latest.working.places.map((p) => p.name).join(", ")}
+					</p>
 				</aside>
 			)}
 		</form>

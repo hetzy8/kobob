@@ -8,7 +8,8 @@ import type { ItemFormState } from "@/app/family/items/actions";
 // newer version would overwrite someone else's change without a conflict.
 export type Snapshot<C> = { version: number; content: C };
 
-const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+const same = (a: unknown, b: unknown) =>
+	JSON.stringify(a) === JSON.stringify(b);
 
 // Comma-separated input as the server stores it: trimmed, non-empty, unique.
 export const listOf = (value: string) => [
@@ -51,7 +52,8 @@ export function useFormBase<C>({
 	if (loaded && loaded.version !== seen) {
 		setSeen(loaded.version);
 		if (next && loaded.version > next.version) {
-			if (same(loaded.content, next.content)) next = { ...next, version: loaded.version };
+			if (same(loaded.content, next.content))
+				next = { ...next, version: loaded.version };
 			else if (same(current, next.content)) {
 				load(loaded.content);
 				next = loaded;
@@ -61,5 +63,9 @@ export function useFormBase<C>({
 		}
 	}
 	if (next !== base) setBase(next);
-	return { version: next?.version, remember: () => setSubmitted(current) };
+	return {
+		version: next?.version,
+		content: next?.content,
+		remember: () => setSubmitted(current),
+	};
 }

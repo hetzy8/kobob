@@ -8,7 +8,11 @@ import { useClientReady } from "./use-client-ready";
 import { listOf, type Snapshot, useFormBase } from "./use-form-base";
 
 type Content = { name: string; otherNames: string[]; familyOnly: boolean };
-const content = (name: string, otherNames: string, familyOnly: boolean): Content => ({
+const content = (
+	name: string,
+	otherNames: string,
+	familyOnly: boolean,
+): Content => ({
 	name: name.trim(),
 	otherNames: listOf(otherNames),
 	familyOnly,
@@ -16,17 +20,29 @@ const content = (name: string, otherNames: string, familyOnly: boolean): Content
 const snapshot = (person?: PersonRecord): Snapshot<Content> | undefined =>
 	person && {
 		version: person.version,
-		content: content(person.name, person.otherNames.join(", "), person.familyOnly),
+		content: content(
+			person.name,
+			person.otherNames.join(", "),
+			person.familyOnly,
+		),
 	};
 
 export function PersonForm({ person }: { person?: PersonRecord }) {
-	const [state, submit, pending] = useActionState(savePersonForm, { status: "idle" } as ItemFormState);
+	const [state, submit, pending] = useActionState(savePersonForm, {
+		status: "idle",
+	} as ItemFormState);
 	const ready = useClientReady();
 	const latest = state.status === "conflict" ? state.latestPerson : undefined;
 	const [name, setName] = useState(person?.name ?? "");
-	const [otherNames, setOtherNames] = useState(person?.otherNames.join(", ") ?? "");
+	const [otherNames, setOtherNames] = useState(
+		person?.otherNames.join(", ") ?? "",
+	);
 	const [familyOnly, setFamilyOnly] = useState(person?.familyOnly ?? false);
-	const { version, remember } = useFormBase({
+	const {
+		version,
+		content: base,
+		remember,
+	} = useFormBase({
 		loaded: snapshot(person),
 		current: content(name, otherNames, familyOnly),
 		state,
@@ -47,8 +63,9 @@ export function PersonForm({ person }: { person?: PersonRecord }) {
 		}
 		// The privacy switch must show the newest decision after a conflict;
 		// the member re-ticks it on purpose if they want to change it.
-		// Skipped when this render also loaded newer props than the latest.
-		if (latest && (version ?? 0) <= latest.version) setFamilyOnly(latest.familyOnly);
+		// Read from the base, not `latest`: when this render also brought newer
+		// props, the base already holds them and the version posted is theirs.
+		if (latest && base) setFamilyOnly(base.familyOnly);
 	}
 	return (
 		<form
@@ -61,11 +78,21 @@ export function PersonForm({ person }: { person?: PersonRecord }) {
 			{person && <input type="hidden" name="version" value={version} />}
 			<label>
 				{copy.items.name}
-				<input name="name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={120} />
+				<input
+					name="name"
+					value={name}
+					onChange={(e) => setName(e.target.value)}
+					required
+					maxLength={120}
+				/>
 			</label>
 			<label>
 				{copy.items.otherNames}
-				<input name="otherNames" value={otherNames} onChange={(e) => setOtherNames(e.target.value)} />
+				<input
+					name="otherNames"
+					value={otherNames}
+					onChange={(e) => setOtherNames(e.target.value)}
+				/>
 			</label>
 			<label>
 				<input
