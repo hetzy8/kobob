@@ -11,8 +11,9 @@ requires approval.
 Empty public page shells, an invitation-only access boundary, member
 administration (bootstrap, add/revoke/restore, member email changes) and
 sign-in email through Resend are live. The planned site address is
-`kobob.org` (not configured yet). Shared editing and archive data/media remain
-future work. Interface copy is Hebrew; approved family names and content remain pending. No
+`kobob.org` (not configured yet). Item editing (shared editing, publishing,
+conflict checks and the public archive pages) is on `dev` and not yet released;
+media and import remain future work ([roadmap](docs/ROADMAP.md)). Interface copy is Hebrew; approved family names and content remain pending. No
 real family data has been imported. See [local setup and checks](docs/DEVELOPMENT.md).
 
 ## Start here
