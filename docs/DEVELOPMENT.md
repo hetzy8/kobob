@@ -30,8 +30,8 @@ Routes: `/family`, `/family/items/new`, `/family/items/[id]/edit`,
 `/archive` and `/archive/[id]`, which show only the published revision. Models:
 `Item`, `ItemRevision`, `Person`, `Place` and `EditorialAudit`. The Hebrew
 strings under `copy.items` are proposed wording and await Yoram's approval.
-Checks at this slice: 76 unit tests, 60 integration tests, 22 browser tests
-(11 existing and 11 for item editing), lint, typecheck and the webpack build
+Checks at this slice: 76 unit tests, 60 integration tests, 26 browser tests
+(11 existing and 15 for item editing), lint, typecheck and the webpack build
 pass (Node 20 locally; the project targets Node 24).
 
 ## Toolchain and engineering choices
