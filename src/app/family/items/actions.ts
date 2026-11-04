@@ -123,11 +123,13 @@ export async function changeItemState(
 	}
 }
 
+// A person added from an item's picker starts family-only (Yoram, 2026-11-04);
+// a member clears it deliberately on the people page.
 export async function addPerson(name: string) {
 	try {
-		const { id } = await editorialService().savePerson({ name, otherNames: [], familyOnly: false });
+		const { id } = await editorialService().savePerson({ name, otherNames: [], familyOnly: true });
 		revalidatePath("/family/people");
-		return { id, name: name.trim() };
+		return { id, name: name.trim(), familyOnly: true };
 	} catch (error) {
 		if (isAccessError(error)) redirect("/sign-in");
 		return null;

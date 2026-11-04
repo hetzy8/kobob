@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function EditItem({ params }: { params: Promise<{ id: string }> }) {
 	const { id } = await params;
 	let item: FamilyItem;
-	let people: { id: string; name: string }[];
+	let people: { id: string; name: string; familyOnly: boolean }[];
 	let places: { id: string; name: string }[];
 	try {
 		[item, people, places] = await Promise.all([

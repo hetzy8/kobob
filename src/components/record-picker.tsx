@@ -3,7 +3,7 @@ import { useState } from "react";
 import { copy } from "@/locales/he";
 import { useClientReady } from "./use-client-ready";
 
-type Option = { id: string; name: string };
+type Option = { id: string; name: string; familyOnly?: boolean };
 
 // Search-and-add picker. Selected ids are submitted as repeated hidden inputs
 // named `name`; "add" creates the record through the given server action.
@@ -31,7 +31,9 @@ export function RecordPicker({
 		setGiven(initialOptions);
 		setOptions([
 			...initialOptions,
-			...options.filter((option) => !initialOptions.some((o) => o.id === option.id)),
+			...options.filter(
+				(option) => !initialOptions.some((o) => o.id === option.id),
+			),
 		]);
 	}
 	const [query, setQuery] = useState("");
@@ -66,21 +68,30 @@ export function RecordPicker({
 				<input key={id} type="hidden" name={name} value={id} />
 			))}
 			<ul>
-				{selected.map((id) => (
-					<li key={id}>
-						{options.find((option) => option.id === id)?.name}{" "}
-						<button
-							type="button"
-							onClick={() => onSelectedChange(selected.filter((value) => value !== id))}
-						>
-							×
-						</button>
-					</li>
-				))}
+				{selected.map((id) => {
+					const option = options.find((candidate) => candidate.id === id);
+					return (
+						<li key={id}>
+							{option?.name}
+							{option?.familyOnly && ` (${copy.items.familyOnly})`}{" "}
+							<button
+								type="button"
+								onClick={() =>
+									onSelectedChange(selected.filter((value) => value !== id))
+								}
+							>
+								×
+							</button>
+						</li>
+					);
+				})}
 			</ul>
 			<label>
 				{copy.items.search}
-				<input value={query} onChange={(event) => setQuery(event.target.value)} />
+				<input
+					value={query}
+					onChange={(event) => setQuery(event.target.value)}
+				/>
 			</label>
 			{needle && (
 				<ul>
