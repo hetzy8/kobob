@@ -41,7 +41,9 @@ In: navigation change, member-only Archive tab, removal of Achievements and of
 the public `/archive`, public item page at `/items/[id]`, `/search`.
 
 Out: timeline, map, internet sources, life-story editing (slices 2–5); search
-filters beyond the year; ranking; visual design.
+filters beyond the year; ranking; visual design; a year-like word also
+matching as text (e.g. an undated item titled with a year) — phase 5 search
+notes.
 
 ## Navigation
 
@@ -75,7 +77,7 @@ filters beyond the year; ranking; visual design.
   to 2999 is a **year**; every other word is a **text word**.
 - An item matches when every word matches:
   - a text word matches, case-insensitively as a substring, the published
-    revision's title, description or a tag, or the name or another name of a
+    revision's title, description or a tag, or the name (not other names) of a
     linked person who is not family-only, or the name or another name of a
     linked place;
   - a year matches when the item's date period overlaps that calendar year.
@@ -83,6 +85,9 @@ filters beyond the year; ranking; visual design.
     decade from its start); a range runs from its start to the end of its end
     date's precision. Approximate dates count as their stated period. Items
     with an unknown date never match a year.
+- People's other names are not searched (Yoram, 2026-11-05): they are never
+  shown publicly, so matching them would let a visitor confirm a nickname.
+  Places' other names are searched.
 - Only published, active items are searched, through their published revision.
   Unpublished edits, private and archived items are never read.
 - No query: all published items, newest publication first (today's `/archive`

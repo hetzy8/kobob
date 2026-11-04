@@ -27,7 +27,8 @@ Item editing (2026-11-03): family members create, edit, publish, make private,
 archive and restore archive items with dates, people, places, types and tags.
 Routes: `/family`, `/family/items/new`, `/family/items/[id]/edit`,
 `/family/archived`, `/family/people`, `/family/places`, and the public
-`/archive` and `/archive/[id]`, which show only the published revision. Models:
+`/archive` and `/archive/[id]` (since 2026-11-05 `/search` and `/items/[id]`),
+which show only the published revision. Models:
 `Item`, `ItemRevision`, `Person`, `Place` and `EditorialAudit`. The Hebrew
 strings under `copy.items` were approved by Yoram on 2026-11-04.
 Checks at this slice: 76 unit tests, 60 integration tests, 28 browser tests
@@ -39,7 +40,7 @@ story and Search; signed-in members also see Archive, which opens `/family`.
 Achievements and the public `/archive` were removed. `/search` matches the
 published revision's text, tags, non-family-only people, places and years
 (`src/services/search.ts`). The `searchPage` strings await Yoram's approval.
-Checks at this slice: 81 unit, 65 integration and 30 browser tests, lint,
+Checks at this slice: 82 unit, 65 integration and 30 browser tests, lint,
 typecheck and the webpack build pass.
 
 ## Toolchain and engineering choices
