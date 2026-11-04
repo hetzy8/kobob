@@ -13,8 +13,8 @@ by Yoram. All active verified family members can read private items and edit,
 publish, unpublish, archive and restore everyone's items. Restoration is private;
 only Yoram manages users or permanently deletes items.
 
-The access foundation, member administration and sign-in email are in
-production (v0.2.0, 2026-11-02; releases follow OPERATIONS.md). Yoram
+The access foundation, member administration, sign-in email and item editing
+are in production (v0.3.0, 2026-11-04; releases follow OPERATIONS.md). Yoram
 authorized development on 2026-11-01. See docs/DEVELOPMENT.md for exact implemented scope and
 checks; do not confuse page shells with a completed archive. Do not provision
 services, import real data, change DNS, send invitations or deploy without the

@@ -7,13 +7,13 @@ The domain may change; keep site URLs configurable and item identities stable.
 GitHub work is English; the website interface is Hebrew. Family content still
 requires approval.
 
-**Status (2026-11-03): v0.2.0 in production at https://kobob.vercel.app.**
-Empty public page shells, an invitation-only access boundary, member
-administration (bootstrap, add/revoke/restore, member email changes) and
-sign-in email through Resend are live. The planned site address is
-`kobob.org` (not configured yet). Item editing (shared editing, publishing,
-conflict checks and the public archive pages) is on `dev` and not yet released;
-media and import remain future work ([roadmap](docs/ROADMAP.md)). Interface copy is Hebrew; approved family names and content remain pending. No
+**Status (2026-11-04): v0.3.0 in production at https://kobob.vercel.app.**
+An invitation-only access boundary, member administration (bootstrap,
+add/revoke/restore, member email changes), sign-in email through Resend and
+item editing (shared editing, publishing, conflict checks and the public
+archive pages) are live; Home, About and Achievements are still page shells.
+The planned site address is `kobob.org` (not configured yet). Media and import
+remain future work ([roadmap](docs/ROADMAP.md)). Interface copy is Hebrew; approved family names and content remain pending. No
 real family data has been imported. See [local setup and checks](docs/DEVELOPMENT.md).
 
 ## Start here
