@@ -39,7 +39,8 @@ export function createArchiveReader(db: Database) {
 				...revision.tags,
 				...revision.people
 					.filter(({ person }) => !person.familyOnly)
-					.flatMap(({ person }) => [person.name, ...person.otherNames]),
+					// Main name only: other names are never shown publicly (Yoram, 2026-11-05).
+					.map(({ person }) => person.name),
 				...revision.places.flatMap(({ place }) => [place.name, ...place.otherNames]),
 			];
 			if (!matches({ texts, date }, query)) return [];

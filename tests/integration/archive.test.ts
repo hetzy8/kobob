@@ -120,9 +120,10 @@ it("searches the published revision's text, tags, people and places", async () =
 	);
 	await a.createItem(input("Unrelated private"));
 	await a.transitionItem(id, 1, "publish");
-	for (const text of ["race", "MORNING", "marath", "synthetic runner", "nickname", "harbor", "old harbor", "race harbor"]) {
+	for (const text of ["race", "MORNING", "marath", "synthetic runner", "harbor", "old harbor", "race harbor"]) {
 		expect((await reader.searchPublicItems(text)).map((item) => item.id), text).toEqual([id]);
 	}
+	expect(await reader.searchPublicItems("nickname")).toEqual([]);
 	expect(await reader.searchPublicItems("race swimming")).toEqual([]);
 	expect(await reader.searchPublicItems("unrelated")).toEqual([]);
 	expect((await reader.searchPublicItems("")).map((item) => item.id)).toEqual([id]);
