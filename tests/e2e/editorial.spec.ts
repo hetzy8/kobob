@@ -334,6 +334,132 @@ test("a save on an item archived meanwhile keeps the input and shows the conflic
 	await expect(a.getByLabel(copy.items.title)).toHaveValue("Typed before archive");
 });
 
+// Any action re-renders the page with fresh props. A form must keep posting
+// the version of the values it loaded, never the refreshed one, unless it
+// also shows the refreshed values.
+test("an edited person form conflicts after another save on the page refreshed it", async ({
+	browser,
+}) => {
+	const a = await newMemberPage(browser, "a@example.test");
+	const b = await newMemberPage(browser, "b@example.test");
+	const x = await db.person.create({ data: { name: "Synthetic X", otherNames: [] } });
+	await db.person.create({ data: { name: "Synthetic Y", otherNames: [] } });
+	await a.goto("/family/people");
+	await b.goto("/family/people");
+	const panel = (page: Page, index: number) => page.locator("section.panel").nth(index);
+	const save = (page: Page, index: number) =>
+		panel(page, index).getByRole("button", { name: copy.items.save });
+	const status = (page: Page, index: number) => panel(page, index).getByRole("status");
+	await expect(save(a, 0)).toBeEnabled();
+	await expect(save(b, 0)).toBeEnabled();
+	await panel(b, 0).getByLabel(copy.items.familyOnly).check();
+	await save(b, 0).click();
+	await expect(status(b, 0)).toHaveText(copy.items.saved);
+	await panel(a, 0).getByLabel(copy.items.otherNames).fill("Synthetic alias");
+	await panel(a, 1).getByLabel(copy.items.otherNames).fill("Synthetic Y alias");
+	await save(a, 1).click();
+	await expect(status(a, 1)).toHaveText(copy.items.saved);
+	await save(a, 0).click();
+	await expect(status(a, 0)).toHaveText(copy.items.conflict);
+	await expect(
+		panel(a, 0).getByRole("complementary", { name: copy.items.latest }),
+	).toContainText(copy.items.familyOnly);
+	expect((await db.person.findFirstOrThrow({ where: { id: x.id } })).familyOnly).toBe(true);
+	await save(a, 0).click();
+	await expect(status(a, 0)).toHaveText(copy.items.saved);
+	const row = await db.person.findFirstOrThrow({ where: { id: x.id } });
+	expect(row.familyOnly).toBe(true);
+	expect(row.otherNames).toEqual(["Synthetic alias"]);
+});
+
+test("an unedited person form loads the refreshed record after another save on the page", async ({
+	browser,
+}) => {
+	const a = await newMemberPage(browser, "a@example.test");
+	const b = await newMemberPage(browser, "b@example.test");
+	const x = await db.person.create({ data: { name: "Synthetic X", otherNames: [] } });
+	await db.person.create({ data: { name: "Synthetic Y", otherNames: [] } });
+	await a.goto("/family/people");
+	await b.goto("/family/people");
+	const panel = (page: Page, index: number) => page.locator("section.panel").nth(index);
+	const save = (page: Page, index: number) =>
+		panel(page, index).getByRole("button", { name: copy.items.save });
+	const status = (page: Page, index: number) => panel(page, index).getByRole("status");
+	await expect(save(a, 0)).toBeEnabled();
+	await expect(save(b, 0)).toBeEnabled();
+	await panel(b, 0).getByLabel(copy.items.familyOnly).check();
+	await save(b, 0).click();
+	await expect(status(b, 0)).toHaveText(copy.items.saved);
+	await panel(a, 1).getByLabel(copy.items.otherNames).fill("Synthetic Y alias");
+	await save(a, 1).click();
+	await expect(status(a, 1)).toHaveText(copy.items.saved);
+	await expect(panel(a, 0).getByLabel(copy.items.familyOnly)).toBeChecked();
+	await panel(a, 0).getByLabel(copy.items.otherNames).fill("Synthetic alias");
+	await save(a, 0).click();
+	await expect(status(a, 0)).toHaveText(copy.items.saved);
+	const row = await db.person.findFirstOrThrow({ where: { id: x.id } });
+	expect(row.familyOnly).toBe(true);
+	expect(row.otherNames).toEqual(["Synthetic alias"]);
+});
+
+test("an edited item form conflicts after a lifecycle action refreshed the page", async ({
+	browser,
+}) => {
+	const a = await newMemberPage(browser, "a@example.test");
+	const b = await newMemberPage(browser, "b@example.test");
+	const id = await createItem(a, "Synthetic original");
+	await expect(a.getByRole("button", { name: copy.items.save })).toBeEnabled();
+	await b.goto(`/family/items/${id}/edit`);
+	await expect(b.getByRole("button", { name: copy.items.save })).toBeEnabled();
+	await b.getByLabel(copy.items.title).fill("Title by B");
+	await b.getByRole("button", { name: copy.items.save }).click();
+	await expect(b.locator("form").getByRole("status").last()).toHaveText(
+		copy.items.saved,
+	);
+	await a.getByLabel(copy.items.description).fill("Description by A");
+	// A's lifecycle buttons still carry the old version, so this conflicts and
+	// re-renders the page with B's version and title.
+	await a.getByRole("button", { name: copy.items.publish }).click();
+	await expect(
+		a.getByRole("status").filter({ hasText: copy.items.conflict }),
+	).toHaveCount(1);
+	await a.getByRole("button", { name: copy.items.save }).click();
+	await expect(a.locator("form").getByRole("status").last()).toHaveText(
+		copy.items.conflict,
+	);
+	await expect(a.getByLabel(copy.items.description)).toHaveValue("Description by A");
+	await expect(
+		a.getByRole("complementary", { name: copy.items.latest }),
+	).toContainText("Title by B");
+	const item = await db.item.findFirstOrThrow({
+		where: { id },
+		include: { workingRevision: true },
+	});
+	expect(item.workingRevision?.title).toBe("Title by B");
+});
+
+test("publishing from the edit page does not make the next save conflict", async ({
+	page,
+}) => {
+	await signIn(page, "editor@example.test");
+	const id = await createItem(page, "Synthetic published");
+	await expect(page.getByRole("button", { name: copy.items.save })).toBeEnabled();
+	await page.getByRole("button", { name: copy.items.publish }).click();
+	await expect(
+		page.getByRole("button", { name: copy.items.makePrivate }),
+	).toBeVisible();
+	await page.getByLabel(copy.items.title).fill("Synthetic edited after publish");
+	await page.getByRole("button", { name: copy.items.save }).click();
+	await expect(page.locator("form").getByRole("status").last()).toHaveText(
+		copy.items.saved,
+	);
+	const item = await db.item.findFirstOrThrow({
+		where: { id },
+		include: { workingRevision: true },
+	});
+	expect(item.workingRevision?.title).toBe("Synthetic edited after publish");
+});
+
 test("family sub-pages hide private content while logout is pending", async ({
 	page,
 	context,
