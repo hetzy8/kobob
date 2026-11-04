@@ -59,7 +59,7 @@ export const copy = {
 	error: "לא ניתן לטעון את הדף כרגע",
 	errorHelp: "אירעה תקלה. אפשר לנסות שוב או לחזור לדף הבית.",
 	retry: "ניסיון נוסף",
-	// Proposed for Yoram's approval (item editing, 2026-11-03); not yet approved.
+	// Approved by Yoram 2026-11-04 (item editing, PR #20).
 	items: {
 		list: "פריטים",
 		add: "הוספת פריט",

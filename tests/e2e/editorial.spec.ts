@@ -273,6 +273,21 @@ test("family-only stays on when a saved person form is saved again", async ({
 	await expect(panel.getByLabel(copy.items.familyOnly)).toBeChecked();
 });
 
+test("a person added from the item picker starts family-only", async ({
+	page,
+}) => {
+	await signIn(page, "editor@example.test");
+	await page.goto("/family/items/new");
+	const people = page.locator("fieldset").filter({ hasText: copy.items.people });
+	await people.getByLabel(copy.items.search).fill("Synthetic picked");
+	const add = people.getByRole("button", { name: copy.items.addNew });
+	await expect(add).toBeEnabled();
+	await add.click();
+	await expect(people.getByRole("listitem").filter({ hasText: "Synthetic picked" })).toBeVisible();
+	const row = await db.person.findFirstOrThrow({ where: { name: "Synthetic picked" } });
+	expect(row.familyOnly).toBe(true);
+});
+
 test("the new-person form clears after a successful add", async ({ page }) => {
 	await signIn(page, "editor@example.test");
 	await page.goto("/family/people");
