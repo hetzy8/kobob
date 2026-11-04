@@ -234,6 +234,9 @@ Release checklist:
    production, which is why `dev` has no ruleset. The hetzy8-eng command guard
    blocks agents from writing `dev`/`main`, so Yoram runs:
    `git push origin --delete dev && git push origin <release-sha>:refs/heads/dev`.
+   Recreate `dev` before merging any open PR into it: a merge into the old
+   `dev` is dropped by the recreation (v0.3.0: PR #24 merged first and had to
+   be re-landed as PR #25).
 
 After an explicitly authorized release: verify migrations and recovery steps,
 check email and media access with approved test accounts, and record the actual
