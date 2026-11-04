@@ -67,7 +67,8 @@ export function PlaceForm({ place }: { place?: PlaceRecord }) {
 			setLatitude("");
 			setLongitude("");
 		}
-		if (latest) {
+		// Skipped when this render also loaded newer props than the latest.
+		if (latest && (version ?? 0) <= latest.version) {
 			setLatitude(latest.latitude?.toString() ?? "");
 			setLongitude(latest.longitude?.toString() ?? "");
 		}

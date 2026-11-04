@@ -47,7 +47,8 @@ export function PersonForm({ person }: { person?: PersonRecord }) {
 		}
 		// The privacy switch must show the newest decision after a conflict;
 		// the member re-ticks it on purpose if they want to change it.
-		if (latest) setFamilyOnly(latest.familyOnly);
+		// Skipped when this render also loaded newer props than the latest.
+		if (latest && (version ?? 0) <= latest.version) setFamilyOnly(latest.familyOnly);
 	}
 	return (
 		<form
