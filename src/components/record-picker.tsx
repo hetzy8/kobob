@@ -24,6 +24,16 @@ export function RecordPicker({
 }) {
 	const ready = useClientReady();
 	const [options, setOptions] = useState(initialOptions);
+	// A refreshed page can bring records created elsewhere (the form may load
+	// them as selected); keep the ones created here too.
+	const [given, setGiven] = useState(initialOptions);
+	if (given !== initialOptions) {
+		setGiven(initialOptions);
+		setOptions([
+			...initialOptions,
+			...options.filter((option) => !initialOptions.some((o) => o.id === option.id)),
+		]);
+	}
 	const [query, setQuery] = useState("");
 	const [busy, setBusy] = useState(false);
 	const [failed, setFailed] = useState(false);

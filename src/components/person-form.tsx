@@ -5,15 +5,38 @@ import type { PersonRecord } from "@/services/editorial";
 import { copy } from "@/locales/he";
 import { submitWithoutReset } from "./submit-without-reset";
 import { useClientReady } from "./use-client-ready";
+import { listOf, type Snapshot, useFormBase } from "./use-form-base";
+
+type Content = { name: string; otherNames: string[]; familyOnly: boolean };
+const content = (name: string, otherNames: string, familyOnly: boolean): Content => ({
+	name: name.trim(),
+	otherNames: listOf(otherNames),
+	familyOnly,
+});
+const snapshot = (person?: PersonRecord): Snapshot<Content> | undefined =>
+	person && {
+		version: person.version,
+		content: content(person.name, person.otherNames.join(", "), person.familyOnly),
+	};
 
 export function PersonForm({ person }: { person?: PersonRecord }) {
 	const [state, submit, pending] = useActionState(savePersonForm, { status: "idle" } as ItemFormState);
 	const ready = useClientReady();
 	const latest = state.status === "conflict" ? state.latestPerson : undefined;
-	const version = Math.max(person?.version ?? 0, state.version ?? 0, latest?.version ?? 0);
 	const [name, setName] = useState(person?.name ?? "");
 	const [otherNames, setOtherNames] = useState(person?.otherNames.join(", ") ?? "");
 	const [familyOnly, setFamilyOnly] = useState(person?.familyOnly ?? false);
+	const { version, remember } = useFormBase({
+		loaded: snapshot(person),
+		current: content(name, otherNames, familyOnly),
+		state,
+		latest: snapshot(latest),
+		load: (loaded) => {
+			setName(loaded.name);
+			setOtherNames(loaded.otherNames.join(", "));
+			setFamilyOnly(loaded.familyOnly);
+		},
+	});
 	const [handled, setHandled] = useState(state);
 	if (handled !== state) {
 		setHandled(state);
@@ -27,7 +50,12 @@ export function PersonForm({ person }: { person?: PersonRecord }) {
 		if (latest) setFamilyOnly(latest.familyOnly);
 	}
 	return (
-		<form onSubmit={submitWithoutReset(submit)}>
+		<form
+			onSubmit={submitWithoutReset((data) => {
+				remember();
+				submit(data);
+			})}
+		>
 			{person && <input type="hidden" name="id" value={person.id} />}
 			{person && <input type="hidden" name="version" value={version} />}
 			<label>

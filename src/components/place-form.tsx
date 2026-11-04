@@ -5,16 +5,59 @@ import type { PlaceRecord } from "@/services/editorial";
 import { copy } from "@/locales/he";
 import { submitWithoutReset } from "./submit-without-reset";
 import { useClientReady } from "./use-client-ready";
+import { listOf, type Snapshot, useFormBase } from "./use-form-base";
+
+type Content = {
+	name: string;
+	otherNames: string[];
+	latitude: number | string | null;
+	longitude: number | string | null;
+};
+// Text that is not a number stays text, so it never compares equal to a
+// stored coordinate (or to none).
+const coordinate = (value: string) => {
+	const trimmed = value.trim();
+	if (trimmed === "") return null;
+	const parsed = Number(trimmed);
+	return Number.isNaN(parsed) ? trimmed : parsed;
+};
+const content = (name: string, otherNames: string, latitude: string, longitude: string): Content => ({
+	name: name.trim(),
+	otherNames: listOf(otherNames),
+	latitude: coordinate(latitude),
+	longitude: coordinate(longitude),
+});
+const snapshot = (place?: PlaceRecord): Snapshot<Content> | undefined =>
+	place && {
+		version: place.version,
+		content: content(
+			place.name,
+			place.otherNames.join(", "),
+			place.latitude?.toString() ?? "",
+			place.longitude?.toString() ?? "",
+		),
+	};
 
 export function PlaceForm({ place }: { place?: PlaceRecord }) {
 	const [state, submit, pending] = useActionState(savePlaceForm, { status: "idle" } as ItemFormState);
 	const ready = useClientReady();
 	const latest = state.status === "conflict" ? state.latestPlace : undefined;
-	const version = Math.max(place?.version ?? 0, state.version ?? 0, latest?.version ?? 0);
 	const [name, setName] = useState(place?.name ?? "");
 	const [otherNames, setOtherNames] = useState(place?.otherNames.join(", ") ?? "");
 	const [latitude, setLatitude] = useState(place?.latitude?.toString() ?? "");
 	const [longitude, setLongitude] = useState(place?.longitude?.toString() ?? "");
+	const { version, remember } = useFormBase({
+		loaded: snapshot(place),
+		current: content(name, otherNames, latitude, longitude),
+		state,
+		latest: snapshot(latest),
+		load: (loaded) => {
+			setName(loaded.name);
+			setOtherNames(loaded.otherNames.join(", "));
+			setLatitude(loaded.latitude?.toString() ?? "");
+			setLongitude(loaded.longitude?.toString() ?? "");
+		},
+	});
 	const [handled, setHandled] = useState(state);
 	if (handled !== state) {
 		setHandled(state);
@@ -30,7 +73,12 @@ export function PlaceForm({ place }: { place?: PlaceRecord }) {
 		}
 	}
 	return (
-		<form onSubmit={submitWithoutReset(submit)}>
+		<form
+			onSubmit={submitWithoutReset((data) => {
+				remember();
+				submit(data);
+			})}
+		>
 			{place && <input type="hidden" name="id" value={place.id} />}
 			{place && <input type="hidden" name="version" value={version} />}
 			<label>

@@ -2,12 +2,13 @@
 import { useActionState, useState } from "react";
 import { addPerson, addPlace, saveItem, type ItemFormState } from "@/app/family/items/actions";
 import type { RevisionView } from "@/services/item-view";
-import { itemTypes } from "@/services/item-input";
+import { type DateValue, itemTypes } from "@/services/item-input";
 import { formatDate } from "@/lib/format-date";
 import { copy } from "@/locales/he";
 import { RecordPicker } from "./record-picker";
 import { submitWithoutReset } from "./submit-without-reset";
 import { useClientReady } from "./use-client-ready";
+import { listOf, useFormBase } from "./use-form-base";
 
 type Option = { id: string; name: string };
 const empty: RevisionView = {
@@ -20,9 +21,69 @@ const empty: RevisionView = {
 	places: [],
 };
 
+// What the form edits, in the shape the server stores it (see itemInputSchema).
+type Content = {
+	title: string;
+	description: string;
+	types: string[];
+	date: DateValue;
+	tags: string[];
+	personIds: string[];
+	placeIds: string[];
+};
+const fromView = (view: RevisionView): Content => ({
+	title: view.title,
+	description: view.description,
+	types: view.types,
+	date: view.date,
+	tags: view.tags,
+	personIds: view.people.map((p) => p.id),
+	placeIds: view.places.map((p) => p.id),
+});
+function fields({ date, ...rest }: Content) {
+	return {
+		title: rest.title,
+		description: rest.description,
+		types: rest.types,
+		dateKind: date.kind,
+		dateStart: date.kind === "unknown" ? "" : date.start,
+		dateEnd: date.kind === "range" ? date.end : "",
+		precision: date.kind === "unknown" ? ("year" as const) : date.precision,
+		approximate: date.kind === "unknown" ? false : date.approximate,
+		tags: rest.tags.join(", "),
+		personIds: rest.personIds,
+		placeIds: rest.placeIds,
+	};
+}
+type Fields = ReturnType<typeof fields>;
+function content(f: Fields): Content {
+	const date: DateValue =
+		f.dateKind === "single"
+			? { kind: "single", start: f.dateStart, precision: f.precision, approximate: f.approximate }
+			: f.dateKind === "range"
+				? {
+						kind: "range",
+						start: f.dateStart,
+						end: f.dateEnd,
+						precision: f.precision,
+						approximate: f.approximate,
+					}
+				: { kind: "unknown" };
+	return {
+		title: f.title.trim(),
+		description: f.description,
+		types: itemTypes.filter((type) => f.types.includes(type)),
+		date,
+		tags: listOf(f.tags),
+		personIds: [...new Set(f.personIds)],
+		placeIds: [...new Set(f.placeIds)],
+	};
+}
+
 // Every field lives in React state, so a conflict or a failed save never
 // clears what the member typed; submitWithoutReset keeps React's post-action
-// form reset from reverting checkboxes in the DOM.
+// form reset from reverting checkboxes in the DOM. useFormBase keeps the
+// posted version tied to the values the form loaded.
 export function ItemForm({
 	id,
 	version,
@@ -41,31 +102,62 @@ export function ItemForm({
 		version,
 	} as ItemFormState);
 	const ready = useClientReady();
-	const [title, setTitle] = useState(initial.title);
-	const [description, setDescription] = useState(initial.description);
-	const [types, setTypes] = useState<string[]>(initial.types);
-	const [dateKind, setDateKind] = useState(initial.date.kind);
-	const [dateStart, setDateStart] = useState(initial.date.kind === "unknown" ? "" : initial.date.start);
-	const [dateEnd, setDateEnd] = useState(initial.date.kind === "range" ? initial.date.end : "");
-	const [precision, setPrecision] = useState(
-		initial.date.kind === "unknown" ? "year" : initial.date.precision,
-	);
-	const [approximate, setApproximate] = useState(
-		initial.date.kind === "unknown" ? false : initial.date.approximate,
-	);
-	const [tags, setTags] = useState(initial.tags.join(", "));
-	const [personIds, setPersonIds] = useState(initial.people.map((p) => p.id));
-	const [placeIds, setPlaceIds] = useState(initial.places.map((p) => p.id));
-	// Versions only grow, so the highest one known is current: the page prop
-	// (refreshed after lifecycle actions), the last save, or the conflict's
-	// latest version (the next save then deliberately targets it).
-	const known = [version, state.version, state.latest?.version].filter(
-		(value): value is number => value !== undefined,
-	);
-	const currentVersion = known.length ? Math.max(...known) : undefined;
+	const start = fields(fromView(initial));
+	const [title, setTitle] = useState(start.title);
+	const [description, setDescription] = useState(start.description);
+	const [types, setTypes] = useState<string[]>(start.types);
+	const [dateKind, setDateKind] = useState(start.dateKind);
+	const [dateStart, setDateStart] = useState(start.dateStart);
+	const [dateEnd, setDateEnd] = useState(start.dateEnd);
+	const [precision, setPrecision] = useState(start.precision);
+	const [approximate, setApproximate] = useState(start.approximate);
+	const [tags, setTags] = useState(start.tags);
+	const [personIds, setPersonIds] = useState(start.personIds);
+	const [placeIds, setPlaceIds] = useState(start.placeIds);
+	const current = {
+		title,
+		description,
+		types,
+		dateKind,
+		dateStart,
+		dateEnd,
+		precision,
+		approximate,
+		tags,
+		personIds,
+		placeIds,
+	};
+	const { version: currentVersion, remember } = useFormBase({
+		loaded: version === undefined ? undefined : { version, content: content(start) },
+		current: content(current),
+		state,
+		latest: state.latest && {
+			version: state.latest.version,
+			content: content(fields(fromView(state.latest.working))),
+		},
+		load: (loaded) => {
+			const next = fields(loaded);
+			setTitle(next.title);
+			setDescription(next.description);
+			setTypes(next.types);
+			setDateKind(next.dateKind);
+			setDateStart(next.dateStart);
+			setDateEnd(next.dateEnd);
+			setPrecision(next.precision);
+			setApproximate(next.approximate);
+			setTags(next.tags);
+			setPersonIds(next.personIds);
+			setPlaceIds(next.placeIds);
+		},
+	});
 	const invalid = (field: string) => state.status === "invalid" && state.fields?.includes(field);
 	return (
-		<form onSubmit={submitWithoutReset(submit)}>
+		<form
+			onSubmit={submitWithoutReset((data) => {
+				remember();
+				submit(data);
+			})}
+		>
 			{id && <input type="hidden" name="id" value={id} />}
 			{currentVersion !== undefined && (
 				<input type="hidden" name="version" value={currentVersion} />
