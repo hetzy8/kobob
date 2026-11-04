@@ -6,15 +6,15 @@ production member is the first administrator; no real family content exists.
 
 ## Current slice
 
-Implemented: Next.js page shells for Home, About Yaki and Achievements;
-the published-item Archive pages; sign-in and verification pages; Hebrew RTL
+Implemented: Next.js page shells for Home and Life story (About);
+public search and published-item pages; sign-in and verification pages; Hebrew RTL
 root; a protected family shell; validated server configuration; Prisma
 membership/session/verification schema and migration; Better Auth
 confirmation links; fresh membership/role checks; durable issuance throttles;
 logout retry that hides private UI on failure.
 
-Home, About and Achievements are honest empty shells; `/archive` and
-`/archive/[id]` show published items. Interface
+Home and Life story are honest empty shells; `/search` and
+`/items/[id]` show published items only. Interface
 copy is Hebrew in `src/locales/he.ts`, including navigation, sign-in and error
 states. Yoram requested the shorter Achievements label and plain Sign in.
 The Hebrew display name was supplied explicitly by Yoram. No biography,
@@ -33,6 +33,14 @@ strings under `copy.items` were approved by Yoram on 2026-11-04.
 Checks at this slice: 76 unit tests, 60 integration tests, 28 browser tests
 (11 existing and 17 for item editing), lint, typecheck and the webpack build
 pass (Node 20 locally; the project targets Node 24).
+
+Public navigation and search (2026-11-05, phase 2 slice 1): visitors see Life
+story and Search; signed-in members also see Archive, which opens `/family`.
+Achievements and the public `/archive` were removed. `/search` matches the
+published revision's text, tags, non-family-only people, places and years
+(`src/services/search.ts`). The `searchPage` strings await Yoram's approval.
+Checks at this slice: 81 unit, 65 integration and 30 browser tests, lint,
+typecheck and the webpack build pass.
 
 ## Toolchain and engineering choices
 

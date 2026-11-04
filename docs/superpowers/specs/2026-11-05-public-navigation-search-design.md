@@ -2,6 +2,7 @@
 
 **Date:** 2026-11-05
 **Status:** approved design (Yoram, 2026-11-05)
+**Implemented:** 2026-11-05 on `feat/public-search`.
 **Roadmap:** phase 2, slice 1 of 5 in [ROADMAP.md](../../ROADMAP.md)
 **Depends on:** v0.3.0 (item editing, published revisions, family-only people);
 [item editing design](2026-11-03-item-editing-design.md)
