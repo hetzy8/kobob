@@ -80,7 +80,7 @@ export const copy = {
 		private: "פרטי",
 		public: "ציבורי",
 		unpublishedEdits: "נערך מאז הפרסום",
-		// Pending Yoram's approval (media import, stage 1).
+		// Approved by Yoram, 2026-11-05 (media import, stage 1).
 		rights: "זכויות",
 		rightsNames: { unknown: "לא ידוע", needs_clarification: "נדרש בירור", cleared: "אושרו" },
 		markRightsCleared: "סימון שהזכויות אושרו",

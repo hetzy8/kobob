@@ -160,7 +160,15 @@ export async function changeItemStatus(
 	} catch (error) {
 		if (isAccessError(error)) redirect("/sign-in");
 		if (error instanceof Error && error.message === "CONFLICT") {
-			revalidatePath(`/family/items/${id}/edit`);
+			// As in saveItem: revalidating would re-render an archived item's page
+			// without the form, dropping the member's input and this message.
+			const latest = await editorialService()
+				.getItem(id)
+				.catch(() => undefined);
+			if (latest?.state !== "archived") {
+				revalidatePath("/family");
+				revalidatePath(`/family/items/${id}/edit`);
+			}
 			return { status: "conflict" };
 		}
 		return { status: "failed" };

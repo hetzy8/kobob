@@ -2169,6 +2169,8 @@ export const makeDisplayCopy = (input: Uint8Array) => toJpeg(input, 2400, 85);
 
 ### Task 10: Copy, verify and resume
 
+> **Open before implementing (Codex, PR #30):** `applyCatalog` refreshes a changed catalog row but keeps the existing `MediaFile` placeholder. Decide how corrected Drive ids, sizes, hashes and newly available saved copies reconcile with the typed file record, so the two cannot disagree when copying starts. The code below reads the Drive id from the row, and size and hash from the file record.
+
 **Files:**
 - Create: `src/import/copy-media.ts`, `scripts/import-media.ts`
 - Modify: `package.json`, `docs/DEVELOPMENT.md`

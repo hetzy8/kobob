@@ -432,6 +432,29 @@ test("a save on an item archived meanwhile keeps the input and shows the conflic
 	);
 });
 
+test("a status change on an item archived meanwhile keeps the input and shows the conflict", async ({
+	browser,
+}) => {
+	const a = await newMemberPage(browser, "a@example.test");
+	const b = await newMemberPage(browser, "b@example.test");
+	const id = await createItem(a, "Synthetic status soon archived");
+	await expect(a.getByRole("button", { name: copy.items.save })).toBeEnabled();
+	await a.getByLabel(copy.items.title).fill("Typed before archive");
+	await b.goto(`/family/items/${id}/edit`);
+	await expect(
+		b.getByRole("button", { name: copy.items.archive }),
+	).toBeEnabled();
+	await b.getByRole("button", { name: copy.items.archive }).click();
+	await expect(
+		b.getByRole("button", { name: copy.items.restore }),
+	).toBeVisible();
+	await a.getByRole("button", { name: copy.items.markNeedsReview }).click();
+	await expect(a.getByText(copy.items.conflict)).toBeVisible();
+	await expect(a.getByLabel(copy.items.title)).toHaveValue(
+		"Typed before archive",
+	);
+});
+
 // Any action re-renders the page with fresh props. A form must keep posting
 // the version of the values it loaded, never the refreshed one, unless it
 // also shows the refreshed values.
