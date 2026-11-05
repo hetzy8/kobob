@@ -143,9 +143,10 @@ export async function applyCatalog(
 		let stale = false;
 		if (existing.visibility === "public") {
 			if (!record.publish) report.publicNoLongerEligible.push(record.kobId);
+			const planned = record.source;
 			stale =
 				existing.publishedRevision?.title !== record.title ||
-				(record.source !== null && !existing.sources.some((source) => sameSource(source, record.source!)));
+				(planned !== null && !existing.sources.some((source) => sameSource(source, planned)));
 			if (stale) report.staleCards.push(record.kobId);
 		}
 		if (stale && existing.version === 1) continue;

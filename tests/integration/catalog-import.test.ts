@@ -181,7 +181,7 @@ it("reports a stale public card on every run and does not refresh its catalog ro
 	}
 	expect((await stored("KOB-000002")).catalogRecord?.row).toEqual({ catalog: { note: "PRIVATE-NOTE" }, web: null });
 	const base = card("KOB-000002");
-	const moved = { ...base, source: { ...base.source!, url: "https://example.test/moved" } };
+	const moved = { ...base, source: { url: "https://example.test/moved", publisher: "Press", author: "", publishedText: "", license: "" } };
 	expect((await applyCatalog(db, [moved], "h4", { apply: false })).staleCards).toEqual(["KOB-000002"]);
 	expect((await applyCatalog(db, [base], "h5", { apply: false })).staleCards).toEqual([]);
 });

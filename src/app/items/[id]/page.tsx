@@ -35,6 +35,7 @@ export default async function PublicItem({
 			)}
 			{item.tags.length > 0 && <p>{item.tags.join(", ")}</p>}
 			{item.sources.filter((source) => isSafeSourceUrl(source.url)).map((source, index) => (
+				// biome-ignore lint/suspicious/noArrayIndexKey: the same URL can be listed twice, so the index keeps keys unique
 				<p key={`${index}-${source.url}`}>
 					{source.publisher && `${copy.items.publisher}: ${source.publisher} · `}
 					{source.author && `${copy.items.author}: ${source.author} · `}
