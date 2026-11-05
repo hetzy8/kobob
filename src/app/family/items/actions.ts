@@ -12,7 +12,7 @@ import type {
 import type { ItemInput } from "@/services/item-input";
 
 export type ItemFormState = {
-	status: "idle" | "saved" | "invalid" | "conflict" | "failed";
+	status: "idle" | "saved" | "invalid" | "conflict" | "failed" | "rights";
 	version?: number;
 	fields?: string[];
 	latest?: FamilyItem;
@@ -116,6 +116,38 @@ export async function changeItemState(
 		if (error instanceof Error && error.message === "CONFLICT") {
 			revalidatePath("/family");
 			revalidatePath("/family/archived");
+			revalidatePath(`/family/items/${id}/edit`);
+			return { status: "conflict" };
+		}
+		if (error instanceof Error && error.message === "RIGHTS_NOT_CLEARED")
+			return { status: "rights" };
+		return { status: "failed" };
+	}
+}
+
+const rightsValues = ["unknown", "needs_clarification", "cleared"] as const;
+const reviewValues = ["needs_review", "reviewed"] as const;
+
+export async function changeItemStatus(
+	_previous: ItemFormState,
+	data: FormData,
+): Promise<ItemFormState> {
+	const id = String(data.get("id") ?? "");
+	const expected = Number(data.get("version"));
+	const rights = rightsValues.find((value) => value === data.get("rights"));
+	const review = reviewValues.find((value) => value === data.get("review"));
+	if (!rights && !review) return { status: "failed" };
+	try {
+		const service = editorialService();
+		const { version } = rights
+			? await service.setRightsStatus(id, expected, rights)
+			: await service.setReviewStatus(id, expected, review as (typeof reviewValues)[number]);
+		revalidatePath("/family");
+		revalidatePath(`/family/items/${id}/edit`);
+		return { status: "saved", version };
+	} catch (error) {
+		if (isAccessError(error)) redirect("/sign-in");
+		if (error instanceof Error && error.message === "CONFLICT") {
 			revalidatePath(`/family/items/${id}/edit`);
 			return { status: "conflict" };
 		}

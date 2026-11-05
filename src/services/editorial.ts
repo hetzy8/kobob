@@ -23,6 +23,8 @@ export type EditorialAction =
 	| "make-private"
 	| "archive"
 	| "restore";
+export type RightsValue = "unknown" | "needs_clarification" | "cleared";
+export type ReviewValue = "needs_review" | "reviewed";
 export type ItemSummary = {
 	id: string;
 	title: string;
@@ -35,6 +37,9 @@ export type FamilyItem = {
 	visibility: "private" | "public";
 	version: number;
 	hasUnpublishedEdits: boolean;
+	origin: "family" | "internet";
+	rightsStatus: RightsValue;
+	reviewStatus: ReviewValue;
 	working: RevisionView;
 };
 export type PersonRecord = {
@@ -59,6 +64,8 @@ type ItemRow = {
 	state: "active" | "archived";
 	visibility: "private" | "public";
 	version: number;
+	origin: "family" | "internet";
+	rightsStatus: RightsValue;
 	workingRevisionId: string | null;
 	publishedRevisionId: string | null;
 };
@@ -77,14 +84,17 @@ function transition(
 	if (action === "restore")
 		return item.state === "archived" ? { state: "active" } : null;
 	if (item.state !== "active") return null;
-	if (action === "publish")
-		return item.visibility === "private" || unpublishedEdits(item)
-			? {
-					visibility: "public",
-					publishedRevisionId: item.workingRevisionId,
-					publishedAt: new Date(),
-				}
-			: null;
+	if (action === "publish") {
+		if (item.visibility !== "private" && !unpublishedEdits(item)) return null;
+		// Internet items are already public at their source (Yoram, 2026-11-05).
+		if (item.origin === "family" && item.rightsStatus !== "cleared")
+			throw new Error("RIGHTS_NOT_CLEARED");
+		return {
+			visibility: "public",
+			publishedRevisionId: item.workingRevisionId,
+			publishedAt: new Date(),
+		};
+	}
 	if (action === "make-private")
 		return item.visibility === "public"
 			? { visibility: "private", publishedRevisionId: null, publishedAt: null }
@@ -290,6 +300,22 @@ export function createEditorialService(
 				await audit(tx, actor.id, "item", id, action);
 				return { id, version: expectedVersion + 1 };
 			}),
+		setRightsStatus: (id: string, expectedVersion: number, status: RightsValue) =>
+			run(async (tx, actor) => {
+				await claim(tx, id, expectedVersion, (item) =>
+					item.state === "active" ? { rightsStatus: status } : null,
+				);
+				await audit(tx, actor.id, "item", id, `rights-${status}`);
+				return { id, version: expectedVersion + 1 };
+			}),
+		setReviewStatus: (id: string, expectedVersion: number, status: ReviewValue) =>
+			run(async (tx, actor) => {
+				await claim(tx, id, expectedVersion, (item) =>
+					item.state === "active" ? { reviewStatus: status } : null,
+				);
+				await audit(tx, actor.id, "item", id, `review-${status}`);
+				return { id, version: expectedVersion + 1 };
+			}),
 		getItem: (id: string) =>
 			run(async (tx): Promise<FamilyItem> => {
 				const item = await tx.item.findUnique({
@@ -303,6 +329,9 @@ export function createEditorialService(
 					visibility: item.visibility,
 					version: item.version,
 					hasUnpublishedEdits: unpublishedEdits(item),
+					origin: item.origin,
+					rightsStatus: item.rightsStatus,
+					reviewStatus: item.reviewStatus,
 					working: toRevisionView(item.workingRevision, { publicOnly: false }),
 				};
 			}),

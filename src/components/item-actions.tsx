@@ -41,6 +41,7 @@ export function ItemActions({ item }: { item: FamilyItem }) {
 			<p role="status">
 				{state.status === "conflict" && copy.items.conflict}
 				{state.status === "failed" && copy.items.failed}
+				{state.status === "rights" && copy.items.rightsNotCleared}
 			</p>
 		</div>
 	);

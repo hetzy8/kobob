@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { editorialService } from "@/services/editorial-runtime";
 import type { FamilyItem } from "@/services/editorial";
 import { ItemForm } from "@/components/item-form";
+import { ItemStatusActions } from "@/components/item-status-actions";
 import { ItemActions } from "@/components/item-actions";
 import { SessionPanel } from "@/components/session-panel";
 import { copy } from "@/locales/he";
@@ -45,6 +46,7 @@ export default async function EditItem({ params }: { params: Promise<{ id: strin
 						/>
 					)}
 					{item.state === "archived" && <h2>{item.working.title}</h2>}
+					{item.state === "active" && <ItemStatusActions item={item} />}
 					<ItemActions item={item} />
 				</>
 			)}

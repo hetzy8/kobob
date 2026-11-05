@@ -63,8 +63,23 @@ async function createItem(page: Page, title: string) {
 	await page.getByLabel(copy.items.typeNames.picture).check();
 	await page.getByRole("button", { name: copy.items.save }).click();
 	await page.waitForURL(/\/family\/items\/[^/]+\/edit$/);
-	return page.url().split("/").at(-2) as string;
+	const id = page.url().split("/").at(-2) as string;
+	await db.item.update({ where: { id }, data: { rightsStatus: "cleared" } });
+	return id;
 }
+
+test("explains that publishing needs cleared rights, then allows it", async ({ page }) => {
+	await signIn(page, "rights@example.test");
+	const id = await createItem(page, "Synthetic rights item");
+	await db.item.update({ where: { id }, data: { rightsStatus: "unknown" } });
+	await page.reload();
+	await page.getByRole("button", { name: copy.items.publish }).click();
+	await expect(page.getByText(copy.items.rightsNotCleared)).toBeVisible();
+	await page.getByRole("button", { name: copy.items.markRightsCleared }).click();
+	await expect(page.getByRole("button", { name: copy.items.undoRightsCleared })).toBeVisible();
+	await page.getByRole("button", { name: copy.items.publish }).click();
+	await expect(page.getByText(copy.items.public).first()).toBeVisible();
+});
 
 test("publishing shows the published version until the next publish", async ({
 	page,

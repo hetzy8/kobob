@@ -34,7 +34,7 @@ const input = (title = "Synthetic title"): ItemInput => ({
 	placeIds: [],
 });
 
-async function member(email: string) {
+async function serviceFor(email: string) {
 	const user = await db.user.create({
 		data: { email, emailVerified: true },
 	});
@@ -43,6 +43,22 @@ async function member(email: string) {
 		role: "member",
 		accessVersion: user.accessVersion,
 	}));
+}
+const rawCreate = (service: Awaited<ReturnType<typeof serviceFor>>) =>
+	service.createItem(input());
+async function member(email: string) {
+	const service = await serviceFor(email);
+	return {
+		...service,
+		createItem: async (value: ItemInput) => {
+			const created = await service.createItem(value);
+			await db.item.update({
+				where: { id: created.id },
+				data: { rightsStatus: "cleared" },
+			});
+			return created;
+		},
+	};
 }
 
 it("creates items as private and lets another member edit them", async () => {
@@ -375,4 +391,49 @@ it("refuses non-members on people and places", async () => {
 			anonymous.savePlace({ name: "x", otherNames: [], latitude: null, longitude: null }),
 	])
 		await expect(operation()).rejects.toThrow("UNAUTHORIZED");
+});
+
+it("refuses to publish a family item until rights are cleared", async () => {
+	const service = await serviceFor("a@example.test");
+	const { id } = await rawCreate(service);
+	await expect(service.transitionItem(id, 1, "publish")).rejects.toThrow("RIGHTS_NOT_CLEARED");
+	expect((await db.item.findUniqueOrThrow({ where: { id } })).visibility).toBe("private");
+	const { version } = await service.setRightsStatus(id, 1, "cleared");
+	await service.transitionItem(id, version, "publish");
+	expect((await db.item.findUniqueOrThrow({ where: { id } })).visibility).toBe("public");
+});
+
+it("blocks republishing after rights are withdrawn but keeps the public version", async () => {
+	const service = await serviceFor("b@example.test");
+	const { id } = await rawCreate(service);
+	const cleared = await service.setRightsStatus(id, 1, "cleared");
+	const published = await service.transitionItem(id, cleared.version, "publish");
+	const withdrawn = await service.setRightsStatus(id, published.version, "needs_clarification");
+	const edited = await service.updateItem(id, withdrawn.version, input("Edited"));
+	await expect(service.transitionItem(id, edited.version, "publish")).rejects.toThrow("RIGHTS_NOT_CLEARED");
+	expect((await db.item.findUniqueOrThrow({ where: { id } })).visibility).toBe("public");
+});
+
+it("lets internet items publish without cleared rights", async () => {
+	const service = await serviceFor("c@example.test");
+	const { id } = await rawCreate(service);
+	await db.item.update({ where: { id }, data: { origin: "internet" } });
+	await service.transitionItem(id, 1, "publish");
+	expect((await db.item.findUniqueOrThrow({ where: { id } })).visibility).toBe("public");
+});
+
+it("rejects status changes on a stale version or an archived item", async () => {
+	const service = await serviceFor("d@example.test");
+	const { id } = await rawCreate(service);
+	await expect(service.setRightsStatus(id, 9, "cleared")).rejects.toThrow("CONFLICT");
+	await service.transitionItem(id, 1, "archive");
+	await expect(service.setReviewStatus(id, 2, "reviewed")).rejects.toThrow("CONFLICT");
+});
+
+it("audits status changes with ids and action names only", async () => {
+	const service = await serviceFor("e@example.test");
+	const { id } = await rawCreate(service);
+	await service.setRightsStatus(id, 1, "cleared");
+	const rows = await db.editorialAudit.findMany({ where: { targetId: id } });
+	expect(rows.map((row) => row.action)).toContain("rights-cleared");
 });

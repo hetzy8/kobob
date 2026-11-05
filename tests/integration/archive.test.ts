@@ -21,11 +21,19 @@ afterAll(async () => {
 });
 async function editor() {
 	const user = await db.user.create({ data: { email: "a@example.test", emailVerified: true } });
-	return createEditorialService(db, async () => ({
+	const service = createEditorialService(db, async () => ({
 		id: user.id,
 		role: "member",
 		accessVersion: user.accessVersion,
 	}));
+	return {
+		...service,
+		createItem: async (value: ItemInput) => {
+			const created = await service.createItem(value);
+			await db.item.update({ where: { id: created.id }, data: { rightsStatus: "cleared" } });
+			return created;
+		},
+	};
 }
 const input = (title: string, extra: Partial<ItemInput> = {}): ItemInput => ({
 	title,
