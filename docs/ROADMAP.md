@@ -23,9 +23,9 @@ book is planned to premiere there.
 |---|---|---|---|---|
 | 0 | Foundation | Hebrew RTL site, invitation-only sign-in by email, member administration, production on Vercel + Neon | Tasks 1–2 | Done (v0.2.0, 2026-11-02) |
 | 1 | Item editing | Archive items with metadata, private-by-default, shared editing with conflict checks, publish / make private / archive / restore, minimal public archive and item pages | Task 3 (items) | Done (v0.3.0, 2026-11-04) |
-| 2 | Public tabs | New site structure (Yoram, 2026-11-05): Home, Life story, Timeline, Map, From the internet and Search for everyone; Archive for family members only; Achievements dropped. Published items reach tabs automatically from their details. Slices: 1 navigation, family-only archive and search ([spec](superpowers/specs/2026-11-05-public-navigation-search-design.md)); 2 timeline; 3 map; 4 internet sources; 5 life-story editing | Task 3 (rest), Task 4 | Slice 1 designed |
-| 3 | Media storage | Private R2 storage, uploads with validation, safe derivatives (thumbnails, web video/audio), playback inside item pages, external sources with attribution | Task 5 | Not started |
-| 4 | Collection import | The existing collection (now in Drive) and found internet material brought in as private items with their metadata, reviewed item by item | Task 6 | Not started |
+| 2 | Public tabs | New site structure (Yoram, 2026-11-05): Home, Life story, Timeline, Map, From the internet and Search for everyone; Archive for family members only; Achievements dropped. Published items reach tabs automatically from their details. Slices: 1 navigation, family-only archive and search ([spec](superpowers/specs/2026-11-05-public-navigation-search-design.md)); 2 timeline; 3 map; 4 internet sources; 5 life-story editing | Task 3 (rest), Task 4 | Slice 1 released (v0.4.0, 2026-11-05); slices 2–5 follow media and import |
+| 3 | Media storage | Private R2 storage, uploads with validation, safe derivatives (thumbnails, web video/audio), playback inside item pages, external sources with attribution ([spec](superpowers/specs/2026-11-05-media-import-design.md), stage 2) | Task 5 | In progress (stage 1 built; stage 2 not started) |
+| 4 | Collection import | The existing collection (now in Drive) and found internet material brought in as private items with their metadata, reviewed item by item ([spec](superpowers/specs/2026-11-05-media-import-design.md), stage 1: catalog import with a dry run; no real data imported yet) | Task 6 | In progress |
 | 5 | Discovery | Search filters beyond the year (type, people, places, tags); people and place pages. Basic search, timeline and map moved to phase 2 | Task 4, extended | Not started |
 | 6 | The book | Yaki's book presented on the site (form to decide: reader, chapters, excerpts or download) | new | Idea; needs design |
 | 7 | The film | A film made from the book, presented on the site | new | Idea; production is outside this repository |
@@ -56,6 +56,9 @@ Decided in phase 1 so later views do not need a data migration:
 ## Rules carried into every phase
 
 - Everything starts private; only a family member's deliberate action publishes.
+  Exception (Yoram, 2026-11-05): imported internet records that explicitly name
+  their subject publish as link cards without family review; their summaries
+  and saved copies stay family-only.
 - No automatic face recognition or guessed identities; people are tagged by
   family members.
 - Naming living people, and showing them publicly, needs the same review as

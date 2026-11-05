@@ -180,6 +180,30 @@ The PR workflow is bounded to 15 minutes, read-only repository permissions,
 one Chromium browser, isolated PostgreSQL and no live email/storage. No deployment
 or ops mutation is included. Its remote run is not verified until GitHub executes it.
 
+## Media and catalog import (stage 1)
+
+Design: [media import](superpowers/specs/2026-11-05-media-import-design.md);
+plan: [media import plan](superpowers/plans/2026-11-05-media-import.md). Built
+on `feat/catalog-import`; it has not been run against real data.
+
+- **Models:** `ExternalSource` (link, publisher, author, license), `MediaFile`
+  (original file record with storage key, size and hash), `ItemCatalogRecord`
+  (the catalog row, family reads only) and `ImportRun` (counts only).
+- **Rights rule:** a family item cannot be published until a family member
+  marks its rights as cleared. Internet records are not subject to it.
+- **Importer:** `npm run import:catalog -- --catalog <csv> --web <csv>
+  --drive-key <key.json> --report <path>` with `DATABASE_URL` set. It is a dry
+  run unless `--apply` and a matching `--confirm-host` are given. A rerun
+  creates no duplicates and never changes website edits; changed rows on
+  edited items are reported as conflicts. Probable system files are confirmed
+  by name and format before they are excluded. The Drive service account
+  needs read-only access to the shared folder.
+- **Report rule:** the console prints counts only. Row detail goes to the
+  `--report` file, which must be outside the repository.
+- **Settings for Yoram to add to `.env.example`** (agents cannot edit it): none.
+  The only new setting is the operator-only `--drive-key` path, passed on the
+  command line; keep the key file outside the repository.
+
 ## Next work
 
 Implement explicit admin bootstrap/member management, then shared editorial

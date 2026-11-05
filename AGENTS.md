@@ -18,7 +18,10 @@ are in production (v0.3.0, 2026-11-04; releases follow OPERATIONS.md). Yoram
 authorized development on 2026-11-01. See docs/DEVELOPMENT.md for exact implemented scope and
 checks; do not confuse page shells with a completed archive. Do not provision
 services, import real data, change DNS, send invitations or deploy without the
-corresponding explicit instruction. Preserve requirements, proposals, open
+corresponding explicit instruction. The media and catalog import (stage 1 is
+built on `feat/catalog-import`; no real data has been imported) follows
+`docs/superpowers/specs/2026-11-05-media-import-design.md` and its plan.
+Preserve requirements, proposals, open
 decisions and implemented behavior as different statuses.
 
 ## Language and family content
@@ -52,7 +55,7 @@ decisions and implemented behavior as different statuses.
 6. Missing data and failed operations are reported honestly. No invented
    success, fabricated family content, or claim that a backup is restorable
    without a tested restore.
-7. New/imported/restored items are private. Public reads check current visibility;
+7. New/imported/restored items are private. Exception (Yoram, 2026-11-05): imported internet records that explicitly name their subject publish as link cards without family review; their summaries and saved copies stay family-only. Public reads check current visibility;
    private reads and all family mutations require active verified membership.
    Concurrent edits/transitions check revisions atomically and preserve unsaved input.
 8. Public delivery, external embeds and domain changes must not expose private
