@@ -48,13 +48,15 @@ groups. Preserve original Hebrew values; technical enums can use English
 without losing source values. Do not treat confirmation of a person's
 appearance as approval to display the item.
 
-External research
-records may be links, not downloadable files. Preserve them as source entries,
+External research records may be links, not downloadable files. Preserve them as source entries,
 with attribution and original links. Video/audio uses supported players where
 available; articles can remain metadata/link cards. Do not copy media, scrape
-previews or embed arbitrary sources automatically. Publication requires a
-family member's deliberate action and rights/safe-delivery review. External
-access remains controlled by the publisher. Broken/restricted sources keep
+previews or embed arbitrary sources automatically. Publication of family
+items requires a family member's deliberate action and rights/safe-delivery
+review. Exception (Yoram, 2026-11-05): an internet record that explicitly names
+Yaki publishes as a link card at import, without family review; its summary and
+any saved copy stay family-only. External access remains controlled by the
+publisher. Broken/restricted sources keep
 explicit states without invented descriptions or rights. Do not merge duplicate
 records or delete originals automatically.
 
@@ -68,8 +70,8 @@ records or delete originals automatically.
 2. **Dry-run import.** Validate all KOB IDs and source statuses; report expected
    creates/updates/errors without publishing or mutating source files.
    Preserve source version and import-run evidence outside public Git.
-3. **Private catalog import.** Idempotently load all records and source review
-   decisions. Never overwrite later website edits on retry; report conflicts
+3. **Catalog import.** Idempotently load all records and source review
+   decisions; family records are private, internet link cards are public. Never overwrite later website edits on retry; report conflicts
    for administrator resolution. Reconcile counts and rejected rows.
 4. **Copy and verify media.** Copy accessible originals without moving/deleting
    Drive sources. Compare bytes and SHA-256; retain explicit missing/failed
@@ -92,10 +94,10 @@ records or delete originals automatically.
 
 Use synthetic fixtures in public tests. Prove import idempotence, editorial
 conflict preservation, missing-file reporting, hash mismatch handling, safe
-retry and duplicate-record preservation. All imported records start private, except those internet cards.
-Public search, detail, thumbnails and media independently enforce current
+retry and duplicate-record preservation. Imported family records start private; the only imported records that publish
+are the internet link cards above. Public search, detail, thumbnails and media independently enforce current
 public visibility; family routes require active verified membership. Imported
-records and restored records never become public implicitly. Retain stable
+family records and restored records never become public implicitly. Retain stable
 KOB/item IDs and source references across a future site-domain change.
 
 Before cutover, Drive remains the recovery source. After website edits begin,

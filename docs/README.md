@@ -19,7 +19,7 @@ All documents are English. The website itself will be Hebrew RTL.
 | [Public navigation and search design](superpowers/specs/2026-11-05-public-navigation-search-design.md) | Tabs, family-only Archive, public search and item pages | Approved; implemented on `feat/public-search` |
 | [Public navigation and search plan](superpowers/plans/2026-11-05-public-navigation-search.md) | Tasks for phase 2 slice 1 | All steps done |
 | [Media and import design](superpowers/specs/2026-11-05-media-import-design.md) | Private media storage and the catalog import, in stages | Stage 1 (catalog import) built; not run on real data |
-| [Media and import plan](superpowers/plans/2026-11-05-media-import.md) | Tasks for stage 1 (catalog import) and stage 2 (storage and delivery) | Stage 1 tasks done; Gate A pending |
+| [Media and import plan](superpowers/plans/2026-11-05-media-import.md) | Tasks in four stages: catalog import, storage and delivery, file copy, review pages | Stage 1 tasks done; Gate A pending |
 | [Operations](OPERATIONS.md) | Secrets, costs, backups, releases, domain and launch gates | In production; release records, Resend lessons, kobob.org plan |
 
 ## Source of truth

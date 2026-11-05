@@ -3,6 +3,13 @@
 **Date:** 2026-11-01
 **Repository:** hetzy8/kobob
 **Status:** initial local application/access foundation implemented; full archive/editorial flows and final presentation pending; not deployed
+**Amendment (2026-11-05, Yoram):** imported internet records that explicitly name
+Yaki publish as link cards without family review. This supersedes the
+statements in sections 2, 3 and 8 that every imported item is private with no
+automatic publication. Importing family records stays private. The 1,374 record
+count in section 2 was later corrected to 1,379. See the
+[media import design](2026-11-05-media-import-design.md).
+
 **Initial intended domain:** kobobhetz.org; ownership, DNS and deployment unverified
 
 ## 1. Intent and evidence

@@ -34,6 +34,7 @@ The spec was updated to match these on approval (2026-11-05):
 - **BMP:** `sharp` has no BMP input, so the 2 BMP files stay download-only instead of getting a display copy.
 - **Rights and review actions ship in stage 1,** not stage 4. The rights rule would otherwise stop the family publishing anything after the stage 1 release.
 - **The viewer ships in stage 4,** not stage 2. Stage 2 measures through direct `/api/media/<id>` links, so nothing is shown before files exist.
+- **Lock files are confirmed by name, size and an owner-name length byte,** not by size alone.
 - **The copy holds one file in memory at a time** rather than streaming. The largest file is about 220 MB, it runs on Yoram's Mac, and it keeps verification simple. Size and hash are still checked before and after upload.
 
 ## File map
@@ -1456,6 +1457,7 @@ Verify the wiring without real data. Run `npm run typecheck`; expected: PASS. Ru
 - [ ] Open the PR into `dev`. Yoram runs the Codex review. Reply to each point; merge on CI green plus the reply, on Yoram's word.
 - [ ] Yoram approves the Hebrew strings; then a release to `main` on Yoram's go, because production needs the migration. Follow OPERATIONS.md.
 - [ ] Yoram creates a Google Cloud service account and shares the collection folder with it as Viewer. The key file stays outside the repository.
+- [ ] Before the release, count public items in production by query, because the rights rule applies to their next publish.
 - [ ] Yoram exports the "catalog" and "web sources" tabs as CSV into a dated folder outside the repository, and runs the dry run against the local development database:
 
 ```sh
@@ -1464,7 +1466,8 @@ DATABASE_URL='postgresql://kobob_dev:synthetic-local-dev-only@127.0.0.1:55440/ko
 
 Expected, if nothing changed: 0 errors, 165 excluded, 1,214 items, 81 published, 1,129 files. Differences go to Yoram with the report; they are not "fixed" silently. Yoram reads the report's `publicCards` list, which is exactly what visitors will see, and decides the two cataloged dates listed in the spec.
 
-- [ ] On Yoram's explicit go, apply to the local database, then to production using `KOBOB_DIRECT_URL` through Bitwarden as in the OPERATIONS.md bootstrap command, with `--apply --confirm-host=<host>`. Verify counts by query, then check a card on the public site and search as an anonymous visitor.
+- [ ] Before the production apply, run a production dry run and have Yoram read its report. Yoram resolves `selectedAndPublishing` (site-selected records that would publish) first.
+- [ ] On Yoram's explicit go, apply to the local database, then to production using `KOBOB_DIRECT_URL` through Bitwarden as in the OPERATIONS.md bootstrap command, with `--apply --confirm-host=<host> --confirm-snapshot=<hash from the reviewed dry run>`. Verify counts by query, then check a card on the public site and search as an anonymous visitor.
 
 ---
 
