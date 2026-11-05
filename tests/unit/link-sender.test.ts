@@ -86,4 +86,75 @@ describe("createLinkSender", () => {
 			expect(tasks).toHaveLength(0);
 		},
 	);
+
+	describe("EMAIL_IN_DEVELOPMENT opt-in", () => {
+		const optedIn = {
+			...validEnv,
+			NODE_ENV: "development",
+			EMAIL_IN_DEVELOPMENT: "1",
+			SITE_ORIGIN: "http://localhost:3000",
+		};
+
+		it.each([
+			"http://localhost:3000",
+			"http://127.0.0.1:3000",
+			"http://[::1]:3000",
+		])("delivers live after the response from %s", async (origin) => {
+			const { sender, tasks, deliver, makeSender } = setup({
+				...optedIn,
+				SITE_ORIGIN: origin,
+			});
+			await sender(message);
+			expect(deliver).not.toHaveBeenCalled();
+			expect(makeSender).toHaveBeenCalledWith({
+				apiKey: "re_synthetic",
+				from: "קובוב <no-reply@mail.kobob.example>",
+			});
+			await tasks[0]();
+			expect(deliver).toHaveBeenCalledWith(message);
+		});
+
+		it.each<[string, Record<string, string | undefined>]>([
+			["the setting is absent", { EMAIL_IN_DEVELOPMENT: undefined }],
+			["the setting is not exactly 1", { EMAIL_IN_DEVELOPMENT: "true" }],
+			["browser tests are running", { KOBOB_E2E: "1" }],
+			["NODE_ENV is test", { NODE_ENV: "test" }],
+			["NODE_ENV is unset", { NODE_ENV: undefined }],
+			["the origin is missing", { SITE_ORIGIN: undefined }],
+			["the origin is malformed", { SITE_ORIGIN: "not a url" }],
+			["the origin is remote", { SITE_ORIGIN: "http://kobob.example" }],
+			["the origin is https", { SITE_ORIGIN: "https://localhost:3000" }],
+		])("stays off when %s", async (_case, override) => {
+			const { sender, tasks, makeSender } = setup({ ...optedIn, ...override });
+			await expect(sender(message)).rejects.toThrow(
+				/^EMAIL_DELIVERY_NOT_CONFIGURED$/,
+			);
+			expect(makeSender).not.toHaveBeenCalled();
+			expect(tasks).toHaveLength(0);
+		});
+
+		it("rejects and logs when opted in with invalid email settings", async () => {
+			const log = vi.spyOn(console, "error").mockImplementation(() => {});
+			const { sender, makeSender } = setup({
+				...optedIn,
+				RESEND_API_KEY: undefined,
+			});
+			expect(makeSender).not.toHaveBeenCalled();
+			await expect(sender(message)).rejects.toThrow(
+				/^EMAIL_DELIVERY_NOT_CONFIGURED$/,
+			);
+			expect(log).toHaveBeenCalledWith("[email] delivery not configured");
+		});
+
+		it("leaves production unchanged when the setting is also present", async () => {
+			const { sender, tasks, makeSender } = setup({
+				...validEnv,
+				EMAIL_IN_DEVELOPMENT: "1",
+				SITE_ORIGIN: "https://kobob.example",
+			});
+			await sender(message);
+			expect(makeSender).toHaveBeenCalledOnce();
+			expect(tasks).toHaveLength(1);
+		});
+	});
 });
