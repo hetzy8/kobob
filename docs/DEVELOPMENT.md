@@ -1,20 +1,20 @@
 # Local development and verification
 
-**Status (2026-11-03):** access foundation, member administration and sign-in
-email are in production (v0.2.0, see OPERATIONS.md). The only production
-member is the first administrator; no real family content exists.
+**Status (2026-11-04):** access foundation, member administration, sign-in
+email and item editing are in production (v0.3.0, see OPERATIONS.md). The only
+production member is the first administrator; no real family content exists.
 
 ## Current slice
 
-Implemented: Next.js page shells for Home, About Yaki and Achievements;
-the published-item Archive pages; sign-in and verification pages; Hebrew RTL
+Implemented: Next.js page shells for Home and Life story (About);
+public search and published-item pages; sign-in and verification pages; Hebrew RTL
 root; a protected family shell; validated server configuration; Prisma
 membership/session/verification schema and migration; Better Auth
 confirmation links; fresh membership/role checks; durable issuance throttles;
 logout retry that hides private UI on failure.
 
-Home, About and Achievements are honest empty shells; `/archive` and
-`/archive/[id]` show published items. Interface
+Home and Life story are honest empty shells; `/search` and
+`/items/[id]` show published items only. Interface
 copy is Hebrew in `src/locales/he.ts`, including navigation, sign-in and error
 states. Yoram requested the shorter Achievements label and plain Sign in.
 The Hebrew display name was supplied explicitly by Yoram. No biography,
@@ -27,12 +27,21 @@ Item editing (2026-11-03): family members create, edit, publish, make private,
 archive and restore archive items with dates, people, places, types and tags.
 Routes: `/family`, `/family/items/new`, `/family/items/[id]/edit`,
 `/family/archived`, `/family/people`, `/family/places`, and the public
-`/archive` and `/archive/[id]`, which show only the published revision. Models:
+`/archive` and `/archive/[id]` (since 2026-11-05 `/search` and `/items/[id]`),
+which show only the published revision. Models:
 `Item`, `ItemRevision`, `Person`, `Place` and `EditorialAudit`. The Hebrew
 strings under `copy.items` were approved by Yoram on 2026-11-04.
 Checks at this slice: 76 unit tests, 60 integration tests, 28 browser tests
 (11 existing and 17 for item editing), lint, typecheck and the webpack build
 pass (Node 20 locally; the project targets Node 24).
+
+Public navigation and search (2026-11-05, phase 2 slice 1): visitors see Life
+story and Search; signed-in members also see Archive, which opens `/family`.
+Achievements and the public `/archive` were removed. `/search` matches the
+published revision's text, tags, non-family-only people, places and years
+(`src/services/search.ts`). Yoram approved the `searchPage` strings on 2026-11-05.
+Checks at this slice: 82 unit, 65 integration and 30 browser tests, lint,
+typecheck and the webpack build pass.
 
 ## Toolchain and engineering choices
 
@@ -87,16 +96,54 @@ use an isolated development database, a locally generated secret of at least
 files, real member lists or another app's credentials. The migration scripts
 below do not load `.env` files or fall back to `DATABASE_URL`.
 
-Live email is sent only in production, through Resend, when `RESEND_API_KEY`
-and `EMAIL_FROM` pass `readEmailConfig` (`src/lib/runtime.ts`). Development
-and tests never construct the Resend client: browser tests issue synthetic
-links through an injected mock sender, and there is no test mailbox or
-production bypass. Reserved test domains (`example.*`, `test.com`, `.test`,
+Live email is sent through Resend when `RESEND_API_KEY` and `EMAIL_FROM` pass
+`readEmailConfig` (`src/lib/runtime.ts`), in production and in one opt-in local
+case: `EMAIL_IN_DEVELOPMENT=1` under `next dev` with a loopback http
+`SITE_ORIGIN` (Yoram, 2026-11-05, to try real sign-in locally). Without that
+setting, and always in tests, the Resend client is never constructed. Browser
+tests set `KOBOB_E2E=1`, which keeps the opt-in off even if the developer's
+local env file enables it; they issue synthetic links through an injected mock
+sender, and there is no test mailbox or production bypass. Reserved test domains (`example.*`, `test.com`, `.test`,
 `.invalid`, `.local`…) are never sent to, even in production. In production
 delivery runs after the response (`src/lib/link-sender.ts`, Next's `after`),
 so response time cannot reveal membership. Delivery failures are logged as
 codes only; the member always sees the same confirmation so the form cannot
 reveal membership.
+
+### Local sign-in with a development database
+
+`npm run dev` needs a database separate from production and from `kobob_test`,
+which the test suites wipe. A synthetic local example, bound to loopback with a
+named volume so data survives restarts:
+
+```sh
+docker run -d --name kobob-dev --restart unless-stopped \
+  -e POSTGRES_USER=kobob_dev -e POSTGRES_PASSWORD=synthetic-local-dev-only \
+  -e POSTGRES_DB=kobob_dev -p 127.0.0.1:55440:5432 \
+  -v kobob-dev-data:/var/lib/postgresql/data postgres:17.7-alpine
+DATABASE_URL='postgresql://kobob_dev:synthetic-local-dev-only@127.0.0.1:55440/kobob_dev' npx prisma migrate deploy
+```
+
+Put these in `.env.local` (ignored by Git), with a newly generated secret:
+
+| Setting | Value |
+|---|---|
+| `SITE_ORIGIN` | `http://localhost:3000`, and open the site at that same address |
+| `DATABASE_URL` | the `kobob_dev` URL above; never a production database |
+| `AUTH_SECRET` | output of `openssl rand -base64 48` |
+| `EMAIL_IN_DEVELOPMENT` | `1`, only to send real sign-in email locally |
+| `RESEND_API_KEY` | only with the opt-in; prefer a separate sending-only key |
+| `EMAIL_FROM` | only with the opt-in; must use the verified sending domain |
+
+Then create your local administrator and restart `npm run dev`:
+
+```sh
+node --env-file=.env.local --conditions=react-server --import tsx scripts/bootstrap-admin.ts
+```
+
+Emailed links point at `SITE_ORIGIN`, so they open only on the machine running
+the server. Without the opt-in, sign-in accepts the address but no link arrives,
+and the server logs `[email] delivery not configured`.
 
 ## Isolated test database
 
@@ -136,7 +183,7 @@ or ops mutation is included. Its remote run is not verified until GitHub execute
 ## Next work
 
 Implement explicit admin bootstrap/member management, then shared editorial
-revisions/lifecycle, visibility-filtered archive/achievements, safe media and
+revisions/lifecycle, public search and tabs (ROADMAP.md phase 2), safe media and
 supported external players. Follow the spec and plan; provider budget, real-data
 imports, domain changes and launch retain separate gates. Keep permanent deletion
 disabled until retention/cleanup policy is agreed. Family-approved Hebrew copy

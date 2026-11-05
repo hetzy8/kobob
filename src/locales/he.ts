@@ -24,13 +24,22 @@ export const copy = {
 	skip: "דילוג לתוכן",
 	navigationLabel: "ניווט ראשי",
 	about: "סיפור חיים",
-	achievements: "הישגים",
 	archive: "ארכיון",
+	// Visitor tabs in order (Yoram, 2026-11-05). Timeline, Map and From the
+	// internet are added when their slices ship.
 	navigation: [
 		{ href: "/about", label: "סיפור חיים" },
-		{ href: "/achievements", label: "הישגים" },
-		{ href: "/archive", label: "ארכיון" },
+		{ href: "/search", label: "חיפוש" },
 	],
+	// Shown only to signed-in active members; the page keeps its own checks.
+	memberNavigation: { href: "/family", label: "ארכיון" },
+	// Approved by Yoram 2026-11-05 (public search, PR #27).
+	searchPage: {
+		title: "חיפוש",
+		label: "מה לחפש",
+		submit: "חיפוש",
+		noResults: "לא נמצאו פריטים.",
+	},
 	empty: "עדיין לא נוסף תוכן ציבורי.",
 	signIn: "כניסה",
 	email: "כתובת דוא״ל",

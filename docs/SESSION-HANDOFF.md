@@ -7,22 +7,21 @@ Read AGENTS.md, README.md, docs/README.md, the product spec and plan before chan
 
 ## Current state (2026-11-04)
 
-- Production: v0.2.0 (`f8eff0a`) at https://kobob.vercel.app. Release
+- Production: v0.3.0 (`995d901`, PR #23) at https://kobob.vercel.app. Release
   records: OPERATIONS.md → Branch and release flow.
 - Sign-in email through Resend is live from `mail.kobob.org`; the first
   administrator was bootstrapped and the first sign-in email arrived.
-- `dev` holds roadmap phase 1, item editing ([PR #20](https://github.com/hetzy8/kobob/pull/20),
-  spec `docs/superpowers/specs/2026-11-03-item-editing-design.md`). Its migration only
-  adds tables, columns and enums; the production build applies it through
-  `scripts/migrate-production.mjs` as usual. Before release Yoram must approve the proposed Hebrew strings in
-  `copy.items` (`src/locales/he.ts`) and answer two questions listed in PR #20:
-  the decade-range wording and whether people added from the item picker
-  start as family-only.
+- Roadmap phase 1, item editing, is live (PR #20; spec
+  `docs/superpowers/specs/2026-11-03-item-editing-design.md`). Yoram approved
+  the `copy.items` Hebrew strings on 2026-11-04, kept the full decade-range
+  wording and chose family-only as the default for people added from an
+  item's picker (PR #22). No items have been published yet.
 - Postponed by Yoram: `kobob.org` as the site address (order in
-  OPERATIONS.md → Before provisioning). Still to do in Vercel project
-  settings: Node.js 24.x.
-- Next product work: see [ROADMAP.md](ROADMAP.md) (phase 2, achievements and
-  memorial pages, then media in R2).
+  OPERATIONS.md → Before provisioning). Vercel project settings use Node.js
+  24.x (Yoram, 2026-11-05), matching the `engines` pin in package.json.
+- Next product work: see [ROADMAP.md](ROADMAP.md): phase 2 slice 1
+  (navigation, family-only archive and search, branch `feat/public-search`),
+  then slices 2-5 (timeline, map, internet sources, life-story editing).
 
 ## Repository and current work
 
@@ -78,8 +77,9 @@ The initial display name is approved; other family material is still absent.
 - Public-item edits remain private working revisions until explicit publication;
   the previously published version stays public meanwhile. Atomic revision
   checks reject stale edits/transitions and preserve unsaved input.
-- One searchable archive with media-type filters. Dedicated Achievements section
-  links recognition to archive evidence. Sources and delivery representations
+- One searchable archive with media-type filters. (Superseded 2026-11-05: no
+  Achievements section; recognition is a dated item on the timeline, and the
+  archive is family-only with public search.) Sources and delivery representations
   are separate so mixed media and external references need no duplicate items.
 - Embed supported video/audio; retain attribution and original-source fallback.
   Article presentation stays flexible. No arbitrary embedding, scraping or
@@ -155,7 +155,8 @@ Next planned implementation is Task 2: explicit verified admin bootstrap and
 Yoram-only member administration, using synthetic fixtures until real identities
 are privately supplied. Do not seed a guessed email or promote the first visitor.
 Then implement shared editorial revisions/lifecycle, archive/search/achievements,
-media/embeds and authorized migration. None of these later flows exists yet.
+media/embeds and authorized migration. (2026-11-01 plan; for current next work
+see the top of this file and ROADMAP.md.)
 
 Preserve separate gates for costs/capacity, sender/secrets, real-data import,
 backup/restore rehearsal, domain changes and release. Use Bitwarden/ops conventions

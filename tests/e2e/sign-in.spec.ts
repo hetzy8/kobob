@@ -59,13 +59,16 @@ test("public foundation has Hebrew RTL root, relative navigation and no private 
 	await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
 	await expect(page.getByRole("navigation")).toBeVisible();
 	await page
-		.getByRole("link", { name: expected.archive, exact: true })
+		.getByRole("link", { name: expected.search, exact: true })
 		.first()
 		.click();
-	await expect(page).toHaveURL(/\/archive$/);
+	await expect(page).toHaveURL(/\/search$/);
 	await expect(
-		page.getByRole("heading", { name: expected.archive, exact: true }),
+		page.getByRole("heading", { name: expected.search, exact: true }),
 	).toBeVisible();
+	await expect(
+		page.getByRole("link", { name: expected.archive, exact: true }),
+	).toHaveCount(0);
 	await expect(page.getByText("browser@example.test")).toHaveCount(0);
 	await page.setViewportSize({ width: 375, height: 812 });
 	expect(
@@ -171,14 +174,13 @@ test("keeps sign-in disabled until client handlers are ready", async ({
 	).toBeEnabled();
 });
 
-test("shows Hebrew interface copy and Achievements with a plain sign-in label", async ({
+test("shows Hebrew interface copy, the visitor tabs and a plain sign-in label", async ({
 	page,
 }) => {
 	for (const [path, heading] of [
 		["/", expected.home],
 		["/about", expected.about],
-		["/achievements", expected.achievements],
-		["/archive", expected.archive],
+		["/search", expected.search],
 		["/sign-in", expected.signIn],
 		["/verify", expected.confirm],
 		["/missing-page", expected.notFound],
@@ -194,10 +196,12 @@ test("shows Hebrew interface copy and Achievements with a plain sign-in label", 
 			page.getByRole("link", { name: expected.signIn, exact: true }),
 		).toBeVisible();
 		await expect(
-			page
-				.getByRole("link", { name: expected.achievements, exact: true })
-				.first(),
+			page.getByRole("navigation", { name: expected.navigation })
+				.getByRole("link", { name: expected.search, exact: true }),
 		).toBeVisible();
+		await expect(
+			page.getByRole("link", { name: expected.archive, exact: true }),
+		).toHaveCount(0);
 		// biome-ignore lint/performance/useDomNodeTextContent: assert visible interface text, excluding script payloads.
 		expect(await page.locator("body").innerText()).not.toMatch(/[A-Za-z]/);
 		await expect(page.locator('[lang="en"]')).toHaveCount(0);

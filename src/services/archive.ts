@@ -2,6 +2,7 @@ import "server-only";
 import type { Database } from "../lib/database";
 import type { DateValue, ItemTypeValue } from "./item-input";
 import { dateFromRow, revisionInclude, toRevisionView, type RevisionView } from "./item-view";
+import { matches, parseQuery } from "./search";
 
 export type PublicSummary = {
 	id: string;
@@ -19,26 +20,36 @@ const publicWhere = {
 } as const;
 
 export function createArchiveReader(db: Database) {
+	// Loads every published item and matches in code (spec 2026-11-05: fine at
+	// family-archive scale; move matching into SQL if it gets slow).
+	async function searchPublicItems(text: string): Promise<PublicSummary[]> {
+		const query = parseQuery(text);
+		const items = await db.item.findMany({
+			where: publicWhere,
+			include: { publishedRevision: { include: revisionInclude } },
+			orderBy: [{ publishedAt: "desc" }, { id: "asc" }],
+		});
+		return items.flatMap((item) => {
+			const revision = item.publishedRevision;
+			if (!revision) return [];
+			const date = dateFromRow(revision);
+			const texts = [
+				revision.title,
+				revision.description,
+				...revision.tags,
+				...revision.people
+					.filter(({ person }) => !person.familyOnly)
+					// Main name only: other names are never shown publicly (Yoram, 2026-11-05).
+					.map(({ person }) => person.name),
+				...revision.places.flatMap(({ place }) => [place.name, ...place.otherNames]),
+			];
+			if (!matches({ texts, date }, query)) return [];
+			return [{ id: item.id, title: revision.title, types: revision.types, date }];
+		});
+	}
 	return {
-		async listPublicItems(): Promise<PublicSummary[]> {
-			const items = await db.item.findMany({
-				where: publicWhere,
-				include: { publishedRevision: true },
-				orderBy: [{ publishedAt: "desc" }, { id: "asc" }],
-			});
-			return items.flatMap((item) =>
-				item.publishedRevision
-					? [
-							{
-								id: item.id,
-								title: item.publishedRevision.title,
-								types: item.publishedRevision.types,
-								date: dateFromRow(item.publishedRevision),
-							},
-						]
-					: [],
-			);
-		},
+		searchPublicItems,
+		listPublicItems: () => searchPublicItems(""),
 		async getPublicItem(id: string): Promise<(RevisionView & { id: string }) | null> {
 			const item = await db.item.findFirst({
 				where: { id, ...publicWhere },
