@@ -1,8 +1,8 @@
 # Private media storage and collection import
 
 **Date:** 2026-11-05
-**Status:** proposed; awaiting Yoram's review of this written spec. The approach
-was agreed in discussion on 2026-11-05.
+**Status:** approved by Yoram, 2026-11-05. Plan:
+[media import plan](../plans/2026-11-05-media-import.md).
 **Roadmap:** phases 3 and 4 in [ROADMAP.md](../../ROADMAP.md), joined into one
 path and moved ahead of the rest of phase 2 (Yoram, 2026-11-05).
 **Depends on:** v0.4.0; [item editing design](2026-11-03-item-editing-design.md);
@@ -172,11 +172,13 @@ edited item is reported as a conflict.
 **`scripts/import-media.ts`** reads from Drive by file id, using a Google service
 account with Viewer access to the collection folder only. For each file:
 
-1. Stream from Drive, checking size against the catalog and computing SHA-256.
+1. Read from Drive, one file at a time, checking size against the catalog and
+   computing SHA-256.
 2. Upload to the original key in R2.
 3. Read it back and compare bytes and hash; only then mark it `verified`.
-4. Create a thumbnail, and a display copy for TIFF and BMP, with `sharp`. Embedded
-   metadata such as GPS is stripped.
+4. Create a thumbnail, and a display copy for TIFF, with `sharp`. Embedded metadata
+   such as GPS is stripped. `sharp` cannot read BMP, so the 2 BMP files download
+   only.
 
 A run is resumable and skips verified files. Failures stay as explicit `failed`
 states with a code, and never hide a record.
@@ -190,7 +192,7 @@ states with a code, and never hide a record.
 - Publishing a family item without cleared rights is refused on the server and
   explained on the page.
 - Browser viewing: images including TIFF through the display copy, PDF, MP3. Office
-  files, WMV, ZIP and others download with an honest "no preview yet" label.
+  files, WMV, ZIP, BMP and others download with an honest "no preview yet" label.
 - New Hebrew strings need Yoram's approval before release.
 
 ## Stages
@@ -198,16 +200,17 @@ states with a code, and never hide a record.
 Each stage is its own PR into `dev`. Each run against real data needs Yoram's
 explicit go.
 
-1. **Schema and catalog import.** Models, the rights rule, `import-catalog`, doc
-   changes. Dry-run report for Yoram, then the import: 81 public cards and private
-   records without files.
-2. **Storage and delivery.** R2 client, media route, viewer. Yoram provisions
+1. **Schema and catalog import.** Models, the rights rule with its status actions
+   (without them the family could not publish after this release), `import-catalog`,
+   doc changes. Dry-run report for Yoram, then the import: 81 public cards and
+   private records without files.
+2. **Storage and delivery.** R2 client and media route. Yoram provisions
    buckets and keys. Measure on production, behind sign-in, with synthetic files
    of the largest sizes (about 220 MB audio, 64 MB image), since preview
    deployments are off.
 3. **File copy.** `import-media` on a small sample, then everything. Reconcile
    counts, bytes and hashes.
-4. **Review pages.** Paged list, thumbnails, filter and status actions.
+4. **Review pages.** Paged list, thumbnails, filter and the file viewer.
 
 If stage 2 measurements show that streaming cannot serve the largest files, this
 comes back to Yoram before stage 3, with costs and the access trade-off.
