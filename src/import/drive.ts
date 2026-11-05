@@ -12,7 +12,7 @@ export function createDriveClient(keyFilePath: string): DriveClient {
 	const auth = new JWT({ keyFile: keyFilePath, scopes: ["https://www.googleapis.com/auth/drive.readonly"] });
 	async function get(id: string, range?: string) {
 		const { token } = await auth.getAccessToken();
-		const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?alt=media`, {
+		const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?alt=media&supportsAllDrives=true`, {
 			headers: { authorization: `Bearer ${token}`, ...(range ? { range } : {}) },
 		});
 		if (!response.ok || !response.body) throw new Error(`DRIVE_READ_FAILED_${response.status}`);

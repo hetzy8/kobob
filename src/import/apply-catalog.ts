@@ -13,7 +13,24 @@ export type CatalogReport = {
 	changed: string[];
 	conflicts: string[];
 	files: number;
+	publicNoLongerEligible: string[];
+	staleCards: string[];
+	missingFromExport: string[];
 };
+
+// An apply needs a clean plan: counts only, so a message never carries row data.
+export function applyBlockers({
+	errors,
+	unreadable,
+}: {
+	errors: readonly unknown[];
+	unreadable: readonly unknown[];
+}): string[] {
+	const blockers: string[] = [];
+	if (errors.length > 0) blockers.push(`${errors.length} catalog rows have planning errors`);
+	if (unreadable.length > 0) blockers.push(`${unreadable.length} system-file candidates could not be read from Drive`);
+	return blockers;
+}
 
 export async function resolveSystemFiles(
 	records: PlannedRecord[],
@@ -21,7 +38,7 @@ export async function resolveSystemFiles(
 ) {
 	const kept: PlannedRecord[] = [];
 	const excluded: PlannedRecord[] = [];
-	const unreadable: string[] = [];
+	const unreadable: { kobId: string; code: string }[] = [];
 	for (const record of records) {
 		if (!record.systemCandidate || !record.file) {
 			kept.push(record);
@@ -30,13 +47,22 @@ export async function resolveSystemFiles(
 		try {
 			const head = await readHead(record.file.driveFileId);
 			(confirmSystemFile(record.file.originalFilename, record.file.sizeBytes, head) ? excluded : kept).push(record);
-		} catch {
-			unreadable.push(record.kobId);
+		} catch (error) {
+			const status = error instanceof Error ? /DRIVE_READ_FAILED_(\d+)/.exec(error.message)?.[1] : undefined;
+			unreadable.push({ kobId: record.kobId, code: status ? `DRIVE_READ_FAILED_${status}` : "DRIVE_READ_FAILED" });
 			kept.push(record);
 		}
 	}
 	return { records: kept, excluded, unreadable };
 }
+
+type SourceFields = NonNullable<PlannedRecord["source"]>;
+const sameSource = (stored: SourceFields, planned: SourceFields) =>
+	stored.url === planned.url &&
+	stored.publisher === planned.publisher &&
+	stored.author === planned.author &&
+	stored.publishedText === planned.publishedText &&
+	stored.license === planned.license;
 
 async function createRecord(tx: Prisma.TransactionClient, record: PlannedRecord, snapshotHash: string) {
 	const item = await tx.item.create({
@@ -88,10 +114,23 @@ export async function applyCatalog(
 	snapshotHash: string,
 	{ apply }: { apply: boolean },
 ): Promise<CatalogReport> {
-	const report: CatalogReport = { created: 0, published: 0, existing: 0, changed: [], conflicts: [], files: 0 };
+	const report: CatalogReport = {
+		created: 0,
+		published: 0,
+		existing: 0,
+		changed: [],
+		conflicts: [],
+		files: 0,
+		publicNoLongerEligible: [],
+		staleCards: [],
+		missingFromExport: [],
+	};
 	const startedAt = new Date();
 	for (const record of records) {
-		const existing = await db.item.findUnique({ where: { kobId: record.kobId }, include: { catalogRecord: true } });
+		const existing = await db.item.findUnique({
+			where: { kobId: record.kobId },
+			include: { catalogRecord: true, publishedRevision: true, sources: true },
+		});
 		if (!existing) {
 			report.created++;
 			if (record.publish) report.published++;
@@ -100,6 +139,16 @@ export async function applyCatalog(
 			continue;
 		}
 		report.existing++;
+		// Drift on a public item is reported, never applied: visibility and the card stay as published.
+		let stale = false;
+		if (existing.visibility === "public") {
+			if (!record.publish) report.publicNoLongerEligible.push(record.kobId);
+			stale =
+				existing.publishedRevision?.title !== record.title ||
+				(record.source !== null && !existing.sources.some((source) => sameSource(source, record.source!)));
+			if (stale) report.staleCards.push(record.kobId);
+		}
+		if (stale && existing.version === 1) continue;
 		if (isDeepStrictEqual(existing.catalogRecord?.row, record.row)) continue;
 		if (existing.version > 1) {
 			report.conflicts.push(record.kobId);
@@ -112,6 +161,9 @@ export async function applyCatalog(
 				data: { row: record.row as unknown as Prisma.InputJsonObject, snapshotHash },
 			});
 	}
+	const given = new Set(records.map((record) => record.kobId));
+	const known = await db.item.findMany({ where: { kobId: { not: null } }, select: { kobId: true }, orderBy: { kobId: "asc" } });
+	report.missingFromExport = known.flatMap(({ kobId }) => (kobId && !given.has(kobId) ? [kobId] : []));
 	if (apply)
 		await db.importRun.create({
 			data: {
@@ -126,6 +178,9 @@ export async function applyCatalog(
 					changed: report.changed.length,
 					conflicts: report.conflicts.length,
 					files: report.files,
+					publicNoLongerEligible: report.publicNoLongerEligible.length,
+					staleCards: report.staleCards.length,
+					missingFromExport: report.missingFromExport.length,
 				},
 			},
 		});
