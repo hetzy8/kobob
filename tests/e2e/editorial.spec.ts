@@ -63,8 +63,24 @@ async function createItem(page: Page, title: string) {
 	await page.getByLabel(copy.items.typeNames.picture).check();
 	await page.getByRole("button", { name: copy.items.save }).click();
 	await page.waitForURL(/\/family\/items\/[^/]+\/edit$/);
-	return page.url().split("/").at(-2) as string;
+	const id = page.url().split("/").at(-2) as string;
+	await db.item.update({ where: { id }, data: { rightsStatus: "cleared" } });
+	return id;
 }
+
+test("explains that publishing needs cleared rights, then allows it", async ({ page }) => {
+	await signIn(page, "rights@example.test");
+	const id = await createItem(page, "Synthetic rights item");
+	await db.item.update({ where: { id }, data: { rightsStatus: "unknown" } });
+	await page.reload();
+	await page.getByRole("button", { name: copy.items.publish }).click();
+	await expect(page.getByText(copy.items.rightsNotCleared)).toBeVisible();
+	await page.getByRole("button", { name: copy.items.markRightsCleared }).click();
+	await expect(page.getByText(copy.items.rightsNotCleared)).toHaveCount(0);
+	await expect(page.getByRole("button", { name: copy.items.undoRightsCleared })).toBeVisible();
+	await page.getByRole("button", { name: copy.items.publish }).click();
+	await expect(page.getByText(copy.items.public).first()).toBeVisible();
+});
 
 test("publishing shows the published version until the next publish", async ({
 	page,
@@ -121,6 +137,29 @@ test("publishing shows the published version until the next publish", async ({
 	).toBeVisible();
 	await page.goto("/search?q=nothing+like+this");
 	await expect(page.getByText(copy.searchPage.noResults)).toBeVisible();
+});
+
+test("withdrawing rights warns first, then unpublishes the item", async ({
+	page,
+	browser,
+}) => {
+	await signIn(page, "withdraw@example.test");
+	const id = await createItem(page, "Synthetic withdrawn item");
+	await page.goto(`/family/items/${id}/edit`);
+	await expect(page.getByRole("button", { name: copy.items.save })).toBeEnabled();
+	await page.getByRole("button", { name: copy.items.publish }).click();
+	await expect(page.getByText(copy.items.public).first()).toBeVisible();
+	await expect(page.getByText(copy.items.rightsWithdrawWarning)).toBeVisible();
+	await page.getByRole("button", { name: copy.items.undoRightsCleared }).click();
+	await expect(page.getByText(copy.items.rightsWithdrawn)).toBeVisible();
+	await expect(page.getByText(copy.items.rightsWithdrawWarning)).toHaveCount(0);
+	await expect(page.getByText(copy.items.private, { exact: true }).first()).toBeVisible();
+	await expect(page.getByRole("button", { name: copy.items.publish })).toBeVisible();
+	await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+	const anonymous = await (await browser.newContext()).newPage();
+	await anonymous.goto(`/items/${id}`);
+	await expect(anonymous.getByRole("heading", { name: copy.notFound })).toBeVisible();
+	await anonymous.context().close();
 });
 
 test("the old public archive and achievements pages are gone", async ({ page }) => {
@@ -393,6 +432,29 @@ test("a save on an item archived meanwhile keeps the input and shows the conflic
 	);
 });
 
+test("a status change on an item archived meanwhile keeps the input and shows the conflict", async ({
+	browser,
+}) => {
+	const a = await newMemberPage(browser, "a@example.test");
+	const b = await newMemberPage(browser, "b@example.test");
+	const id = await createItem(a, "Synthetic status soon archived");
+	await expect(a.getByRole("button", { name: copy.items.save })).toBeEnabled();
+	await a.getByLabel(copy.items.title).fill("Typed before archive");
+	await b.goto(`/family/items/${id}/edit`);
+	await expect(
+		b.getByRole("button", { name: copy.items.archive }),
+	).toBeEnabled();
+	await b.getByRole("button", { name: copy.items.archive }).click();
+	await expect(
+		b.getByRole("button", { name: copy.items.restore }),
+	).toBeVisible();
+	await a.getByRole("button", { name: copy.items.markNeedsReview }).click();
+	await expect(a.getByText(copy.items.conflict)).toBeVisible();
+	await expect(a.getByLabel(copy.items.title)).toHaveValue(
+		"Typed before archive",
+	);
+});
+
 // Any action re-renders the page with fresh props. A form must keep posting
 // the version of the values it loaded, never the refreshed one, unless it
 // also shows the refreshed values.
@@ -627,4 +689,70 @@ test("only signed-in members see the Archive tab, and it opens the family list",
 	await db.user.update({ where: { email: "navigator@example.test" }, data: { status: "revoked" } });
 	await page.goto("/");
 	await expect(nav.getByRole("link", { name: copy.archive, exact: true })).toHaveCount(0);
+});
+
+test("a public link card shows its source details and nothing private", async ({ page }) => {
+	const item = await db.item.create({ data: { origin: "internet", visibility: "public", publishedAt: new Date() } });
+	const revision = await db.itemRevision.create({
+		data: { itemId: item.id, title: "Synthetic link card", types: ["article"], authorId: "system:import" },
+	});
+	await db.item.update({ where: { id: item.id }, data: { workingRevisionId: revision.id, publishedRevisionId: revision.id } });
+	await db.externalSource.createMany({
+		data: [
+			{
+				itemId: item.id,
+				url: "https://example.test/article",
+				publisher: "Synthetic Press",
+				publishedText: "Synthetic 1979",
+				license: "Synthetic license",
+			},
+			{ itemId: item.id, url: "javascript:alert(1)", publisher: "Synthetic bad" },
+		],
+	});
+	await db.itemCatalogRecord.create({
+		data: { itemId: item.id, tab: "catalog", row: { catalog: { note: "PRIVATE-FOLDER" }, web: null }, snapshotHash: "synthetic" },
+	});
+	await db.mediaFile.create({
+		data: {
+			itemId: item.id,
+			role: "original",
+			storageKey: `originals/${item.id}`,
+			mimeType: "text/html",
+			sizeBytes: 1n,
+			originalFilename: "PRIVATE-NAME.html",
+		},
+	});
+	await page.goto(`/items/${item.id}`);
+	await expect(page.getByRole("heading", { name: "Synthetic link card" })).toBeVisible();
+	const link = page.getByRole("link", { name: copy.items.sourceLink });
+	await expect(link).toHaveCount(1);
+	await expect(link).toHaveAttribute("href", "https://example.test/article");
+	await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+	const article = page.getByRole("article");
+	await expect(article).toContainText(`${copy.items.publisher}: Synthetic Press`);
+	await expect(article).toContainText("Synthetic 1979");
+	await expect(article).toContainText(`${copy.items.license}: Synthetic license`);
+	const html = await page.content();
+	expect(html).not.toContain("PRIVATE-FOLDER");
+	expect(html).not.toContain("PRIVATE-NAME");
+	expect(html).not.toContain("javascript:");
+});
+
+test("the family list pages and filters items needing review", async ({ page }) => {
+	await signIn(page, "paging@example.test");
+	for (let index = 0; index < 51; index++) {
+		const item = await db.item.create({ data: { reviewStatus: index === 0 ? "needs_review" : "reviewed" } });
+		const revision = await db.itemRevision.create({
+			data: { itemId: item.id, title: `Synthetic ${index}`, types: ["other"], authorId: "system:import" },
+		});
+		await db.item.update({ where: { id: item.id }, data: { workingRevisionId: revision.id } });
+	}
+	await page.goto("/family");
+	await expect(page.getByText(copy.items.pageOf(1, 2))).toBeVisible();
+	await page.getByRole("link", { name: copy.items.nextPage }).click();
+	await expect(page.getByText(copy.items.pageOf(2, 2))).toBeVisible();
+	await page.getByRole("link", { name: copy.items.showNeedsReview }).click();
+	await expect(page.getByRole("link", { name: "Synthetic 0", exact: true })).toBeVisible();
+	await expect(page.getByRole("link", { name: "Synthetic 1", exact: true })).toHaveCount(0);
+	await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
 });

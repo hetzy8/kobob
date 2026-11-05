@@ -19,7 +19,14 @@ Read AGENTS.md, README.md, docs/README.md, the product spec and plan before chan
 - Postponed by Yoram: `kobob.org` as the site address (order in
   OPERATIONS.md → Before provisioning). Vercel project settings use Node.js
   24.x (Yoram, 2026-11-05), matching the `engines` pin in package.json.
-- Next product work: see [ROADMAP.md](ROADMAP.md): phase 2 slice 1
+- Update 2026-11-05: v0.4.0 (`fe7cc03`) released phase 2 slice 1. Stage 1 of
+  the [media import](superpowers/specs/2026-11-05-media-import-design.md) is
+  built on `feat/catalog-import` (catalog import with a dry run; plan:
+  `docs/superpowers/plans/2026-11-05-media-import.md`). Nothing has been
+  imported. Next: Gate A in the plan (PR into `dev`, Codex review, Hebrew
+  strings approval, release, Drive service account, Yoram's dry run and
+  report review), then stage 2, storage and delivery.
+- Earlier next work: see [ROADMAP.md](ROADMAP.md): phase 2 slice 1
   (navigation, family-only archive and search, branch `feat/public-search`),
   then slices 2-5 (timeline, map, internet sources, life-story editing).
 

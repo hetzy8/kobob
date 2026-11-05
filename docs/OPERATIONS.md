@@ -1,8 +1,8 @@
 # Operations, cost and launch conventions
 
-**Status (2026-11-04):** in production at `https://kobob.vercel.app` (Vercel
-`fra1`, Neon Frankfurt), v0.3.0. Sign-in email through Resend and item
-editing are live and the first administrator exists. Backups, private media and the custom domain
+**Status (2026-11-05):** in production at `https://kobob.vercel.app` (Vercel
+`fra1`, Neon Frankfurt), v0.4.0. Sign-in email through Resend, item
+editing and public search are live and the first administrator exists. Backups, private media and the custom domain
 (`kobob.org`) are not set up yet.
 
 ## Ownership
@@ -228,6 +228,10 @@ Release checklist:
      [Deploy run 41877996213](https://github.com/hetzy8/kobob/actions/runs/41877996213)
      green; health `ok` on `995d901` with every config flag true; `/archive`
      answers 200.
+   - `v0.4.0`, 2026-11-05: `fe7cc03` (PR #29), public navigation, family-only
+     archive and search; no migration.
+     [Deploy run 42026065465](https://github.com/hetzy8/kobob/actions/runs/42026065465)
+     green; health `ok` with every config flag true; `/archive` answers 404.
 6. Delete `dev` and recreate it from the release commit, then retarget any
    open PRs to the new `dev` (`gh pr edit <n> --base dev`). This is the hetzy8
    standards release rule (getmygoals' practice): each cycle starts level with

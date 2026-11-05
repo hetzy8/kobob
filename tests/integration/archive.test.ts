@@ -21,11 +21,19 @@ afterAll(async () => {
 });
 async function editor() {
 	const user = await db.user.create({ data: { email: "a@example.test", emailVerified: true } });
-	return createEditorialService(db, async () => ({
+	const service = createEditorialService(db, async () => ({
 		id: user.id,
 		role: "member",
 		accessVersion: user.accessVersion,
 	}));
+	return {
+		...service,
+		createItem: async (value: ItemInput) => {
+			const created = await service.createItem(value);
+			await db.item.update({ where: { id: created.id }, data: { rightsStatus: "cleared" } });
+			return created;
+		},
+	};
 }
 const input = (title: string, extra: Partial<ItemInput> = {}): ItemInput => ({
 	title,
@@ -181,4 +189,48 @@ it("matches % and _ literally", async () => {
 	expect((await reader.searchPublicItems("50%")).map((item) => item.id)).toEqual([id]);
 	expect(await reader.searchPublicItems("%%")).toEqual([]);
 	expect(await reader.searchPublicItems("fift_")).toEqual([]);
+});
+
+async function card(title: string, overrides: { summaryInRow?: string } = {}) {
+	const item = await db.item.create({ data: { origin: "internet", visibility: "public", kobId: `KOB-${title}` } });
+	const revision = await db.itemRevision.create({
+		data: { itemId: item.id, title, types: ["other"], authorId: "system:import" },
+	});
+	await db.item.update({
+		where: { id: item.id },
+		data: { workingRevisionId: revision.id, publishedRevisionId: revision.id, publishedAt: new Date() },
+	});
+	await db.externalSource.create({
+		data: { itemId: item.id, url: "https://example.test/a", publisher: "Synthetic Press", author: "Synthetic Writer" },
+	});
+	await db.itemCatalogRecord.create({
+		data: { itemId: item.id, tab: "web", row: { summary: overrides.summaryInRow ?? "PRIVATE-SUMMARY" }, snapshotHash: "x" },
+	});
+	await db.mediaFile.create({
+		data: {
+			itemId: item.id, role: "original", storageKey: `originals/${item.id}`,
+			mimeType: "image/jpeg", sizeBytes: 1n, originalFilename: "PRIVATE-NAME.jpg", status: "verified",
+		},
+	});
+	return item.id;
+}
+
+it("shows a public card's source fields and nothing from its catalog record or file", async () => {
+	const id = await card("Public card");
+	const item = await reader.getPublicItem(id);
+	expect(item?.sources).toEqual([
+		{ url: "https://example.test/a", publisher: "Synthetic Press", author: "Synthetic Writer", publishedText: "", license: "" },
+	]);
+	const serialized = JSON.stringify(item);
+	expect(serialized).not.toContain("PRIVATE-SUMMARY");
+	expect(serialized).not.toContain("PRIVATE-NAME");
+	expect(serialized).not.toContain("originals/");
+});
+
+it("finds a card by publisher and removes it from search when made private", async () => {
+	const id = await card("Card to hide");
+	expect((await reader.searchPublicItems("Synthetic Press")).map((row) => row.id)).toContain(id);
+	await db.item.update({ where: { id }, data: { visibility: "private", publishedRevisionId: null } });
+	expect(await reader.searchPublicItems("Synthetic Press")).toEqual([]);
+	expect(await reader.getPublicItem(id)).toBeNull();
 });

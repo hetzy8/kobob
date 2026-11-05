@@ -23,11 +23,20 @@ export type EditorialAction =
 	| "make-private"
 	| "archive"
 	| "restore";
+export type RightsValue = "unknown" | "needs_clarification" | "cleared";
+export type ReviewValue = "needs_review" | "reviewed";
 export type ItemSummary = {
 	id: string;
 	title: string;
 	visibility: "private" | "public";
 	hasUnpublishedEdits: boolean;
+};
+export const ITEMS_PER_PAGE = 50;
+export type ItemPage = {
+	items: (ItemSummary & { reviewStatus: ReviewValue; thumbnailId: string | null })[];
+	page: number;
+	pageCount: number;
+	total: number;
 };
 export type FamilyItem = {
 	id: string;
@@ -35,6 +44,9 @@ export type FamilyItem = {
 	visibility: "private" | "public";
 	version: number;
 	hasUnpublishedEdits: boolean;
+	origin: "family" | "internet";
+	rightsStatus: RightsValue;
+	reviewStatus: ReviewValue;
 	working: RevisionView;
 };
 export type PersonRecord = {
@@ -59,6 +71,8 @@ type ItemRow = {
 	state: "active" | "archived";
 	visibility: "private" | "public";
 	version: number;
+	origin: "family" | "internet";
+	rightsStatus: RightsValue;
 	workingRevisionId: string | null;
 	publishedRevisionId: string | null;
 };
@@ -77,14 +91,17 @@ function transition(
 	if (action === "restore")
 		return item.state === "archived" ? { state: "active" } : null;
 	if (item.state !== "active") return null;
-	if (action === "publish")
-		return item.visibility === "private" || unpublishedEdits(item)
-			? {
-					visibility: "public",
-					publishedRevisionId: item.workingRevisionId,
-					publishedAt: new Date(),
-				}
-			: null;
+	if (action === "publish") {
+		if (item.visibility !== "private" && !unpublishedEdits(item)) return null;
+		// Internet items are already public at their source (Yoram, 2026-11-05).
+		if (item.origin === "family" && item.rightsStatus !== "cleared")
+			throw new Error("RIGHTS_NOT_CLEARED");
+		return {
+			visibility: "public",
+			publishedRevisionId: item.workingRevisionId,
+			publishedAt: new Date(),
+		};
+	}
 	if (action === "make-private")
 		return item.visibility === "public"
 			? { visibility: "private", publishedRevisionId: null, publishedAt: null }
@@ -290,6 +307,36 @@ export function createEditorialService(
 				await audit(tx, actor.id, "item", id, action);
 				return { id, version: expectedVersion + 1 };
 			}),
+		setRightsStatus: (id: string, expectedVersion: number, status: RightsValue) =>
+			run(async (tx, actor) => {
+				// Withdrawing rights on a public family item also unpublishes it.
+				const before = await claim(tx, id, expectedVersion, (item) => {
+					if (item.state !== "active") return null;
+					const unpublish =
+						status !== "cleared" && item.origin === "family" && item.visibility === "public";
+					return unpublish
+						? {
+								rightsStatus: status,
+								visibility: "private",
+								publishedRevisionId: null,
+								publishedAt: null,
+							}
+						: { rightsStatus: status };
+				});
+				const unpublished =
+					status !== "cleared" && before.origin === "family" && before.visibility === "public";
+				await audit(tx, actor.id, "item", id, `rights-${status}`);
+				if (unpublished) await audit(tx, actor.id, "item", id, "make-private");
+				return { id, version: expectedVersion + 1, unpublished };
+			}),
+		setReviewStatus: (id: string, expectedVersion: number, status: ReviewValue) =>
+			run(async (tx, actor) => {
+				await claim(tx, id, expectedVersion, (item) =>
+					item.state === "active" ? { reviewStatus: status } : null,
+				);
+				await audit(tx, actor.id, "item", id, `review-${status}`);
+				return { id, version: expectedVersion + 1 };
+			}),
 		getItem: (id: string) =>
 			run(async (tx): Promise<FamilyItem> => {
 				const item = await tx.item.findUnique({
@@ -303,10 +350,46 @@ export function createEditorialService(
 					visibility: item.visibility,
 					version: item.version,
 					hasUnpublishedEdits: unpublishedEdits(item),
+					origin: item.origin,
+					rightsStatus: item.rightsStatus,
+					reviewStatus: item.reviewStatus,
 					working: toRevisionView(item.workingRevision, { publicOnly: false }),
 				};
 			}),
 		listItems: () => run((tx) => summaries(tx, "active")),
+		listItemsPage: ({ page, needsReview }: { page: number; needsReview: boolean }) =>
+			run(async (tx): Promise<ItemPage> => {
+				const where = {
+					state: "active" as const,
+					...(needsReview ? { reviewStatus: "needs_review" as const } : {}),
+				};
+				const total = await tx.item.count({ where });
+				const pageCount = Math.max(1, Math.ceil(total / ITEMS_PER_PAGE));
+				const current = Number.isInteger(page) && page >= 1 && page <= pageCount ? page : 1;
+				const items = await tx.item.findMany({
+					where,
+					include: {
+						workingRevision: { select: { title: true } },
+						files: { where: { role: "thumbnail", status: "verified" }, select: { id: true } },
+					},
+					orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+					skip: (current - 1) * ITEMS_PER_PAGE,
+					take: ITEMS_PER_PAGE,
+				});
+				return {
+					page: current,
+					pageCount,
+					total,
+					items: items.map((item) => ({
+						id: item.id,
+						title: item.workingRevision?.title ?? "",
+						visibility: item.visibility,
+						hasUnpublishedEdits: unpublishedEdits(item),
+						reviewStatus: item.reviewStatus,
+						thumbnailId: item.files[0]?.id ?? null,
+					})),
+				};
+			}),
 		listArchived: () => run((tx) => summaries(tx, "archived")),
 		listPeople: (): Promise<PersonRecord[]> =>
 			run((tx) =>

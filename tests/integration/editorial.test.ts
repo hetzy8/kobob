@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, expect, it } from "vitest";
 import { createDatabase } from "../../src/lib/database";
 import { requireTestDatabaseUrl } from "../../src/lib/config";
+import { createArchiveReader } from "../../src/services/archive";
 import { createEditorialService } from "../../src/services/editorial";
 import type { ItemInput } from "../../src/services/item-input";
 
@@ -34,7 +35,7 @@ const input = (title = "Synthetic title"): ItemInput => ({
 	placeIds: [],
 });
 
-async function member(email: string) {
+async function serviceFor(email: string) {
 	const user = await db.user.create({
 		data: { email, emailVerified: true },
 	});
@@ -43,6 +44,22 @@ async function member(email: string) {
 		role: "member",
 		accessVersion: user.accessVersion,
 	}));
+}
+const rawCreate = (service: Awaited<ReturnType<typeof serviceFor>>) =>
+	service.createItem(input());
+async function member(email: string) {
+	const service = await serviceFor(email);
+	return {
+		...service,
+		createItem: async (value: ItemInput) => {
+			const created = await service.createItem(value);
+			await db.item.update({
+				where: { id: created.id },
+				data: { rightsStatus: "cleared" },
+			});
+			return created;
+		},
+	};
 }
 
 it("creates items as private and lets another member edit them", async () => {
@@ -375,4 +392,160 @@ it("refuses non-members on people and places", async () => {
 			anonymous.savePlace({ name: "x", otherNames: [], latitude: null, longitude: null }),
 	])
 		await expect(operation()).rejects.toThrow("UNAUTHORIZED");
+});
+
+it("refuses to publish a family item until rights are cleared", async () => {
+	const service = await serviceFor("a@example.test");
+	const { id } = await rawCreate(service);
+	await expect(service.transitionItem(id, 1, "publish")).rejects.toThrow("RIGHTS_NOT_CLEARED");
+	expect((await db.item.findUniqueOrThrow({ where: { id } })).visibility).toBe("private");
+	const { version } = await service.setRightsStatus(id, 1, "cleared");
+	await service.transitionItem(id, version, "publish");
+	expect((await db.item.findUniqueOrThrow({ where: { id } })).visibility).toBe("public");
+});
+
+async function publishedFamilyItem(
+	service: Awaited<ReturnType<typeof serviceFor>>,
+	title = "Synthetic title",
+) {
+	const { id } = await service.createItem(input(title));
+	const cleared = await service.setRightsStatus(id, 1, "cleared");
+	const published = await service.transitionItem(id, cleared.version, "publish");
+	return { id, version: published.version };
+}
+
+it("unpublishes a public family item when its rights are withdrawn", async () => {
+	const service = await serviceFor("b@example.test");
+	const reader = createArchiveReader(db);
+	const { id, version } = await publishedFamilyItem(service, "Withdrawn synthetic");
+	expect(await reader.getPublicItem(id)).not.toBeNull();
+	const withdrawn = await service.setRightsStatus(id, version, "needs_clarification");
+	expect(withdrawn).toEqual({ id, version: version + 1, unpublished: true });
+	const row = await db.item.findUniqueOrThrow({ where: { id } });
+	expect(row.visibility).toBe("private");
+	expect(row.publishedRevisionId).toBeNull();
+	expect(row.publishedAt).toBeNull();
+	const actions = (await db.editorialAudit.findMany({ where: { targetId: id } })).map(
+		(r) => r.action,
+	);
+	expect(actions).toContain("rights-needs_clarification");
+	expect(actions).toContain("make-private");
+	expect(await reader.getPublicItem(id)).toBeNull();
+	expect((await reader.searchPublicItems("Withdrawn")).map((item) => item.id)).not.toContain(id);
+	await expect(service.transitionItem(id, withdrawn.version, "publish")).rejects.toThrow(
+		"RIGHTS_NOT_CLEARED",
+	);
+	const again = await service.setRightsStatus(id, withdrawn.version, "cleared");
+	await service.transitionItem(id, again.version, "publish");
+	expect((await db.item.findUniqueOrThrow({ where: { id } })).visibility).toBe("public");
+});
+
+it("keeps unsaved working edits when withdrawal unpublishes", async () => {
+	const service = await serviceFor("b2@example.test");
+	const { id, version } = await publishedFamilyItem(service);
+	const edited = await service.updateItem(id, version, input("Edited working title"));
+	await service.setRightsStatus(id, edited.version, "needs_clarification");
+	expect((await service.getItem(id)).working.title).toBe("Edited working title");
+});
+
+it("only changes rights on a private family item", async () => {
+	const service = await serviceFor("b3@example.test");
+	const { id } = await rawCreate(service);
+	const cleared = await service.setRightsStatus(id, 1, "cleared");
+	expect(cleared.unpublished).toBe(false);
+	const withdrawn = await service.setRightsStatus(id, cleared.version, "needs_clarification");
+	expect(withdrawn.unpublished).toBe(false);
+	const actions = (await db.editorialAudit.findMany({ where: { targetId: id } })).map(
+		(r) => r.action,
+	);
+	expect(actions).not.toContain("make-private");
+});
+
+it("leaves a public internet item public on a rights change", async () => {
+	const service = await serviceFor("b4@example.test");
+	const { id } = await rawCreate(service);
+	await db.item.update({ where: { id }, data: { origin: "internet" } });
+	const published = await service.transitionItem(id, 1, "publish");
+	const changed = await service.setRightsStatus(id, published.version, "needs_clarification");
+	expect(changed.unpublished).toBe(false);
+	expect((await db.item.findUniqueOrThrow({ where: { id } })).visibility).toBe("public");
+});
+
+it("keeps a legacy public family item with unknown rights public", async () => {
+	const service = await serviceFor("b5@example.test");
+	const reader = createArchiveReader(db);
+	const { id, version } = await publishedFamilyItem(service);
+	await db.item.update({ where: { id }, data: { rightsStatus: "unknown" } });
+	expect(await reader.getPublicItem(id)).not.toBeNull();
+	const cleared = await service.setRightsStatus(id, version, "cleared");
+	expect(cleared.unpublished).toBe(false);
+	expect((await db.item.findUniqueOrThrow({ where: { id } })).visibility).toBe("public");
+	expect(await reader.getPublicItem(id)).not.toBeNull();
+});
+
+it("throws CONFLICT on a stale version and changes nothing when withdrawing", async () => {
+	const service = await serviceFor("b6@example.test");
+	const { id, version } = await publishedFamilyItem(service);
+	await expect(
+		service.setRightsStatus(id, version - 1, "needs_clarification"),
+	).rejects.toThrow("CONFLICT");
+	const row = await db.item.findUniqueOrThrow({ where: { id } });
+	expect(row.visibility).toBe("public");
+	expect(row.rightsStatus).toBe("cleared");
+	expect(row.version).toBe(version);
+});
+
+it("lets internet items publish without cleared rights", async () => {
+	const service = await serviceFor("c@example.test");
+	const { id } = await rawCreate(service);
+	await db.item.update({ where: { id }, data: { origin: "internet" } });
+	await service.transitionItem(id, 1, "publish");
+	expect((await db.item.findUniqueOrThrow({ where: { id } })).visibility).toBe("public");
+});
+
+it("rejects status changes on a stale version or an archived item", async () => {
+	const service = await serviceFor("d@example.test");
+	const { id } = await rawCreate(service);
+	await expect(service.setRightsStatus(id, 9, "cleared")).rejects.toThrow("CONFLICT");
+	await service.transitionItem(id, 1, "archive");
+	await expect(service.setReviewStatus(id, 2, "reviewed")).rejects.toThrow("CONFLICT");
+});
+
+it("audits status changes with ids and action names only", async () => {
+	const service = await serviceFor("e@example.test");
+	const { id } = await rawCreate(service);
+	await service.setRightsStatus(id, 1, "cleared");
+	const rows = await db.editorialAudit.findMany({ where: { targetId: id } });
+	expect(rows.map((row) => row.action)).toContain("rights-cleared");
+});
+
+it("pages active items and filters by needing review, with stable order", async () => {
+	const service = await serviceFor("pages@example.test");
+	for (let index = 0; index < 52; index++) await rawCreate(service);
+	const needing = await db.item.findMany({ take: 3, orderBy: { id: "asc" } });
+	await db.item.updateMany({ where: { id: { in: needing.map((i) => i.id) } }, data: { reviewStatus: "needs_review" } });
+
+	const first = await service.listItemsPage({ page: 1, needsReview: false });
+	const second = await service.listItemsPage({ page: 2, needsReview: false });
+	expect(first.items).toHaveLength(50);
+	expect(second.items).toHaveLength(2);
+	expect(first).toMatchObject({ page: 1, pageCount: 2, total: 52 });
+	expect(new Set([...first.items, ...second.items].map((i) => i.id)).size).toBe(52);
+
+	const filtered = await service.listItemsPage({ page: 1, needsReview: true });
+	expect(filtered.total).toBe(3);
+	expect(filtered.items.every((item) => item.reviewStatus === "needs_review")).toBe(true);
+});
+
+it("clamps a page out of range and returns only a verified thumbnail", async () => {
+	const service = await serviceFor("thumbs@example.test");
+	const { id } = await rawCreate(service);
+	const thumbnail = await db.mediaFile.create({
+		data: { itemId: id, role: "thumbnail", storageKey: `t/${id}`, mimeType: "image/jpeg", sizeBytes: 1n, originalFilename: "t", status: "verified" },
+	});
+	const result = await service.listItemsPage({ page: 99, needsReview: false });
+	expect(result.page).toBe(1);
+	expect(result.items[0].thumbnailId).toBe(thumbnail.id);
+	await db.mediaFile.update({ where: { id: thumbnail.id }, data: { status: "failed" } });
+	expect((await service.listItemsPage({ page: 1, needsReview: false })).items[0].thumbnailId).toBeNull();
 });

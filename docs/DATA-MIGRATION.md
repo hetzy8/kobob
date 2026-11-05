@@ -1,11 +1,22 @@
 # Archive data ownership and migration
 
 **Date:** 2026-11-01
-**Status:** planning only; no files moved or imported.
+**Status:** planning only; no files moved or imported. The catalog importer
+exists (stage 1 of the [media import](superpowers/specs/2026-11-05-media-import-design.md))
+but has not been run against real data.
 
 ## Accepted decisions
 
-All 1,374 catalog records enter the website privately; import never publishes.
+The catalog holds 1,379 records, and five of them carry a site selection. All
+enter the website privately, with one exception (Yoram, 2026-11-05): imported
+internet records that explicitly name their subject publish as link cards
+without family review; their summaries and saved copies stay family-only.
+The five selected records stay private with that choice kept in their catalog
+record. Probable system files (`._*`, `Thumbs.db`, a Word lock file) are
+excluded only after a content check, and listed in the report. File hashes
+are computed at copy time, not taken from the catalog. The duplicate column
+marks related versions, reprints and sets, not duplicates, so nothing is
+merged. Take a private snapshot of the exported tabs before the dry run.
 Every active verified family member can read every private item, contribute,
 edit/publish/unpublish everyone's items, archive recoverably and restore as
 private. Only Yoram manages membership and permanently deletes. Concurrent
@@ -37,13 +48,15 @@ groups. Preserve original Hebrew values; technical enums can use English
 without losing source values. Do not treat confirmation of a person's
 appearance as approval to display the item.
 
-The inspected catalog had no approved website selections. External research
-records may be links, not downloadable files. Preserve them as source entries,
+External research records may be links, not downloadable files. Preserve them as source entries,
 with attribution and original links. Video/audio uses supported players where
 available; articles can remain metadata/link cards. Do not copy media, scrape
-previews or embed arbitrary sources automatically. Publication requires a
-family member's deliberate action and rights/safe-delivery review. External
-access remains controlled by the publisher. Broken/restricted sources keep
+previews or embed arbitrary sources automatically. Publication of family
+items requires a family member's deliberate action and rights/safe-delivery
+review. Exception (Yoram, 2026-11-05): an internet record that explicitly names
+Yaki publishes as a link card at import, without family review; its summary and
+any saved copy stay family-only. External access remains controlled by the
+publisher. Broken/restricted sources keep
 explicit states without invented descriptions or rights. Do not merge duplicate
 records or delete originals automatically.
 
@@ -57,8 +70,8 @@ records or delete originals automatically.
 2. **Dry-run import.** Validate all KOB IDs and source statuses; report expected
    creates/updates/errors without publishing or mutating source files.
    Preserve source version and import-run evidence outside public Git.
-3. **Private catalog import.** Idempotently load all records and source review
-   decisions. Never overwrite later website edits on retry; report conflicts
+3. **Catalog import.** Idempotently load all records and source review
+   decisions; family records are private, internet link cards are public. Never overwrite later website edits on retry; report conflicts
    for administrator resolution. Reconcile counts and rejected rows.
 4. **Copy and verify media.** Copy accessible originals without moving/deleting
    Drive sources. Compare bytes and SHA-256; retain explicit missing/failed
@@ -81,10 +94,10 @@ records or delete originals automatically.
 
 Use synthetic fixtures in public tests. Prove import idempotence, editorial
 conflict preservation, missing-file reporting, hash mismatch handling, safe
-retry and duplicate-record preservation. All imported records start private.
-Public search, detail, thumbnails and media independently enforce current
+retry and duplicate-record preservation. Imported family records start private; the only imported records that publish
+are the internet link cards above. Public search, detail, thumbnails and media independently enforce current
 public visibility; family routes require active verified membership. Imported
-records and restored records never become public implicitly. Retain stable
+family records and restored records never become public implicitly. Retain stable
 KOB/item IDs and source references across a future site-domain change.
 
 Before cutover, Drive remains the recovery source. After website edits begin,
