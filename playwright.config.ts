@@ -28,6 +28,11 @@ export default defineConfig({
 			DATABASE_URL: databaseUrl,
 			SITE_ORIGIN: testOrigin,
 			AUTH_SECRET: "synthetic-browser-secret-more-than-32-characters",
+			// `next dev` loads the developer's local env file but keeps variables
+			// already set, so blank values keep live email settings out of the tests.
+			RESEND_API_KEY: "",
+			EMAIL_FROM: "",
+			EMAIL_IN_DEVELOPMENT: "",
 		},
 	},
 });

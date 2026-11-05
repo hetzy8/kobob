@@ -14,6 +14,11 @@ function parseUrl(value: string, name: string): URL {
 		throw new Error(`Missing or invalid ${name}`);
 	}
 }
+export function isLocalHttpOrigin(value: string | undefined): boolean {
+	if (!value || !URL.canParse(value)) return false;
+	const { protocol, hostname } = new URL(value);
+	return protocol === "http:" && loopback.has(hostname);
+}
 export function readServerConfig(env: Environment) {
 	const origin = parseUrl(setting(env, "SITE_ORIGIN"), "SITE_ORIGIN");
 	const localHttp =
