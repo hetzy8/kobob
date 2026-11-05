@@ -67,3 +67,33 @@ it("applies the initial migration in isolation and rolls it back without touchin
 		await client.end();
 	}
 });
+
+it("defaults new items to family origin, unknown rights and already reviewed", async () => {
+	const item = await db.item.create({ data: {} });
+	expect(item.origin).toBe("family");
+	expect(item.rightsStatus).toBe("unknown");
+	expect(item.reviewStatus).toBe("reviewed");
+	await db.item.delete({ where: { id: item.id } });
+});
+
+it("removes files, sources and catalog records with their item", async () => {
+	const item = await db.item.create({ data: {} });
+	await db.mediaFile.create({
+		data: {
+			itemId: item.id,
+			role: "original",
+			storageKey: `originals/${item.id}`,
+			mimeType: "image/jpeg",
+			sizeBytes: 10n,
+			originalFilename: "synthetic.jpg",
+		},
+	});
+	await db.externalSource.create({ data: { itemId: item.id, url: "https://example.test/a" } });
+	await db.itemCatalogRecord.create({
+		data: { itemId: item.id, tab: "catalog", row: { a: "b" }, snapshotHash: "x" },
+	});
+	await db.item.delete({ where: { id: item.id } });
+	expect(await db.mediaFile.count({ where: { itemId: item.id } })).toBe(0);
+	expect(await db.externalSource.count({ where: { itemId: item.id } })).toBe(0);
+	expect(await db.itemCatalogRecord.count({ where: { itemId: item.id } })).toBe(0);
+});

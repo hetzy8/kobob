@@ -110,6 +110,29 @@ enum DatePrecision {
   year
   decade
 }
+enum ItemOrigin {
+  family
+  internet
+}
+enum RightsStatus {
+  unknown
+  needs_clarification
+  cleared
+}
+enum ReviewStatus {
+  needs_review
+  reviewed
+}
+enum MediaRole {
+  original
+  thumbnail
+  display
+}
+enum MediaStatus {
+  pending
+  verified
+  failed
+}
 // workingRevisionId is nullable only because the item row must exist before
 // its first revision; the editorial service always sets it in the same transaction.
 model Item {
@@ -121,12 +144,19 @@ model Item {
   workingRevisionId   String?        @unique
   publishedRevisionId String?        @unique
   publishedAt         DateTime?
+  origin              ItemOrigin     @default(family)
+  rightsStatus        RightsStatus   @default(unknown)
+  reviewStatus        ReviewStatus   @default(reviewed)
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
   revisions           ItemRevision[] @relation("ItemRevisions")
+  sources             ExternalSource[]
+  files               MediaFile[]
+  catalogRecord       ItemCatalogRecord?
   workingRevision     ItemRevision?  @relation("WorkingRevision", fields: [workingRevisionId], references: [id])
   publishedRevision   ItemRevision?  @relation("PublishedRevision", fields: [publishedRevisionId], references: [id])
   @@index([state, visibility])
+  @@index([state, reviewStatus])
 }
 model ItemRevision {
   id              String               @id @default(cuid())
@@ -196,4 +226,56 @@ model EditorialAudit {
   action     String
   createdAt  DateTime @default(now())
   @@index([targetId])
+}
+// Public on published items: select only through archive.ts.
+model ExternalSource {
+  id            String  @id @default(cuid())
+  itemId        String
+  item          Item    @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  url           String
+  publisher     String  @default("")
+  author        String  @default("")
+  publishedText String  @default("")
+  license       String  @default("")
+  @@index([itemId])
+}
+// Family-only. storageKey is opaque and never reaches a browser.
+model MediaFile {
+  id               String      @id @default(cuid())
+  itemId           String
+  item             Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  role             MediaRole
+  storageKey       String      @unique
+  mimeType         String
+  sizeBytes        BigInt
+  sha256           String?
+  width            Int?
+  height           Int?
+  status           MediaStatus @default(pending)
+  failureCode      String?
+  originalFilename String
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  @@unique([itemId, role])
+  @@index([status])
+}
+// Family-only: the verbatim source row. Never select from a public reader.
+model ItemCatalogRecord {
+  id           String   @id @default(cuid())
+  itemId       String   @unique
+  item         Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  tab          String
+  row          Json
+  snapshotHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+// Counts only. Row detail stays in the private report outside Git.
+model ImportRun {
+  id           String    @id @default(cuid())
+  kind         String
+  snapshotHash String
+  counts       Json
+  startedAt    DateTime  @default(now())
+  finishedAt   DateTime?
 }
