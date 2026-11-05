@@ -27,7 +27,7 @@ export function applyBlockers({
 	unreadable: readonly unknown[];
 }): string[] {
 	const blockers: string[] = [];
-	if (errors.length > 0) blockers.push(`${errors.length} catalog rows have planning errors`);
+	if (errors.length > 0) blockers.push(`${errors.length} planning errors`);
 	if (unreadable.length > 0) blockers.push(`${unreadable.length} system-file candidates could not be read from Drive`);
 	return blockers;
 }

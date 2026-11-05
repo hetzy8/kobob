@@ -128,6 +128,16 @@ it("never publishes a link to a private Drive or Docs host", () => {
 	expect(url("https://example.test/a")).toBeUndefined();
 });
 
+it("treats a trailing dot, mixed case and Google content hosts as private", () => {
+	const url = (value: string) =>
+		planCatalog([webCatalog("KOB-000034")], [webRow("KOB-000034", { [w.url]: value })]).errors[0]?.code;
+	expect(url("https://Drive.Google.com./file/d/synthetic/view")).toBe("PRIVATE_SOURCE_HOST");
+	expect(url("https://drive.usercontent.google.com/download?id=synthetic")).toBe("PRIVATE_SOURCE_HOST");
+	expect(url("https://lh3.googleusercontent.com/synthetic")).toBe("PRIVATE_SOURCE_HOST");
+	expect(url("https://example.googleusercontent.com./synthetic")).toBe("PRIVATE_SOURCE_HOST");
+	expect(url("https://notgoogleusercontent.com/a")).toBeUndefined();
+});
+
 it("lists cataloged dates and site selections for review, skipping blanks", () => {
 	const { records } = planCatalog(
 		[

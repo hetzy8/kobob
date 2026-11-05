@@ -31,7 +31,7 @@ const KOB_ID = /^KOB-\d{6}$/;
 const MAX_TITLE = 200; // matches itemInputSchema, so the record stays editable
 
 // Visitors must never be sent to a private Drive or Docs link.
-const PRIVATE_SOURCE_HOSTS = new Set(["drive.google.com", "docs.google.com"]);
+const PRIVATE_SOURCE_HOSTS = new Set(["drive.google.com", "docs.google.com", "drive.usercontent.google.com"]);
 // Exports can write sizes in exponent form; nothing else is a size.
 const SIZE_FORMAT = /^\d+(\.\d+)?([eE]\+?\d+)?$/;
 
@@ -43,7 +43,8 @@ function parseSize(value: string): bigint | null {
 
 function isPrivateSourceHost(url: string): boolean {
 	try {
-		return PRIVATE_SOURCE_HOSTS.has(new URL(url).hostname.toLowerCase());
+		const host = new URL(url).hostname.toLowerCase().replace(/\.$/, "");
+		return PRIVATE_SOURCE_HOSTS.has(host) || host.endsWith(".googleusercontent.com");
 	} catch {
 		return false;
 	}

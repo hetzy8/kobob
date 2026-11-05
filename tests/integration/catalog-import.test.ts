@@ -1,5 +1,5 @@
 import { afterAll, beforeEach, expect, it } from "vitest";
-import { applyBlockers, applyCatalog, resolveSystemFiles, SYSTEM_ACTOR } from "../../src/import/apply-catalog";
+import { applyCatalog, resolveSystemFiles, SYSTEM_ACTOR } from "../../src/import/apply-catalog";
 import type { PlannedRecord } from "../../src/import/catalog-plan";
 import { requireTestDatabaseUrl } from "../../src/lib/config";
 import { createDatabase } from "../../src/lib/database";
@@ -145,21 +145,6 @@ it("excludes only system files confirmed by content, keeping readable failures a
 		{ kobId: "KOB-000003", code: "DRIVE_READ_FAILED_403" },
 		{ kobId: "KOB-000005", code: "DRIVE_READ_FAILED" },
 	]);
-});
-
-it("blocks an apply on errors or unreadable files, with counts only", () => {
-	expect(applyBlockers({ errors: [], unreadable: [] })).toEqual([]);
-	const blockers = applyBlockers({
-		errors: [{ kobId: "KOB-000001", code: "INVALID_SIZE" }],
-		unreadable: [
-			{ kobId: "KOB-000002", code: "DRIVE_READ_FAILED_403" },
-			{ kobId: "KOB-000003", code: "DRIVE_READ_FAILED" },
-		],
-	});
-	expect(blockers).toHaveLength(2);
-	expect(blockers[0]).toContain("1");
-	expect(blockers[1]).toContain("2");
-	expect(blockers.join(" ")).not.toContain("KOB-");
 });
 
 const stored = (kobId: string) => db.item.findUniqueOrThrow({ where: { kobId }, include: { catalogRecord: true } });

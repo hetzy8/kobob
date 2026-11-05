@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { closeSync, openSync, readFileSync, writeSync } from "node:fs";
-import { dirname, relative, resolve, sep } from "node:path";
+import { closeSync, openSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { parse } from "csv-parse/sync";
@@ -8,12 +8,14 @@ import { applyBlockers, applyCatalog, resolveSystemFiles } from "../src/import/a
 import { planCatalog, reviewLists, type CatalogRow } from "../src/import/catalog-plan";
 import { createDriveClient } from "../src/import/drive";
 import { createDatabase } from "../src/lib/database";
+import { isOutsideRepository } from "../src/import/report-path";
 
 // Operator command. Dry run unless --apply, --confirm-host and --confirm-snapshot
 // match. Prints counts only; row detail goes to a new report outside the repository.
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 let db: ReturnType<typeof createDatabase> | undefined;
 let reportFd: number | undefined;
+let applying = false;
 
 function fail(message: string): never {
 	console.error(message);
@@ -33,14 +35,18 @@ try {
 		},
 	});
 	const { catalog, web, report: reportPath, "drive-key": driveKey } = values;
+	applying = Boolean(values.apply);
 	const databaseUrl = process.env.DATABASE_URL;
 	if (!catalog || !web || !reportPath || !driveKey || !databaseUrl) {
 		fail("Needs --catalog --web --report --drive-key and DATABASE_URL");
 	}
-	const fromRoot = relative(repositoryRoot, resolve(reportPath));
-	if (fromRoot === "" || (fromRoot !== ".." && !fromRoot.startsWith(`..${sep}`))) {
-		fail("--report must be outside the repository");
+	let outside: boolean;
+	try {
+		outside = isOutsideRepository(reportPath, repositoryRoot);
+	} catch {
+		fail("--report must be in a directory that exists");
 	}
+	if (!outside) fail("--report must be outside the repository");
 	let host: string;
 	try {
 		host = new URL(databaseUrl).host;
@@ -52,11 +58,13 @@ try {
 	}
 	console.log(`Database host: ${host}. Mode: ${values.apply ? "APPLY" : "dry run"}`);
 
-	const read = (path: string) => readFileSync(path);
-	const rows = (path: string): CatalogRow[] =>
-		parse(read(path), { columns: true, bom: true, relax_column_count: true, skip_empty_lines: true });
-	const snapshotHash = createHash("sha256").update(read(catalog)).update(read(web)).digest("hex");
-	const plan = planCatalog(rows(catalog), rows(web));
+	// Each file is read once; the hash and the parse use the same bytes.
+	const catalogBytes = readFileSync(catalog);
+	const webBytes = readFileSync(web);
+	const rows = (bytes: Buffer): CatalogRow[] =>
+		parse(bytes, { columns: true, bom: true, relax_column_count: true, skip_empty_lines: true });
+	const snapshotHash = createHash("sha256").update(catalogBytes).update("\0").update(webBytes).digest("hex");
+	const plan = planCatalog(rows(catalogBytes), rows(webBytes));
 	const drive = createDriveClient(driveKey);
 	const resolved = await resolveSystemFiles(plan.records, drive.readHead);
 	const blockers = applyBlockers({ errors: plan.errors, unreadable: resolved.unreadable });
@@ -93,7 +101,7 @@ try {
 		catalogedDates: review.catalogedDates,
 		siteSelected: review.siteSelected,
 	};
-	writeSync(reportFd, JSON.stringify(detail, (_key, value) => (typeof value === "bigint" ? String(value) : value), 2));
+	writeFileSync(reportFd, JSON.stringify(detail, (_key, value) => (typeof value === "bigint" ? String(value) : value), 2));
 	console.log({
 		items: resolved.records.length,
 		excluded: resolved.excluded.length,
@@ -113,6 +121,7 @@ try {
 } catch (error) {
 	// Never print the message: it can carry a connection string or row data.
 	console.error(`Import failed (${error instanceof Error ? error.constructor.name : "unknown error"}). Details withheld.`);
+	if (applying) console.error("Some records may already be written. Rerun with a new --report path; a rerun is safe.");
 	process.exitCode = 1;
 } finally {
 	if (reportFd !== undefined) closeSync(reportFd);
