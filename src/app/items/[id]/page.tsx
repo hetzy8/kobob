@@ -34,8 +34,8 @@ export default async function PublicItem({
 				</p>
 			)}
 			{item.tags.length > 0 && <p>{item.tags.join(", ")}</p>}
-			{item.sources.filter((source) => isSafeSourceUrl(source.url)).map((source) => (
-				<p key={source.url}>
+			{item.sources.filter((source) => isSafeSourceUrl(source.url)).map((source, index) => (
+				<p key={`${index}-${source.url}`}>
 					{source.publisher && `${copy.items.publisher}: ${source.publisher} · `}
 					{source.author && `${copy.items.author}: ${source.author} · `}
 					{source.publishedText && `${source.publishedText} · `}

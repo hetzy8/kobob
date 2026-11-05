@@ -76,6 +76,7 @@ test("explains that publishing needs cleared rights, then allows it", async ({ p
 	await page.getByRole("button", { name: copy.items.publish }).click();
 	await expect(page.getByText(copy.items.rightsNotCleared)).toBeVisible();
 	await page.getByRole("button", { name: copy.items.markRightsCleared }).click();
+	await expect(page.getByText(copy.items.rightsNotCleared)).toHaveCount(0);
 	await expect(page.getByRole("button", { name: copy.items.undoRightsCleared })).toBeVisible();
 	await page.getByRole("button", { name: copy.items.publish }).click();
 	await expect(page.getByText(copy.items.public).first()).toBeVisible();
@@ -642,4 +643,51 @@ test("only signed-in members see the Archive tab, and it opens the family list",
 	await db.user.update({ where: { email: "navigator@example.test" }, data: { status: "revoked" } });
 	await page.goto("/");
 	await expect(nav.getByRole("link", { name: copy.archive, exact: true })).toHaveCount(0);
+});
+
+test("a public link card shows its source details and nothing private", async ({ page }) => {
+	const item = await db.item.create({ data: { origin: "internet", visibility: "public", publishedAt: new Date() } });
+	const revision = await db.itemRevision.create({
+		data: { itemId: item.id, title: "Synthetic link card", types: ["article"], authorId: "system:import" },
+	});
+	await db.item.update({ where: { id: item.id }, data: { workingRevisionId: revision.id, publishedRevisionId: revision.id } });
+	await db.externalSource.createMany({
+		data: [
+			{
+				itemId: item.id,
+				url: "https://example.test/article",
+				publisher: "Synthetic Press",
+				publishedText: "Synthetic 1979",
+				license: "Synthetic license",
+			},
+			{ itemId: item.id, url: "javascript:alert(1)", publisher: "Synthetic bad" },
+		],
+	});
+	await db.itemCatalogRecord.create({
+		data: { itemId: item.id, tab: "catalog", row: { catalog: { note: "PRIVATE-FOLDER" }, web: null }, snapshotHash: "synthetic" },
+	});
+	await db.mediaFile.create({
+		data: {
+			itemId: item.id,
+			role: "original",
+			storageKey: `originals/${item.id}`,
+			mimeType: "text/html",
+			sizeBytes: 1n,
+			originalFilename: "PRIVATE-NAME.html",
+		},
+	});
+	await page.goto(`/items/${item.id}`);
+	await expect(page.getByRole("heading", { name: "Synthetic link card" })).toBeVisible();
+	const link = page.getByRole("link", { name: copy.items.sourceLink });
+	await expect(link).toHaveCount(1);
+	await expect(link).toHaveAttribute("href", "https://example.test/article");
+	await expect(link).toHaveAttribute("rel", "noopener noreferrer");
+	const article = page.getByRole("article");
+	await expect(article).toContainText(`${copy.items.publisher}: Synthetic Press`);
+	await expect(article).toContainText("Synthetic 1979");
+	await expect(article).toContainText(`${copy.items.license}: Synthetic license`);
+	const html = await page.content();
+	expect(html).not.toContain("PRIVATE-FOLDER");
+	expect(html).not.toContain("PRIVATE-NAME");
+	expect(html).not.toContain("javascript:");
 });
