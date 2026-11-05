@@ -13,6 +13,8 @@ export const catalog = {
 	sha256: "SHA256",
 	rights: "זכויות",
 	sourceKind: "סוג מקור",
+	eventDate: "תאריך אירוע",
+	siteSelection: "בחירה לאתר",
 } as const;
 
 export const web = {

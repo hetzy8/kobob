@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { catalog as c, web as w } from "../../src/import/catalog-columns";
-import { planCatalog } from "../../src/import/catalog-plan";
+import { planCatalog, reviewLists } from "../../src/import/catalog-plan";
 
 const family = (id: string, extra = {}) => ({
 	[c.id]: id, [c.originalName]: "synthetic.jpg", [c.type]: "קובץ תמונה", [c.sourceKind]: "Drive",
@@ -89,4 +89,59 @@ it("reports invalid rows and continues", () => {
 		{ kobId: "KOB-000013", code: "MISSING_WEB_ROW" },
 		{ kobId: "KOB-000014", code: "UNSAFE_URL" },
 	]);
+});
+
+it("reports duplicate and orphan web rows without planning the duplicated record", () => {
+	const { records, errors } = planCatalog(
+		[webCatalog("KOB-000020"), webCatalog("KOB-000021"), family("KOB-000022")],
+		[webRow("KOB-000020"), webRow("KOB-000020"), webRow("KOB-000021"), webRow("KOB-000099")],
+	);
+	expect(records.map((record) => record.kobId)).toEqual(["KOB-000021", "KOB-000022"]);
+	expect(errors).toEqual([
+		{ kobId: "KOB-000020", code: "DUPLICATE_WEB_ROW" },
+		{ kobId: "KOB-000099", code: "ORPHAN_WEB_ROW" },
+	]);
+});
+
+it("accepts only plain decimal or exponent sizes", () => {
+	const code = (size: string) => planCatalog([family("KOB-000030", { [c.size]: size })], []).errors[0]?.code;
+	expect(code("0x10")).toBe("INVALID_SIZE");
+	expect(code(" 10")).toBe("INVALID_SIZE");
+	expect(code("10 ")).toBe("INVALID_SIZE");
+	expect(code("")).toBe("INVALID_SIZE");
+	expect(code("1.5e+3")).toBeUndefined();
+	expect(code("10")).toBeUndefined();
+});
+
+it("defaults an empty MIME type and rejects a missing title", () => {
+	const { records } = planCatalog([family("KOB-000031", { [c.mime]: "" })], []);
+	expect(records[0].file?.mimeType).toBe("application/octet-stream");
+	const { errors } = planCatalog([webCatalog("KOB-000032")], [webRow("KOB-000032", { [w.title]: "  " })]);
+	expect(errors).toEqual([{ kobId: "KOB-000032", code: "MISSING_TITLE" }]);
+});
+
+it("never publishes a link to a private Drive or Docs host", () => {
+	const url = (value: string) =>
+		planCatalog([webCatalog("KOB-000033")], [webRow("KOB-000033", { [w.url]: value })]).errors[0]?.code;
+	expect(url("https://drive.google.com/file/d/synthetic/view")).toBe("PRIVATE_SOURCE_HOST");
+	expect(url("https://docs.google.com/document/d/synthetic")).toBe("PRIVATE_SOURCE_HOST");
+	expect(url("https://example.test/a")).toBeUndefined();
+});
+
+it("lists cataloged dates and site selections for review, skipping blanks", () => {
+	const { records } = planCatalog(
+		[
+			family("KOB-000040", { [c.eventDate]: "1979", [c.siteSelection]: "כן" }),
+			family("KOB-000041", { [c.eventDate]: " ", [c.siteSelection]: "" }),
+			webCatalog("KOB-000042", { [c.siteSelection]: "כן" }),
+		],
+		[webRow("KOB-000042")],
+	);
+	expect(reviewLists(records)).toEqual({
+		catalogedDates: [{ kobId: "KOB-000040", value: "1979" }],
+		siteSelected: [
+			{ kobId: "KOB-000040", publish: false },
+			{ kobId: "KOB-000042", publish: true },
+		],
+	});
 });

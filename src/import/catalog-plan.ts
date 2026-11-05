@@ -30,10 +30,23 @@ export type PlannedRecord = {
 const KOB_ID = /^KOB-\d{6}$/;
 const MAX_TITLE = 200; // matches itemInputSchema, so the record stays editable
 
+// Visitors must never be sent to a private Drive or Docs link.
+const PRIVATE_SOURCE_HOSTS = new Set(["drive.google.com", "docs.google.com"]);
+// Exports can write sizes in exponent form; nothing else is a size.
+const SIZE_FORMAT = /^\d+(\.\d+)?([eE]\+?\d+)?$/;
+
 function parseSize(value: string): bigint | null {
+	if (!SIZE_FORMAT.test(value)) return null;
 	const number = Number(value);
-	// Exports can write sizes in exponent form.
-	return value.trim() !== "" && Number.isSafeInteger(number) && number >= 0 ? BigInt(number) : null;
+	return Number.isSafeInteger(number) ? BigInt(number) : null;
+}
+
+function isPrivateSourceHost(url: string): boolean {
+	try {
+		return PRIVATE_SOURCE_HOSTS.has(new URL(url).hostname.toLowerCase());
+	} catch {
+		return false;
+	}
 }
 
 function planRow(row: CatalogRow, webRow: CatalogRow | null): PlannedRecord | string {
@@ -54,7 +67,7 @@ function planRow(row: CatalogRow, webRow: CatalogRow | null): PlannedRecord | st
 		file = {
 			driveFileId,
 			sizeBytes,
-			mimeType: row[c.mime] ?? "application/octet-stream",
+			mimeType: row[c.mime] || "application/octet-stream",
 			originalFilename: name,
 			sha256: row[c.sha256]?.trim() || null,
 		};
@@ -63,6 +76,7 @@ function planRow(row: CatalogRow, webRow: CatalogRow | null): PlannedRecord | st
 	if (internet && webRow) {
 		const url = webRow[w.url] ?? "";
 		if (!isSafeSourceUrl(url)) return "UNSAFE_URL";
+		if (isPrivateSourceHost(url)) return "PRIVATE_SOURCE_HOST";
 		source = {
 			url,
 			publisher: webRow[w.publisher] ?? "",
@@ -90,7 +104,13 @@ function planRow(row: CatalogRow, webRow: CatalogRow | null): PlannedRecord | st
 export function planCatalog(catalogRows: CatalogRow[], webRows: CatalogRow[]) {
 	const records: PlannedRecord[] = [];
 	const errors: PlanError[] = [];
-	const webById = new Map(webRows.map((row) => [row[w.id], row]));
+	const webById = new Map<string, CatalogRow>();
+	const duplicateWebIds = new Set<string>();
+	for (const row of webRows) {
+		const id = row[w.id] ?? "";
+		if (webById.has(id)) duplicateWebIds.add(id);
+		else webById.set(id, row);
+	}
 	const seen = new Set<string>();
 	for (const row of catalogRows) {
 		const kobId = row[c.id] ?? "";
@@ -103,9 +123,24 @@ export function planCatalog(catalogRows: CatalogRow[], webRows: CatalogRow[]) {
 			continue;
 		}
 		seen.add(kobId);
+		if (duplicateWebIds.has(kobId)) continue;
 		const planned = planRow(row, webById.get(kobId) ?? null);
 		if (typeof planned === "string") errors.push({ kobId, code: planned });
 		else records.push(planned);
 	}
+	for (const id of duplicateWebIds) if (seen.has(id)) errors.push({ kobId: id, code: "DUPLICATE_WEB_ROW" });
+	for (const id of webById.keys()) if (!seen.has(id)) errors.push({ kobId: id, code: "ORPHAN_WEB_ROW" });
 	return { records, errors };
+}
+
+// What Gate A asks Yoram to decide: cataloged dates and site selections.
+export function reviewLists(records: PlannedRecord[]) {
+	const catalogedDates: { kobId: string; value: string }[] = [];
+	const siteSelected: { kobId: string; publish: boolean }[] = [];
+	for (const record of records) {
+		const date = (record.row.catalog[c.eventDate] ?? "").trim();
+		if (date) catalogedDates.push({ kobId: record.kobId, value: date });
+		if ((record.row.catalog[c.siteSelection] ?? "").trim()) siteSelected.push({ kobId: record.kobId, publish: record.publish });
+	}
+	return { catalogedDates, siteSelected };
 }
