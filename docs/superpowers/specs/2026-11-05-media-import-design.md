@@ -62,7 +62,9 @@ a media server. Actual behavior with large files is measured in stage 2.
    DATA-MIGRATION.md.
 5. **Family records need rights cleared before publishing.** A family member marks
    rights as cleared; publishing is refused otherwise. Rights ownership for family
-   material is still an open question and does not block import.
+   material is still an open question and does not block import. Withdrawing rights
+   on a public family item unpublishes it, with a warning beforehand (Yoram,
+   2026-11-05).
 6. **Public media is out of scope.** A published item shows text and links only.
 7. **Own bucket and keys.** Kobob never shares a bucket or key with another app.
 
@@ -226,7 +228,7 @@ Synthetic fixtures only, on the isolated test database.
   reads and from search, and a rerun does not bring it back.
 - **Rights rule:** a family item cannot be published without cleared rights, by any
   path; internet items skip the rule; already-published items are unaffected until
-  their next publish.
+  their next publish; withdrawing rights unpublishes a public family item.
 - **Delivery:** ranges, chunk cap, attachment for unsafe types, spoofed types,
   no storage key in responses, EXIF stripped.
 - **Import:** rerun without duplicates, website edits preserved, conflicts reported,

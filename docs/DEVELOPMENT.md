@@ -191,6 +191,8 @@ on `feat/catalog-import`; it has not been run against real data.
   (the catalog row, family reads only) and `ImportRun` (counts only).
 - **Rights rule:** a family item cannot be published until a family member
   marks its rights as cleared. Internet records are not subject to it.
+  Withdrawing rights on a public family item unpublishes it, with a warning
+  beforehand.
 - **Importer:** `npm run import:catalog -- --catalog <csv> --web <csv>
   --drive-key <key.json> --report <path>` with `DATABASE_URL` set. It is a dry
   run unless `--apply`, a matching `--confirm-host` and a matching

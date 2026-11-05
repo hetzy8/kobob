@@ -1,6 +1,7 @@
 import { afterAll, beforeEach, expect, it } from "vitest";
 import { createDatabase } from "../../src/lib/database";
 import { requireTestDatabaseUrl } from "../../src/lib/config";
+import { createArchiveReader } from "../../src/services/archive";
 import { createEditorialService } from "../../src/services/editorial";
 import type { ItemInput } from "../../src/services/item-input";
 
@@ -403,15 +404,95 @@ it("refuses to publish a family item until rights are cleared", async () => {
 	expect((await db.item.findUniqueOrThrow({ where: { id } })).visibility).toBe("public");
 });
 
-it("blocks republishing after rights are withdrawn but keeps the public version", async () => {
-	const service = await serviceFor("b@example.test");
-	const { id } = await rawCreate(service);
+async function publishedFamilyItem(
+	service: Awaited<ReturnType<typeof serviceFor>>,
+	title = "Synthetic title",
+) {
+	const { id } = await service.createItem(input(title));
 	const cleared = await service.setRightsStatus(id, 1, "cleared");
 	const published = await service.transitionItem(id, cleared.version, "publish");
-	const withdrawn = await service.setRightsStatus(id, published.version, "needs_clarification");
-	const edited = await service.updateItem(id, withdrawn.version, input("Edited"));
-	await expect(service.transitionItem(id, edited.version, "publish")).rejects.toThrow("RIGHTS_NOT_CLEARED");
+	return { id, version: published.version };
+}
+
+it("unpublishes a public family item when its rights are withdrawn", async () => {
+	const service = await serviceFor("b@example.test");
+	const reader = createArchiveReader(db);
+	const { id, version } = await publishedFamilyItem(service, "Withdrawn synthetic");
+	expect(await reader.getPublicItem(id)).not.toBeNull();
+	const withdrawn = await service.setRightsStatus(id, version, "needs_clarification");
+	expect(withdrawn).toEqual({ id, version: version + 1, unpublished: true });
+	const row = await db.item.findUniqueOrThrow({ where: { id } });
+	expect(row.visibility).toBe("private");
+	expect(row.publishedRevisionId).toBeNull();
+	expect(row.publishedAt).toBeNull();
+	const actions = (await db.editorialAudit.findMany({ where: { targetId: id } })).map(
+		(r) => r.action,
+	);
+	expect(actions).toContain("rights-needs_clarification");
+	expect(actions).toContain("make-private");
+	expect(await reader.getPublicItem(id)).toBeNull();
+	expect((await reader.searchPublicItems("Withdrawn")).map((item) => item.id)).not.toContain(id);
+	await expect(service.transitionItem(id, withdrawn.version, "publish")).rejects.toThrow(
+		"RIGHTS_NOT_CLEARED",
+	);
+	const again = await service.setRightsStatus(id, withdrawn.version, "cleared");
+	await service.transitionItem(id, again.version, "publish");
 	expect((await db.item.findUniqueOrThrow({ where: { id } })).visibility).toBe("public");
+});
+
+it("keeps unsaved working edits when withdrawal unpublishes", async () => {
+	const service = await serviceFor("b2@example.test");
+	const { id, version } = await publishedFamilyItem(service);
+	const edited = await service.updateItem(id, version, input("Edited working title"));
+	await service.setRightsStatus(id, edited.version, "needs_clarification");
+	expect((await service.getItem(id)).working.title).toBe("Edited working title");
+});
+
+it("only changes rights on a private family item", async () => {
+	const service = await serviceFor("b3@example.test");
+	const { id } = await rawCreate(service);
+	const cleared = await service.setRightsStatus(id, 1, "cleared");
+	expect(cleared.unpublished).toBe(false);
+	const withdrawn = await service.setRightsStatus(id, cleared.version, "needs_clarification");
+	expect(withdrawn.unpublished).toBe(false);
+	const actions = (await db.editorialAudit.findMany({ where: { targetId: id } })).map(
+		(r) => r.action,
+	);
+	expect(actions).not.toContain("make-private");
+});
+
+it("leaves a public internet item public on a rights change", async () => {
+	const service = await serviceFor("b4@example.test");
+	const { id } = await rawCreate(service);
+	await db.item.update({ where: { id }, data: { origin: "internet" } });
+	const published = await service.transitionItem(id, 1, "publish");
+	const changed = await service.setRightsStatus(id, published.version, "needs_clarification");
+	expect(changed.unpublished).toBe(false);
+	expect((await db.item.findUniqueOrThrow({ where: { id } })).visibility).toBe("public");
+});
+
+it("keeps a legacy public family item with unknown rights public", async () => {
+	const service = await serviceFor("b5@example.test");
+	const reader = createArchiveReader(db);
+	const { id, version } = await publishedFamilyItem(service);
+	await db.item.update({ where: { id }, data: { rightsStatus: "unknown" } });
+	expect(await reader.getPublicItem(id)).not.toBeNull();
+	const cleared = await service.setRightsStatus(id, version, "cleared");
+	expect(cleared.unpublished).toBe(false);
+	expect((await db.item.findUniqueOrThrow({ where: { id } })).visibility).toBe("public");
+	expect(await reader.getPublicItem(id)).not.toBeNull();
+});
+
+it("throws CONFLICT on a stale version and changes nothing when withdrawing", async () => {
+	const service = await serviceFor("b6@example.test");
+	const { id, version } = await publishedFamilyItem(service);
+	await expect(
+		service.setRightsStatus(id, version - 1, "needs_clarification"),
+	).rejects.toThrow("CONFLICT");
+	const row = await db.item.findUniqueOrThrow({ where: { id } });
+	expect(row.visibility).toBe("public");
+	expect(row.rightsStatus).toBe("cleared");
+	expect(row.version).toBe(version);
 });
 
 it("lets internet items publish without cleared rights", async () => {

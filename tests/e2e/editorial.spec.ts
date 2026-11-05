@@ -139,7 +139,30 @@ test("publishing shows the published version until the next publish", async ({
 	await expect(page.getByText(copy.searchPage.noResults)).toBeVisible();
 });
 
-test("the old public archive and achievements pages are gone", async ({ page }) => {
+test("withdrawing rights warns first, then unpublishes the item", async ({
+	page,
+	browser,
+}) => {
+	await signIn(page, "withdraw@example.test");
+	const id = await createItem(page, "Synthetic withdrawn item");
+	await page.goto(`/family/items/${id}/edit`);
+	await expect(page.getByRole("button", { name: copy.items.save })).toBeEnabled();
+	await page.getByRole("button", { name: copy.items.publish }).click();
+	await expect(page.getByText(copy.items.public).first()).toBeVisible();
+	await expect(page.getByText(copy.items.rightsWithdrawWarning)).toBeVisible();
+	await page.getByRole("button", { name: copy.items.undoRightsCleared }).click();
+	await expect(page.getByText(copy.items.rightsWithdrawn)).toBeVisible();
+	await expect(page.getByText(copy.items.rightsWithdrawWarning)).toHaveCount(0);
+	await expect(page.getByText(copy.items.private, { exact: true }).first()).toBeVisible();
+	await expect(page.getByRole("button", { name: copy.items.publish })).toBeVisible();
+	await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+	const anonymous = await (await browser.newContext()).newPage();
+	await anonymous.goto(`/items/${id}`);
+	await expect(anonymous.getByRole("heading", { name: copy.notFound })).toBeVisible();
+	await anonymous.context().close();
+});
+
+test("the old public archive and achievements pages are gone",async ({ page }) => {
 	for (const path of ["/archive", "/archive/anything", "/achievements"]) {
 		const response = await page.goto(path);
 		expect(response?.status(), path).toBe(404);

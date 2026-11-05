@@ -85,6 +85,8 @@ export const copy = {
 		rightsNames: { unknown: "לא ידוע", needs_clarification: "נדרש בירור", cleared: "אושרו" },
 		markRightsCleared: "סימון שהזכויות אושרו",
 		undoRightsCleared: "ביטול אישור הזכויות",
+		rightsWithdrawWarning: "ביטול האישור יסיר את הפריט מהאתר הציבורי.",
+		rightsWithdrawn: "אישור הזכויות בוטל והפריט הוסר מהאתר הציבורי.",
 		rightsNotCleared: "אי אפשר לפרסם לפני אישור הזכויות.",
 		reviewNames: { needs_review: "נדרשת בדיקה", reviewed: "נבדק" },
 		markReviewed: "סימון כנבדק",

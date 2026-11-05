@@ -29,6 +29,9 @@ export function ItemStatusActions({ item }: { item: FamilyItem }) {
 				{copy.items.rights}: {copy.items.rightsNames[item.rightsStatus]} ·{" "}
 				{copy.items.reviewNames[item.reviewStatus]}
 			</p>
+			{item.origin === "family" && item.visibility === "public" && cleared && (
+				<p>{copy.items.rightsWithdrawWarning}</p>
+			)}
 			{item.origin === "family" &&
 				(cleared
 					? button("rights", "needs_clarification", copy.items.undoRightsCleared)
@@ -39,6 +42,7 @@ export function ItemStatusActions({ item }: { item: FamilyItem }) {
 			<p role="status">
 				{state.status === "conflict" && copy.items.conflict}
 				{state.status === "failed" && copy.items.failed}
+				{state.status === "withdrawn" && copy.items.rightsWithdrawn}
 			</p>
 		</div>
 	);

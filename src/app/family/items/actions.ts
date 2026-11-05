@@ -12,7 +12,7 @@ import type {
 import type { ItemInput } from "@/services/item-input";
 
 export type ItemFormState = {
-	status: "idle" | "saved" | "invalid" | "conflict" | "failed" | "rights";
+	status: "idle" | "saved" | "invalid" | "conflict" | "failed" | "rights" | "withdrawn";
 	version?: number;
 	fields?: string[];
 	latest?: FamilyItem;
@@ -139,11 +139,23 @@ export async function changeItemStatus(
 	if (!rights && !review) return { status: "failed" };
 	try {
 		const service = editorialService();
-		const { version } = rights
+		const { version, unpublished } = rights
 			? await service.setRightsStatus(id, expected, rights)
-			: await service.setReviewStatus(id, expected, review as (typeof reviewValues)[number]);
+			: {
+					...(await service.setReviewStatus(
+						id,
+						expected,
+						review as (typeof reviewValues)[number],
+					)),
+					unpublished: false,
+				};
 		revalidatePath("/family");
 		revalidatePath(`/family/items/${id}/edit`);
+		if (unpublished) {
+			revalidatePath("/search");
+			revalidatePath(`/items/${id}`);
+			return { status: "withdrawn", version };
+		}
 		return { status: "saved", version };
 	} catch (error) {
 		if (isAccessError(error)) redirect("/sign-in");

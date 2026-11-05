@@ -302,11 +302,25 @@ export function createEditorialService(
 			}),
 		setRightsStatus: (id: string, expectedVersion: number, status: RightsValue) =>
 			run(async (tx, actor) => {
-				await claim(tx, id, expectedVersion, (item) =>
-					item.state === "active" ? { rightsStatus: status } : null,
-				);
+				// Withdrawing rights on a public family item also unpublishes it.
+				const before = await claim(tx, id, expectedVersion, (item) => {
+					if (item.state !== "active") return null;
+					const unpublish =
+						status !== "cleared" && item.origin === "family" && item.visibility === "public";
+					return unpublish
+						? {
+								rightsStatus: status,
+								visibility: "private",
+								publishedRevisionId: null,
+								publishedAt: null,
+							}
+						: { rightsStatus: status };
+				});
+				const unpublished =
+					status !== "cleared" && before.origin === "family" && before.visibility === "public";
 				await audit(tx, actor.id, "item", id, `rights-${status}`);
-				return { id, version: expectedVersion + 1 };
+				if (unpublished) await audit(tx, actor.id, "item", id, "make-private");
+				return { id, version: expectedVersion + 1, unpublished };
 			}),
 		setReviewStatus: (id: string, expectedVersion: number, status: ReviewValue) =>
 			run(async (tx, actor) => {
