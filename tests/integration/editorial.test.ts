@@ -518,3 +518,34 @@ it("audits status changes with ids and action names only", async () => {
 	const rows = await db.editorialAudit.findMany({ where: { targetId: id } });
 	expect(rows.map((row) => row.action)).toContain("rights-cleared");
 });
+
+it("pages active items and filters by needing review, with stable order", async () => {
+	const service = await serviceFor("pages@example.test");
+	for (let index = 0; index < 52; index++) await rawCreate(service);
+	const needing = await db.item.findMany({ take: 3, orderBy: { id: "asc" } });
+	await db.item.updateMany({ where: { id: { in: needing.map((i) => i.id) } }, data: { reviewStatus: "needs_review" } });
+
+	const first = await service.listItemsPage({ page: 1, needsReview: false });
+	const second = await service.listItemsPage({ page: 2, needsReview: false });
+	expect(first.items).toHaveLength(50);
+	expect(second.items).toHaveLength(2);
+	expect(first).toMatchObject({ page: 1, pageCount: 2, total: 52 });
+	expect(new Set([...first.items, ...second.items].map((i) => i.id)).size).toBe(52);
+
+	const filtered = await service.listItemsPage({ page: 1, needsReview: true });
+	expect(filtered.total).toBe(3);
+	expect(filtered.items.every((item) => item.reviewStatus === "needs_review")).toBe(true);
+});
+
+it("clamps a page out of range and returns only a verified thumbnail", async () => {
+	const service = await serviceFor("thumbs@example.test");
+	const { id } = await rawCreate(service);
+	const thumbnail = await db.mediaFile.create({
+		data: { itemId: id, role: "thumbnail", storageKey: `t/${id}`, mimeType: "image/jpeg", sizeBytes: 1n, originalFilename: "t", status: "verified" },
+	});
+	const result = await service.listItemsPage({ page: 99, needsReview: false });
+	expect(result.page).toBe(1);
+	expect(result.items[0].thumbnailId).toBe(thumbnail.id);
+	await db.mediaFile.update({ where: { id: thumbnail.id }, data: { status: "failed" } });
+	expect((await service.listItemsPage({ page: 1, needsReview: false })).items[0].thumbnailId).toBeNull();
+});

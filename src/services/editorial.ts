@@ -31,6 +31,13 @@ export type ItemSummary = {
 	visibility: "private" | "public";
 	hasUnpublishedEdits: boolean;
 };
+export const ITEMS_PER_PAGE = 50;
+export type ItemPage = {
+	items: (ItemSummary & { reviewStatus: ReviewValue; thumbnailId: string | null })[];
+	page: number;
+	pageCount: number;
+	total: number;
+};
 export type FamilyItem = {
 	id: string;
 	state: "active" | "archived";
@@ -350,6 +357,39 @@ export function createEditorialService(
 				};
 			}),
 		listItems: () => run((tx) => summaries(tx, "active")),
+		listItemsPage: ({ page, needsReview }: { page: number; needsReview: boolean }) =>
+			run(async (tx): Promise<ItemPage> => {
+				const where = {
+					state: "active" as const,
+					...(needsReview ? { reviewStatus: "needs_review" as const } : {}),
+				};
+				const total = await tx.item.count({ where });
+				const pageCount = Math.max(1, Math.ceil(total / ITEMS_PER_PAGE));
+				const current = Number.isInteger(page) && page >= 1 && page <= pageCount ? page : 1;
+				const items = await tx.item.findMany({
+					where,
+					include: {
+						workingRevision: { select: { title: true } },
+						files: { where: { role: "thumbnail", status: "verified" }, select: { id: true } },
+					},
+					orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+					skip: (current - 1) * ITEMS_PER_PAGE,
+					take: ITEMS_PER_PAGE,
+				});
+				return {
+					page: current,
+					pageCount,
+					total,
+					items: items.map((item) => ({
+						id: item.id,
+						title: item.workingRevision?.title ?? "",
+						visibility: item.visibility,
+						hasUnpublishedEdits: unpublishedEdits(item),
+						reviewStatus: item.reviewStatus,
+						thumbnailId: item.files[0]?.id ?? null,
+					})),
+				};
+			}),
 		listArchived: () => run((tx) => summaries(tx, "archived")),
 		listPeople: (): Promise<PersonRecord[]> =>
 			run((tx) =>

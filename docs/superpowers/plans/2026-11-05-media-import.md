@@ -36,6 +36,7 @@ The spec was updated to match these on approval (2026-11-05):
 - **The viewer ships in stage 4,** not stage 2. Stage 2 measures through direct `/api/media/<id>` links, so nothing is shown before files exist.
 - **Lock files are confirmed by name, size and an owner-name length byte,** not by size alone.
 - **Withdrawing rights unpublishes (added after stage 1 was built, Yoram, 2026-11-05):** withdrawing rights on a public family item makes it private in the same transaction, with a warning beside the button beforehand and a confirmation afterwards. Internet and private items are unaffected, and a legacy public item with unknown rights stays public until its rights change.
+- **The paged list (Task 11) moved into stage 1** before the production import (Yoram, 2026-11-05), because the catalog adds about 1,214 items to an unpaged list. Thumbnails appear once stage 3 has files; Task 12's strings stay in stage 4.
 - **The copy holds one file in memory at a time** rather than streaming. The largest file is about 220 MB, it runs on Yoram's Mac, and it keeps verification simple. Size and hash are still checked before and after upload.
 
 ## File map

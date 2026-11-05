@@ -162,7 +162,7 @@ test("withdrawing rights warns first, then unpublishes the item", async ({
 	await anonymous.context().close();
 });
 
-test("the old public archive and achievements pages are gone",async ({ page }) => {
+test("the old public archive and achievements pages are gone", async ({ page }) => {
 	for (const path of ["/archive", "/archive/anything", "/achievements"]) {
 		const response = await page.goto(path);
 		expect(response?.status(), path).toBe(404);
@@ -713,4 +713,23 @@ test("a public link card shows its source details and nothing private", async ({
 	expect(html).not.toContain("PRIVATE-FOLDER");
 	expect(html).not.toContain("PRIVATE-NAME");
 	expect(html).not.toContain("javascript:");
+});
+
+test("the family list pages and filters items needing review", async ({ page }) => {
+	await signIn(page, "paging@example.test");
+	for (let index = 0; index < 51; index++) {
+		const item = await db.item.create({ data: { reviewStatus: index === 0 ? "needs_review" : "reviewed" } });
+		const revision = await db.itemRevision.create({
+			data: { itemId: item.id, title: `Synthetic ${index}`, types: ["other"], authorId: "system:import" },
+		});
+		await db.item.update({ where: { id: item.id }, data: { workingRevisionId: revision.id } });
+	}
+	await page.goto("/family");
+	await expect(page.getByText(copy.items.pageOf(1, 2))).toBeVisible();
+	await page.getByRole("link", { name: copy.items.nextPage }).click();
+	await expect(page.getByText(copy.items.pageOf(2, 2))).toBeVisible();
+	await page.getByRole("link", { name: copy.items.showNeedsReview }).click();
+	await expect(page.getByRole("link", { name: "Synthetic 0", exact: true })).toBeVisible();
+	await expect(page.getByRole("link", { name: "Synthetic 1", exact: true })).toHaveCount(0);
+	await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
 });

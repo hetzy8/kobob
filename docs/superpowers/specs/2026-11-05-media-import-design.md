@@ -204,7 +204,7 @@ explicit go.
 
 1. **Schema and catalog import.** Models, the rights rule with its status actions
    (without them the family could not publish after this release), `import-catalog`,
-   doc changes. Dry-run report for Yoram, then the import: 81 public cards and
+   doc changes, the paged family list and needs-review filter. Dry-run report for Yoram, then the import: 81 public cards and
    private records without files.
 2. **Storage and delivery.** R2 client and media route. Yoram provisions
    buckets and keys. Measure on production, behind sign-in, with synthetic files
@@ -212,7 +212,7 @@ explicit go.
    deployments are off.
 3. **File copy.** `import-media` on a small sample, then everything. Reconcile
    counts, bytes and hashes.
-4. **Review pages.** Paged list, thumbnails, filter and the file viewer.
+4. **Review pages.** Thumbnails appear, and the file viewer.
 
 If stage 2 measurements show that streaming cannot serve the largest files, this
 comes back to Yoram before stage 3, with costs and the access trade-off.

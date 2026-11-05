@@ -206,6 +206,7 @@ on `feat/catalog-import`; it has not been run against real data.
   files or with planning errors on that run. Probable system files are confirmed
   by name and format before they are excluded. The Drive service account
   needs read-only access to the shared folder.
+- **Family list:** `/family` is paged (50 items per page, `?page=`) with a needs-review filter (`?review=1`); it shows a thumbnail only for a verified thumbnail file, so none appear until files are copied in stage 3.
 - **Report rule:** the console prints counts only. Row detail goes to the
   `--report` file, which must be outside the repository and must be a new file:
   an existing report is never overwritten.
