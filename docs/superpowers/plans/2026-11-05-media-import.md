@@ -1455,9 +1455,10 @@ Verify the wiring without real data. Run `npm run typecheck`; expected: PASS. Ru
 ### Gate A: stop for Yoram
 
 - [ ] Open the PR into `dev`. Yoram runs the Codex review. Reply to each point; merge on CI green plus the reply, on Yoram's word.
+- [ ] Before the release, count public items in production by query, because the rights rule applies to their next publish.
 - [ ] Yoram approves the Hebrew strings; then a release to `main` on Yoram's go, because production needs the migration. Follow OPERATIONS.md.
 - [ ] Yoram creates a Google Cloud service account and shares the collection folder with it as Viewer. The key file stays outside the repository.
-- [ ] Before the release, count public items in production by query, because the rights rule applies to their next publish.
+- Note: each dry run and each apply needs its own new `--report` path; the importer refuses to overwrite an existing report.
 - [ ] Yoram exports the "catalog" and "web sources" tabs as CSV into a dated folder outside the repository, and runs the dry run against the local development database:
 
 ```sh

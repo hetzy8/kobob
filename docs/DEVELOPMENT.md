@@ -195,12 +195,13 @@ on `feat/catalog-import`; it has not been run against real data.
   --drive-key <key.json> --report <path>` with `DATABASE_URL` set. It is a dry
   run unless `--apply`, a matching `--confirm-host` and a matching
   `--confirm-snapshot=<hash>` are given; the dry run prints the hash, so an
-  apply is tied to the report that was reviewed. `--apply` is refused (exit 2)
+  apply is tied to the exported files that were reviewed. `--apply` is refused (exit 2)
   while the plan has errors or unreadable system-file candidates; there is no
   override. A rerun creates no duplicates and never changes website edits;
   changed rows on edited items are reported as conflicts, and the report lists
   public items that no longer qualify, stale public cards and items missing
-  from the export. Probable system files are confirmed
+  from the export; `missingFromExport` also lists items excluded as system
+  files or with planning errors on that run. Probable system files are confirmed
   by name and format before they are excluded. The Drive service account
   needs read-only access to the shared folder.
 - **Report rule:** the console prints counts only. Row detail goes to the

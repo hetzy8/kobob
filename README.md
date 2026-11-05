@@ -58,7 +58,7 @@ Aim for low monthly recurring cost with focused dependencies and bounded CI;
 account capacity, numeric cap and actual costs remain to verify. Yoram requests
 daily ops tracking; actual coverage has not been verified here.
 
-All 1,379 catalog records are planned for import: family records start private,
+All 1,379 catalog records are planned for import, with confirmed system files excluded: family records start private,
 and internet records that explicitly name Yaki publish as link cards (Yoram,
 2026-11-05). After cutover the
 website manages the archive and users; Drive remains a preserved migration
