@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/format-date";
+import { isSafeSourceUrl } from "@/lib/source-url";
 import { copy } from "@/locales/he";
 import { archiveReader } from "@/services/editorial-runtime";
 export const dynamic = "force-dynamic";
@@ -33,6 +34,18 @@ export default async function PublicItem({
 				</p>
 			)}
 			{item.tags.length > 0 && <p>{item.tags.join(", ")}</p>}
+			{item.sources.filter((source) => isSafeSourceUrl(source.url)).map((source, index) => (
+				// biome-ignore lint/suspicious/noArrayIndexKey: the same URL can be listed twice, so the index keeps keys unique
+				<p key={`${index}-${source.url}`}>
+					{source.publisher && `${copy.items.publisher}: ${source.publisher} · `}
+					{source.author && `${copy.items.author}: ${source.author} · `}
+					{source.publishedText && `${source.publishedText} · `}
+					{source.license && `${copy.items.license}: ${source.license} · `}
+					<a href={source.url} rel="noopener noreferrer" target="_blank">
+						{copy.items.sourceLink}
+					</a>
+				</p>
+			))}
 		</article>
 	);
 }

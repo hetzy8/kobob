@@ -180,6 +180,40 @@ The PR workflow is bounded to 15 minutes, read-only repository permissions,
 one Chromium browser, isolated PostgreSQL and no live email/storage. No deployment
 or ops mutation is included. Its remote run is not verified until GitHub executes it.
 
+## Media and catalog import (stage 1)
+
+Design: [media import](superpowers/specs/2026-11-05-media-import-design.md);
+plan: [media import plan](superpowers/plans/2026-11-05-media-import.md). Built
+on `feat/catalog-import`; it has not been run against real data.
+
+- **Models:** `ExternalSource` (link, publisher, author, license), `MediaFile`
+  (original file record with storage key, size and hash), `ItemCatalogRecord`
+  (the catalog row, family reads only) and `ImportRun` (counts only).
+- **Rights rule:** a family item cannot be published until a family member
+  marks its rights as cleared. Internet records are not subject to it.
+  Withdrawing rights on a public family item unpublishes it, with a warning
+  beforehand.
+- **Importer:** `npm run import:catalog -- --catalog <csv> --web <csv>
+  --drive-key <key.json> --report <path>` with `DATABASE_URL` set. It is a dry
+  run unless `--apply`, a matching `--confirm-host` and a matching
+  `--confirm-snapshot=<hash>` are given; the dry run prints the hash, so an
+  apply is tied to the exported files that were reviewed. `--apply` is refused (exit 2)
+  while the plan has errors or unreadable system-file candidates; there is no
+  override. A rerun creates no duplicates and never changes website edits;
+  changed rows on edited items are reported as conflicts, and the report lists
+  public items that no longer qualify, stale public cards and items missing
+  from the export; `missingFromExport` also lists items excluded as system
+  files or with planning errors on that run. Probable system files are confirmed
+  by name and format before they are excluded. The Drive service account
+  needs read-only access to the shared folder.
+- **Family list:** `/family` is paged (50 items per page, `?page=`) with a needs-review filter (`?review=1`); it shows a thumbnail only for a verified thumbnail file, so none appear until files are copied in stage 3.
+- **Report rule:** the console prints counts only. Row detail goes to the
+  `--report` file, which must be outside the repository and must be a new file:
+  an existing report is never overwritten.
+- **Settings for Yoram to add to `.env.example`** (agents cannot edit it): none.
+  The only new setting is the operator-only `--drive-key` path, passed on the
+  command line; keep the key file outside the repository.
+
 ## Next work
 
 Implement explicit admin bootstrap/member management, then shared editorial
