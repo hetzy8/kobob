@@ -14,7 +14,8 @@ afterAll(async () => {
 });
 
 const bytes = new TextEncoder().encode("0123456789");
-const reads: Array<{ key: string; range?: { start: number; end: number } }> = [];
+const reads: Array<{ key: string; range?: { start: number; end: number } }> =
+	[];
 const storage: ObjectStorage = {
 	read: async (key, range) => {
 		reads.push({ key, range });
@@ -23,11 +24,23 @@ const storage: ObjectStorage = {
 	},
 	write: async () => {},
 };
-const member = async () => ({ id: "m", role: "member" as const, accessVersion: 1 });
-const reader = (auth: typeof member = member, store: () => ObjectStorage = () => storage) =>
-	createMediaReader(db, auth, store);
+const member = async () => ({
+	id: "m",
+	role: "member" as const,
+	accessVersion: 1,
+});
+const reader = (
+	auth: typeof member = member,
+	store: () => ObjectStorage = () => storage,
+) => createMediaReader(db, auth, store);
 
-async function file(extra: { mimeType?: string; status?: "pending" | "verified" | "failed"; originalFilename?: string } = {}) {
+async function file(
+	extra: {
+		mimeType?: string;
+		status?: "pending" | "verified" | "failed";
+		originalFilename?: string;
+	} = {},
+) {
 	const item = await db.item.create({ data: {} });
 	return db.mediaFile.create({
 		data: {
@@ -57,16 +70,25 @@ it("serves a verified file privately with safe headers and no storage key", asyn
 	expect(await response.text()).toBe("0123456789");
 });
 
-it.each(["UNAUTHORIZED", "FORBIDDEN"])("gives %s the same 404 as an unknown id, with or without a range", async (message) => {
-	const { id } = await file();
-	const denied = reader(async () => {
-		throw new Error(message);
-	});
-	const before = reads.length;
-	const responses = [await denied.read(id, null), await denied.read(id, "bytes=0-1"), await denied.read("missing", null)];
-	expect(responses.map((response) => response.status)).toEqual([404, 404, 404]);
-	expect(reads.length).toBe(before);
-});
+it.each(["UNAUTHORIZED", "FORBIDDEN"])(
+	"gives %s the same 404 as an unknown id, with or without a range",
+	async (message) => {
+		const { id } = await file();
+		const denied = reader(async () => {
+			throw new Error(message);
+		});
+		const before = reads.length;
+		const responses = [
+			await denied.read(id, null),
+			await denied.read(id, "bytes=0-1"),
+			await denied.read("missing", null),
+		];
+		expect(responses.map((response) => response.status)).toEqual([
+			404, 404, 404,
+		]);
+		expect(reads.length).toBe(before);
+	},
+);
 
 it("checks access again on every range request", async () => {
 	const { id } = await file();
@@ -80,10 +102,13 @@ it("checks access again on every range request", async () => {
 	expect((await reading.read(id, "bytes=2-3")).status).toBe(404);
 });
 
-it.each(["pending", "failed"] as const)("does not serve a %s file", async (status) => {
-	const { id } = await file({ status });
-	expect((await reader().read(id, null)).status).toBe(404);
-});
+it.each(["pending", "failed"] as const)(
+	"does not serve a %s file",
+	async (status) => {
+		const { id } = await file({ status });
+		expect((await reader().read(id, null)).status).toBe(404);
+	},
+);
 
 it("returns 206 with a content range", async () => {
 	const { id } = await file();
@@ -101,17 +126,28 @@ it("returns 416 for an unsatisfiable range", async () => {
 	expect(response.headers.get("content-range")).toBe("bytes */10");
 });
 
-it.each(["text/html", "image/svg+xml", "multipart/related", "application/msword", "image/tiff"])(
-	"sends %s as an attachment with a neutral type",
-	async (mimeType) => {
-		const { id } = await file({ mimeType, originalFilename: "שם קובץ.bin" });
-		const response = await reader().read(id, null);
-		expect(response.headers.get("content-type")).toBe("application/octet-stream");
-		expect(response.headers.get("content-disposition")).toMatch(/^attachment; filename\*=UTF-8''/);
-	},
-);
+it.each([
+	"text/html",
+	"image/svg+xml",
+	"multipart/related",
+	"application/msword",
+	"image/tiff",
+])("sends %s as an attachment with a neutral type", async (mimeType) => {
+	const { id } = await file({ mimeType, originalFilename: "שם קובץ.bin" });
+	const response = await reader().read(id, null);
+	expect(response.headers.get("content-type")).toBe("application/octet-stream");
+	expect(response.headers.get("content-disposition")).toMatch(
+		/^attachment; filename\*=UTF-8''/,
+	);
+});
 
-it.each(["image/jpeg", "image/png", "image/gif", "application/pdf", "audio/mpeg"])("sends %s inline", async (mimeType) => {
+it.each([
+	"image/jpeg",
+	"image/png",
+	"image/gif",
+	"application/pdf",
+	"audio/mpeg",
+])("sends %s inline", async (mimeType) => {
 	const { id } = await file({ mimeType });
 	const response = await reader().read(id, null);
 	expect(response.headers.get("content-type")).toBe(mimeType);

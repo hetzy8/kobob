@@ -2,8 +2,15 @@ import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 
 export type ObjectStorage = {
-	read(key: string, range?: { start: number; end: number }): Promise<ReadableStream<Uint8Array>>;
-	write(key: string, body: ReadableStream<Uint8Array> | Uint8Array, contentType: string): Promise<void>;
+	read(
+		key: string,
+		range?: { start: number; end: number },
+	): Promise<ReadableStream<Uint8Array>>;
+	write(
+		key: string,
+		body: ReadableStream<Uint8Array> | Uint8Array,
+		contentType: string,
+	): Promise<void>;
 };
 
 // No signed-link method on purpose: every read goes through the media service
@@ -17,7 +24,10 @@ export function createR2Storage(config: {
 	const client = new S3Client({
 		region: "auto",
 		endpoint: config.endpoint,
-		credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
+		credentials: {
+			accessKeyId: config.accessKeyId,
+			secretAccessKey: config.secretAccessKey,
+		},
 		requestChecksumCalculation: "WHEN_REQUIRED",
 		responseChecksumValidation: "WHEN_REQUIRED",
 	});
@@ -36,7 +46,12 @@ export function createR2Storage(config: {
 		async write(key, body, contentType) {
 			await new Upload({
 				client,
-				params: { Bucket: config.bucket, Key: key, Body: body, ContentType: contentType },
+				params: {
+					Bucket: config.bucket,
+					Key: key,
+					Body: body,
+					ContentType: contentType,
+				},
 			}).done();
 		},
 	};

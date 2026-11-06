@@ -9,7 +9,8 @@ export type ParsedRange =
 export function parseRange(header: string | null, size: number): ParsedRange {
 	if (header === null) return { kind: "full" };
 	const match = /^bytes=(\d*)-(\d*)$/.exec(header.trim());
-	if (!match || (match[1] === "" && match[2] === "")) return { kind: "invalid" };
+	if (!match || (match[1] === "" && match[2] === ""))
+		return { kind: "invalid" };
 	let start: number;
 	let end: number;
 	if (match[1] === "") {
@@ -22,5 +23,9 @@ export function parseRange(header: string | null, size: number): ParsedRange {
 		end = match[2] === "" ? size - 1 : Math.min(Number(match[2]), size - 1);
 	}
 	if (start >= size || end < start) return { kind: "invalid" };
-	return { kind: "partial", start, end: Math.min(end, start + MAX_RANGE_BYTES - 1) };
+	return {
+		kind: "partial",
+		start,
+		end: Math.min(end, start + MAX_RANGE_BYTES - 1),
+	};
 }
