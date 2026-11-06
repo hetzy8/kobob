@@ -1,7 +1,9 @@
 # Ops and backups design
 
 **Date:** 2026-11-06
-**Status:** design, awaiting Yoram's review; nothing here is implemented.
+**Status:** approved by Yoram, 2026-11-06, including the Hebrew wording below; not
+implemented. Yoram asked for R2 and the five selected collages first, so this
+step follows that work.
 **Source:** step 2 of [ROADMAP.md](../../ROADMAP.md) → Order of work, from the
 [panel review](../../reviews/2026-11-06-panel-review.md). Yoram chose Backblaze
 B2 as the only backup destination (2026-11-06).
@@ -19,8 +21,9 @@ members and audits. That gap grows the day relatives start captioning.
 
 ## Out of scope
 
-- Backing up media files. None are in R2 yet; stage 2 must add them to this
-  design before family uploads exist, while Drive still covers the originals.
+- Backing up media files. R2 holds only copies of files that remain in Drive,
+  which still covers the originals; this design must add media backup before
+  family uploads exist.
 - Copies at a second provider, automated restores in CI, and permanent deletion
   of items.
 
@@ -191,7 +194,7 @@ corrected in the same PR.
 
 ## Development wording
 
-Hebrew changes, listed for Yoram's approval at review:
+Hebrew changes, approved by Yoram with this design:
 
 | Where | Change |
 |---|---|
