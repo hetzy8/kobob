@@ -24,6 +24,8 @@
 		"import:catalog": "node --conditions=react-server --import tsx scripts/import-catalog.ts"
 	},
 	"dependencies": {
+		"@aws-sdk/client-s3": "3.1162.0",
+		"@aws-sdk/lib-storage": "3.1162.0",
 		"@prisma/adapter-pg": "7.10.1",
 		"@prisma/client": "7.10.1",
 		"better-auth": "1.7.15",
@@ -46,6 +48,7 @@
 		"csv-parse": "7.0.3",
 		"google-auth-library": "11.3.3",
 		"prisma": "7.10.1",
+		"sharp": "0.35.5",
 		"tailwindcss": "4.3.3",
 		"tsx": "4.23.15",
 		"typescript": "6.0.3",

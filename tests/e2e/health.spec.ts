@@ -24,4 +24,5 @@ test("health reports a reachable database without caching or leaking detail", as
 	// CI has no provider credentials: live email must be off there.
 	expect(body.config.resend).toBe(false);
 	expect(body.config.emailFrom).toBe(false);
+	expect(body.config.storage).toBe(false);
 });
