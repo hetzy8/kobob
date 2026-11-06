@@ -22,6 +22,7 @@ const record = (kobId: string, extra: Partial<PlannedRecord> = {}): PlannedRecor
 	kobId,
 	origin: "family",
 	title: "synthetic.jpg",
+	description: "",
 	types: ["picture"],
 	rightsStatus: "unknown",
 	publish: false,
@@ -66,6 +67,12 @@ it("publishes a card readable by visitors, with nothing private", async () => {
 	const view = await reader.getPublicItem(item.id);
 	expect(view?.title).toBe("Public card");
 	expect(JSON.stringify(view)).not.toContain("PRIVATE-NOTE");
+});
+
+it("shows a card's public note to visitors", async () => {
+	await applyCatalog(db, [{ ...card("KOB-000010"), description: "synthetic note" }], "h1", { apply: true });
+	const item = await db.item.findUniqueOrThrow({ where: { kobId: "KOB-000010" } });
+	expect((await reader.getPublicItem(item.id))?.description).toBe("synthetic note");
 });
 
 it("keeps a search-match internet record away from visitors", async () => {
@@ -154,6 +161,19 @@ it("reports a public item whose record no longer qualifies, without changing it"
 	const report = await applyCatalog(db, [{ ...card("KOB-000002"), publish: false }], "h2", { apply: true });
 	expect(report.publicNoLongerEligible).toEqual(["KOB-000002"]);
 	expect((await stored("KOB-000002")).visibility).toBe("public");
+});
+
+it("reports a changed public note on every run and keeps what visitors see", async () => {
+	await applyCatalog(db, [{ ...card("KOB-000011"), description: "Note A" }], "h1", { apply: true });
+	const changed = { ...card("KOB-000011"), description: "Note B", row: { catalog: { note: "CHANGED" }, web: null } };
+	for (const hash of ["h2", "h3"]) {
+		const report = await applyCatalog(db, [changed], hash, { apply: true });
+		expect(report.staleCards).toEqual(["KOB-000011"]);
+		expect(report.changed).toEqual([]);
+	}
+	const item = await db.item.findUniqueOrThrow({ where: { kobId: "KOB-000011" } });
+	expect((await reader.getPublicItem(item.id))?.description).toBe("Note A");
+	expect((await stored("KOB-000011")).catalogRecord?.row).toEqual({ catalog: { note: "PRIVATE-NOTE" }, web: null });
 });
 
 it("reports a stale public card on every run and does not refresh its catalog row", async () => {

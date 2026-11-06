@@ -4,9 +4,11 @@ import type { ItemTypeValue } from "../services/item-input";
 import {
 	catalog as c,
 	catalogTypes,
-	explicitIdentityPrefix,
+	doNotPublish,
+	holdForNow,
 	internetSourceKind,
 	needsClarificationPrefix,
+	publishNow,
 	web as w,
 	webTypes,
 } from "./catalog-columns";
@@ -18,6 +20,9 @@ export type PlannedRecord = {
 	kobId: string;
 	origin: "family" | "internet";
 	title: string;
+	// Shown to visitors. Family records never get one from the catalog, whose
+	// descriptions can hold review wording.
+	description: string;
 	types: ItemTypeValue[];
 	rightsStatus: "unknown" | "needs_clarification";
 	publish: boolean;
@@ -30,6 +35,7 @@ export type PlannedRecord = {
 
 const KOB_ID = /^KOB-\d{6}$/;
 const MAX_TITLE = 200; // matches itemInputSchema, so the record stays editable
+const MAX_NOTE = 20000; // the same, for the description
 
 // Visitors must never be sent to a private Drive or Docs link.
 const PRIVATE_SOURCE_HOSTS = new Set(["drive.google.com", "docs.google.com", "drive.usercontent.google.com"]);
@@ -64,6 +70,8 @@ function planRow(row: CatalogRow, webRow: CatalogRow | null): PlannedRecord | st
 	const title = ((internet ? webRow?.[w.title] : name) ?? "").trim();
 	if (!title) return "MISSING_TITLE";
 	if (title.length > MAX_TITLE) return "TITLE_TOO_LONG";
+	const description = internet ? (webRow?.[w.publicNote] ?? "").trim() : "";
+	if (description.length > MAX_NOTE) return "NOTE_TOO_LONG";
 	const driveFileId = row[c.driveId]?.trim() ?? "";
 	if (!internet && !driveFileId) return "MISSING_DRIVE_ID";
 	let file: PlannedRecord["file"] = null;
@@ -95,10 +103,11 @@ function planRow(row: CatalogRow, webRow: CatalogRow | null): PlannedRecord | st
 		kobId: row[c.id],
 		origin: internet ? "internet" : "family",
 		title,
+		description,
 		types: [type],
 		// Clearing rights stays a family decision, even with a documented license.
 		rightsStatus: (row[c.rights] ?? "").startsWith(needsClarificationPrefix) ? "needs_clarification" : "unknown",
-		publish: internet && (webRow?.[w.identityBasis] ?? "").startsWith(explicitIdentityPrefix),
+		publish: internet,
 		source,
 		file,
 		systemCandidate: !internet && isSystemFileName(name),
@@ -117,6 +126,7 @@ export function planCatalog(
 	const records: PlannedRecord[] = [];
 	const errors: PlanError[] = [];
 	const deferred = new Set<string>();
+	const heldInternet: string[] = [];
 	const webById = new Map<string, CatalogRow>();
 	const duplicateWebIds = new Set<string>();
 	for (const row of webRows) {
@@ -141,7 +151,20 @@ export function planCatalog(
 			continue;
 		}
 		if (duplicateWebIds.has(kobId)) continue;
-		const planned = planRow(row, webById.get(kobId) ?? null);
+		const webRow = webById.get(kobId) ?? null;
+		if (webRow && row[c.sourceKind] === internetSourceKind) {
+			const decision = (webRow[w.publishDecision] ?? "").trim();
+			if (decision === holdForNow || decision === doNotPublish) {
+				deferred.add(kobId);
+				heldInternet.push(kobId);
+				continue;
+			}
+			if (decision !== publishNow) {
+				errors.push({ kobId, code: "INVALID_PUBLISH_DECISION" });
+				continue;
+			}
+		}
+		const planned = planRow(row, webRow);
 		if (typeof planned === "string") errors.push({ kobId, code: planned });
 		else records.push(planned);
 	}
@@ -149,7 +172,7 @@ export function planCatalog(
 		if (seen.has(id) && !deferred.has(id)) errors.push({ kobId: id, code: "DUPLICATE_WEB_ROW" });
 	if (!familyOnly)
 		for (const id of webById.keys()) if (!seen.has(id)) errors.push({ kobId: id, code: "ORPHAN_WEB_ROW" });
-	return { records, errors, deferred: deferred.size };
+	return { records, errors, deferred: deferred.size, heldInternet };
 }
 
 // The value --confirm-snapshot must match. It depends on the scope, so a reviewed

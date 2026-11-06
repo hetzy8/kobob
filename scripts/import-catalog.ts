@@ -101,9 +101,9 @@ try {
 		errors: plan.errors,
 		excluded: resolved.excluded.map((record) => ({ kobId: record.kobId, name: record.file?.originalFilename })),
 		unreadableSystemCandidates: resolved.unreadable,
-		heldInternet: records.filter((r) => r.origin === "internet" && !r.publish).map((r) => r.kobId),
+		heldInternet: plan.heldInternet,
 		// Exactly what visitors will see, so Yoram can read it before it goes live.
-		publicCards: records.filter((r) => r.publish).map((r) => ({ kobId: r.kobId, title: r.title, ...r.source })),
+		publicCards: records.filter((r) => r.publish).map((r) => ({ kobId: r.kobId, title: r.title, description: r.description, ...r.source })),
 		catalogedDates: review.catalogedDates,
 		siteSelected: review.siteSelected,
 	};

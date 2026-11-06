@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { catalog as c, web as w } from "../../src/import/catalog-columns";
+import { catalog as c, doNotPublish, holdForNow, publishNow, web as w } from "../../src/import/catalog-columns";
 import { confirmationHash, planCatalog, reviewLists } from "../../src/import/catalog-plan";
 
 const family = (id: string, extra = {}) => ({
@@ -14,7 +14,7 @@ const webCatalog = (id: string, extra = {}) => ({
 const webRow = (id: string, extra = {}) => ({
 	[w.id]: id, [w.type]: "כתבה", [w.title]: "Synthetic title", [w.publisher]: "Press", [w.author]: "Writer",
 	[w.publishedText]: "1979", [w.url]: "https://example.test/a", [w.identityBasis]: "שם מפורש והקשר ביוגרפי",
-	[w.saved]: "קישור ותקציר בלבד", [w.licenseSource]: "", ...extra,
+	[w.saved]: "קישור ותקציר בלבד", [w.licenseSource]: "", [w.publishDecision]: publishNow, ...extra,
 });
 
 it("plans a private family record titled by its filename", () => {
@@ -27,7 +27,7 @@ it("plans a private family record titled by its filename", () => {
 	expect(records[0].file?.sizeBytes).toBe(15519895n);
 });
 
-it("publishes an explicitly identified internet record as a link card", () => {
+it("publishes an internet record the owner marked for publishing", () => {
 	const { records } = planCatalog([webCatalog("KOB-000002")], [webRow("KOB-000002")]);
 	expect(records[0]).toMatchObject({
 		origin: "internet", title: "Synthetic title", types: ["article"], publish: true,
@@ -36,12 +36,54 @@ it("publishes an explicitly identified internet record as a link card", () => {
 	});
 });
 
-it("holds a search-match internet record private", () => {
+it("follows the owner's decision, not how the first pass matched the name", () => {
 	const { records } = planCatalog(
 		[webCatalog("KOB-000003")],
 		[webRow("KOB-000003", { [w.identityBasis]: "התאמת שם והקשר מתוצאת חיפוש" })],
 	);
-	expect(records[0].publish).toBe(false);
+	expect(records[0].publish).toBe(true);
+});
+
+it("leaves held and rejected web sources out, even unfinished ones", () => {
+	const { records, errors, deferred, heldInternet } = planCatalog(
+		[webCatalog("KOB-000060"), webCatalog("KOB-000061"), webCatalog("KOB-000062")],
+		[
+			webRow("KOB-000060", { [w.publishDecision]: holdForNow, [w.title]: " " }),
+			webRow("KOB-000061", { [w.publishDecision]: doNotPublish }),
+			webRow("KOB-000062"),
+		],
+	);
+	expect(errors).toEqual([]);
+	expect(records.map((record) => record.kobId)).toEqual(["KOB-000062"]);
+	expect(deferred).toBe(2);
+	expect(heldInternet).toEqual(["KOB-000060", "KOB-000061"]);
+});
+
+it("refuses a web source with no clear publishing decision", () => {
+	const decisions = ["", "כן", undefined];
+	for (const decision of decisions) {
+		const { errors, records } = planCatalog(
+			[webCatalog("KOB-000063")],
+			[webRow("KOB-000063", { [w.publishDecision]: decision })],
+		);
+		expect(errors).toEqual([{ kobId: "KOB-000063", code: "INVALID_PUBLISH_DECISION" }]);
+		expect(records).toEqual([]);
+	}
+});
+
+it("refuses a public note too long to edit on the site", () => {
+	const plan = (note: string) =>
+		planCatalog([webCatalog("KOB-000067")], [webRow("KOB-000067", { [w.publicNote]: note })]);
+	expect(plan("א".repeat(20000)).errors).toEqual([]);
+	expect(plan("א".repeat(20001)).errors).toEqual([{ kobId: "KOB-000067", code: "NOTE_TOO_LONG" }]);
+});
+
+it("carries the public note, and never a family record's catalog text", () => {
+	const { records } = planCatalog(
+		[family("KOB-000064"), webCatalog("KOB-000065"), webCatalog("KOB-000066")],
+		[webRow("KOB-000065", { [w.publicNote]: " אוזכר " }), webRow("KOB-000066")],
+	);
+	expect(records.map((record) => record.description)).toEqual(["", "אוזכר", ""]);
 });
 
 it("keeps a saved internet copy as a file while still publishing the card", () => {
