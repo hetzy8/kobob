@@ -1,6 +1,7 @@
 import { readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { failureCodes } from "../src/lib/failure-codes";
 import { createDatabase } from "../src/lib/database";
 import { verifyRestore } from "../src/ops/verify-restore";
 
@@ -12,7 +13,14 @@ if (!databaseUrl) {
 	console.error("Needs DATABASE_URL");
 	process.exit(2);
 }
-const url = new URL(databaseUrl);
+// new URL() errors carry the whole input, so never print or rethrow them.
+let url: URL;
+try {
+	url = new URL(databaseUrl);
+} catch {
+	console.error("DATABASE_URL is not a valid URL");
+	process.exit(2);
+}
 url.searchParams.set("options", "-c default_transaction_read_only=on");
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const migrations = readdirSync(resolve(root, "prisma/migrations"), {
@@ -33,6 +41,12 @@ try {
 	const report = await verifyRestore(db, migrations);
 	console.log(JSON.stringify({ host: url.host, ...report }, null, 2));
 	if (report.problems.length) process.exitCode = 1;
+} catch (error) {
+	// Messages and stacks can name the host or role: print codes only.
+	console.error(
+		["Verification could not run", ...failureCodes(error)].join(" "),
+	);
+	process.exitCode = 2;
 } finally {
 	await db.$disconnect();
 }

@@ -83,14 +83,14 @@ if [ "$bytes" -lt 1000 ]; then
 	exit 1
 fi
 
-rclone copyto "$dump" "$remote/daily/$name"
+rclone copyto "$dump" "$remote/daily/$name" --no-check-dest
 echo "Uploaded daily/$name"
 
 monthly="$(rclone lsf "$remote/monthly/" --files-only 2>/dev/null || true)"
 case "$monthly" in
 *"kobob-${month}-"*) ;;
 *)
-	rclone copyto "$dump" "$remote/monthly/$name"
+	rclone copyto "$dump" "$remote/monthly/$name" --no-check-dest
 	echo "Uploaded monthly/$name"
 	;;
 esac

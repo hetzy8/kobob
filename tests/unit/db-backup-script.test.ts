@@ -104,6 +104,15 @@ it("encrypts and uploads to daily and, when the month has none, to monthly", () 
 	expect(output).toContain("Uploaded daily/kobob-");
 });
 
+it("passes --no-check-dest to every upload", () => {
+	expect(run().status).toBe(0);
+	const copies = log()
+		.split("\n")
+		.filter((line) => line.startsWith("copyto"));
+	expect(copies).toHaveLength(2);
+	for (const line of copies) expect(line).toContain("--no-check-dest");
+});
+
 it("skips monthly when the month already has a dump", () => {
 	writeFileSync(
 		join(dir, "monthly.txt"),
