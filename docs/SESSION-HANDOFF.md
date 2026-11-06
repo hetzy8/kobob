@@ -30,6 +30,15 @@ Read AGENTS.md, README.md, docs/README.md, the product spec and plan before chan
   items at release. The Google organization policy blocks service account keys,
   so the importer reads Drive through a keyless gcloud login that impersonates
   the service account (DEVELOPMENT.md). Next: Yoram's dry run and report review.
+- Update 2026-11-06, later: stage 1 imported into production (1,162 items,
+  47 public cards; OPERATIONS.md → Import records). Importer fixes from
+  Yoram's review of the first dry run and from Codex reviews are on `dev`
+  (PRs #34–#36: thousands separators in sizes, an owner publish decision and
+  public note per web source, family-only scope). A five-perspective
+  [panel review](reviews/2026-11-06-panel-review.md) set the order of work
+  (ROADMAP.md → Order of work): ops and backups next, then the viewer
+  (stages 2–4), then the warm home page. The 64 held web sources wait for
+  Yoram's decisions in batches, outside the repository.
 - Earlier next work: see [ROADMAP.md](ROADMAP.md): phase 2 slice 1
   (navigation, family-only archive and search, branch `feat/public-search`),
   then slices 2-5 (timeline, map, internet sources, life-story editing).
