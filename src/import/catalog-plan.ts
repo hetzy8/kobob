@@ -35,9 +35,13 @@ const PRIVATE_SOURCE_HOSTS = new Set(["drive.google.com", "docs.google.com", "dr
 // Exports can write sizes in exponent form; nothing else is a size.
 const SIZE_FORMAT = /^\d+(\.\d+)?([eE]\+?\d+)?$/;
 
+// Google Sheets' CSV download writes sizes with thousands separators.
+const GROUPED_SIZE_FORMAT = /^\d{1,3}(,\d{3})+$/;
+
 function parseSize(value: string): bigint | null {
-	if (!SIZE_FORMAT.test(value)) return null;
-	const number = Number(value);
+	const plain = GROUPED_SIZE_FORMAT.test(value) ? value.replaceAll(",", "") : value;
+	if (!SIZE_FORMAT.test(plain)) return null;
+	const number = Number(plain);
 	return Number.isSafeInteger(number) ? BigInt(number) : null;
 }
 

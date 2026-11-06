@@ -103,6 +103,17 @@ it("reports duplicate and orphan web rows without planning the duplicated record
 	]);
 });
 
+it("reads sizes with thousands separators, as Sheets exports them", () => {
+	const size = (value: string) =>
+		planCatalog([family("KOB-000033", { [c.size]: value })], []).records[0]?.file?.sizeBytes;
+	expect(size("1,234,567")).toBe(1234567n);
+	expect(size("15,519")).toBe(15519n);
+	const code = (value: string) => planCatalog([family("KOB-000033", { [c.size]: value })], []).errors[0]?.code;
+	for (const bad of ["1,23", "1,2345", ",123", "123,", "1,,234", "1234,567", "1,234.5", "1,234e3"]) {
+		expect(code(bad), bad).toBe("INVALID_SIZE");
+	}
+});
+
 it("accepts only plain decimal or exponent sizes", () => {
 	const code = (size: string) => planCatalog([family("KOB-000030", { [c.size]: size })], []).errors[0]?.code;
 	expect(code("0x10")).toBe("INVALID_SIZE");
