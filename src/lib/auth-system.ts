@@ -178,12 +178,20 @@ export function createAuthSystem({
 		const bucket = Math.floor(Date.now() / 900000);
 		const hash = (value: string) =>
 			createHmac("sha256", config.authSecret).update(value).digest("hex");
+		const clientKey = `client:${hash(clientAddress?.(request) || "unresolved-client")}:${bucket}`;
+		const clientMax = 20;
+		// A client at its limit is refused before any counter moves, so one
+		// stranger cannot use up the global limit for everyone. Concurrent
+		// requests can pass this read together; the atomic sequence below still
+		// bounds them, and a slight overshoot of the global count is harmless.
+		const client = await db.rateLimit.findUnique({
+			where: { key: clientKey },
+			select: { count: true },
+		});
+		if (client && client.count >= clientMax) return false;
 		const limits = [
 			{ key: `global:${bucket}`, max: 50 },
-			{
-				key: `client:${hash(clientAddress?.(request) || "unresolved-client")}:${bucket}`,
-				max: 20,
-			},
+			{ key: clientKey, max: clientMax },
 			{ key: `email:${hash(email)}:${bucket}`, max: 3 },
 		];
 		// Check coarse limits first, before allocating rows for attacker-controlled

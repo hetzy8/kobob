@@ -474,3 +474,83 @@ it("cleans expired unbound housekeeping rows during verification", async () => {
 	).toBeNull();
 	expect(await db.session.count()).toBe(1);
 });
+
+describe("per-client issuance limits", () => {
+	const perClient = () =>
+		createAuthSystem({
+			db,
+			config,
+			sendLink: async (message) => {
+				deliveries.push(message);
+			},
+			clientAddress: (request) => request.headers.get("x-test-client") ?? "",
+		});
+	function from(client: string, email: string) {
+		const request = post("/api/access/request", { email });
+		request.headers.set("x-test-client", client);
+		return request;
+	}
+	const globalCount = async () =>
+		(
+			await db.rateLimit.findFirst({
+				where: { key: { startsWith: "global:" } },
+			})
+		)?.count;
+
+	it("lets another client sign in after one client goes far over its limit", async () => {
+		await invite();
+		for (let n = 0; n < 60; n++)
+			await perClient().handle(from("stranger", `unknown${n}@example.test`));
+		expect(await globalCount()).toBe(20);
+		await perClient().handle(from("relative", "family@example.test"));
+		expect(deliveries.map(({ email }) => email)).toEqual([
+			"family@example.test",
+		]);
+	});
+
+	it("creates no rows for a client already over its limit", async () => {
+		for (let n = 0; n < 40; n++)
+			await perClient().handle(from("stranger", `unknown${n}@example.test`));
+		expect(await db.rateLimit.count()).toBe(22);
+	});
+
+	it("still refuses at the client limit", async () => {
+		await db.user.createMany({
+			data: Array.from({ length: 22 }, (_, n) => ({
+				email: `family${n}@example.test`,
+			})),
+		});
+		for (let n = 0; n < 22; n++)
+			await perClient().handle(from("one-client", `family${n}@example.test`));
+		expect(deliveries).toHaveLength(20);
+	});
+
+	it("still refuses at the global limit across many clients", async () => {
+		await db.user.createMany({
+			data: Array.from({ length: 52 }, (_, n) => ({
+				email: `family${n}@example.test`,
+			})),
+		});
+		for (let n = 0; n < 52; n++)
+			await perClient().handle(from(`client${n}`, `family${n}@example.test`));
+		expect(deliveries).toHaveLength(50);
+	});
+
+	it("still refuses at the per-address limit across clients", async () => {
+		await invite();
+		for (let n = 0; n < 5; n++)
+			await perClient().handle(from(`client${n}`, "family@example.test"));
+		expect(deliveries).toHaveLength(3);
+	});
+
+	it("shares one bucket when no address is available", async () => {
+		await db.user.createMany({
+			data: Array.from({ length: 22 }, (_, n) => ({
+				email: `family${n}@example.test`,
+			})),
+		});
+		for (let n = 0; n < 22; n++)
+			await perClient().handle(from("", `family${n}@example.test`));
+		expect(deliveries).toHaveLength(20);
+	});
+});
