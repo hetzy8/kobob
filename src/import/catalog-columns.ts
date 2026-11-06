@@ -28,10 +28,17 @@ export const web = {
 	identityBasis: "בסיס קישור לאב",
 	saved: "שמירה בפועל",
 	licenseSource: "מקור רישיון",
+	publishDecision: "החלטת פרסום",
+	publicNote: "הערה ציבורית",
 } as const;
 
+// The owner's decision for a web source. Only publishNow creates it; the others
+// leave it out, so it can be created later with its corrected details.
+export const publishNow = "לפרסם";
+export const holdForNow = "להמתין";
+export const doNotPublish = "לא לפרסם";
+
 export const internetSourceKind = "אינטרנט";
-export const explicitIdentityPrefix = "שם מפורש";
 export const needsClarificationPrefix = "נדרש בירור";
 
 export const catalogTypes: Record<string, ItemTypeValue> = {

@@ -18,9 +18,10 @@ are in production (v0.3.0, 2026-11-04; releases follow OPERATIONS.md). Yoram
 authorized development on 2026-11-01. See docs/DEVELOPMENT.md for exact implemented scope and
 checks; do not confuse page shells with a completed archive. Do not provision
 services, import real data, change DNS, send invitations or deploy without the
-corresponding explicit instruction. The media and catalog import (stage 1 is
-built on `feat/catalog-import`; no real data has been imported) follows
-`docs/superpowers/specs/2026-11-05-media-import-design.md` and its plan.
+corresponding explicit instruction. The media and catalog import follows
+`docs/superpowers/specs/2026-11-05-media-import-design.md` and its plan;
+stage 1 put the catalog into production on 2026-11-06 (1,162 items, 47 public
+link cards; counts only in this repository), and no files have been copied yet.
 Preserve requirements, proposals, open
 decisions and implemented behavior as different statuses.
 

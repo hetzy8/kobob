@@ -293,3 +293,9 @@ test("an open admin form cannot mutate membership after role removal", async ({
 		0,
 	);
 });
+
+test("the media route gives visitors the same 404 for any id", async ({ request }) => {
+	const response = await request.get("/api/media/missing-id");
+	expect(response.status()).toBe(404);
+	expect(response.headers()["cache-control"]).toContain("no-store");
+});

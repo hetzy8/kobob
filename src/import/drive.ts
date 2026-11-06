@@ -1,4 +1,4 @@
-import { JWT } from "google-auth-library";
+import { GoogleAuth, Impersonated } from "google-auth-library";
 
 export type DriveClient = {
 	readHead(id: string): Promise<Uint8Array>;
@@ -8,8 +8,14 @@ export type DriveClient = {
 const HEAD_BYTES = 16;
 
 // Read-only scope. The service account sees only the folder shared with it.
-export function createDriveClient(keyFilePath: string): DriveClient {
-	const auth = new JWT({ keyFile: keyFilePath, scopes: ["https://www.googleapis.com/auth/drive.readonly"] });
+// The operator's gcloud login acts as that service account, with no key file:
+//   gcloud auth application-default login --impersonate-service-account=<email>
+// Any other login is refused, since a personal one could read the whole Drive.
+export async function createDriveClient(): Promise<DriveClient> {
+	const auth = await new GoogleAuth({
+		scopes: ["https://www.googleapis.com/auth/drive.readonly"],
+	}).getClient();
+	if (!(auth instanceof Impersonated)) throw new Error("DRIVE_LOGIN_NOT_IMPERSONATED");
 	async function get(id: string, range?: string) {
 		const { token } = await auth.getAccessToken();
 		const response = await fetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(id)}?alt=media&supportsAllDrives=true`, {

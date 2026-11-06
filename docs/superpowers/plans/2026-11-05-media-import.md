@@ -31,12 +31,14 @@
 
 The spec was updated to match these on approval (2026-11-05):
 
+- **Keyless Drive access (2026-11-06):** the organization policy blocks service account keys, so `createDriveClient()` takes no key path and is async. It uses a gcloud login that impersonates the service account and refuses any other login. Earlier stage 1 code below still shows the key version; `src/import/drive.ts` is current.
 - **BMP:** `sharp` has no BMP input, so the 2 BMP files stay download-only instead of getting a display copy.
 - **Rights and review actions ship in stage 1,** not stage 4. The rights rule would otherwise stop the family publishing anything after the stage 1 release.
 - **The viewer ships in stage 4,** not stage 2. Stage 2 measures through direct `/api/media/<id>` links, so nothing is shown before files exist.
 - **Lock files are confirmed by name, size and an owner-name length byte,** not by size alone.
 - **Withdrawing rights unpublishes (added after stage 1 was built, Yoram, 2026-11-05):** withdrawing rights on a public family item makes it private in the same transaction, with a warning beside the button beforehand and a confirmation afterwards. Internet and private items are unaffected, and a legacy public item with unknown rights stays public until its rights change.
 - **The paged list (Task 11) moved into stage 1** before the production import (Yoram, 2026-11-05), because the catalog adds about 1,214 items to an unpaged list. Thumbnails appear once stage 3 has files; Task 12's strings stay in stage 4.
+- **Selected collages first (Yoram, 2026-11-06):** R2 and the five collages Yoram selected for the site go ahead of ops and backups. Tasks 6, 7, 9 and 10 are built together on `feat/private-media`; `import-media` gains `--only`, and its report lists copied file ids so they can be opened. They stay private with their rights unchanged. Still required before copying everything: Task 8 and Gate B's large-file measurement, Task 10's open catalog reconciliation question, and the panel's byte ceiling, `MediaFile` uniqueness and thumbnail caching items. Stage 4's viewer is unchanged.
 - **The copy holds one file in memory at a time** rather than streaming. The largest file is about 220 MB, it runs on Yoram's Mac, and it keeps verification simple. Size and hash are still checked before and after upload.
 
 ## File map
@@ -1456,21 +1458,21 @@ Verify the wiring without real data. Run `npm run typecheck`; expected: PASS. Ru
 
 ### Gate A: stop for Yoram
 
-- [ ] Open the PR into `dev`. Yoram runs the Codex review. Reply to each point; merge on CI green plus the reply, on Yoram's word.
-- [ ] Before the release, count public items in production by query, because the rights rule applies to their next publish.
-- [ ] Yoram approves the Hebrew strings; then a release to `main` on Yoram's go, because production needs the migration. Follow OPERATIONS.md.
-- [ ] Yoram creates a Google Cloud service account and shares the collection folder with it as Viewer. The key file stays outside the repository.
+- [x] Open the PR into `dev`. Yoram runs the Codex review. Reply to each point; merge on CI green plus the reply, on Yoram's word.
+- [x] Before the release, count public items in production by query, because the rights rule applies to their next publish.
+- [x] Yoram approves the Hebrew strings; then a release to `main` on Yoram's go, because production needs the migration. Follow OPERATIONS.md.
+- [x] Yoram creates a Google Cloud service account and shares the collection folder with it as Viewer. The organization policy blocks key files, so Yoram takes the Service Account Token Creator role on it and runs `gcloud auth application-default login --impersonate-service-account=<email>`.
 - Note: each dry run and each apply needs its own new `--report` path; the importer refuses to overwrite an existing report.
-- [ ] Yoram exports the "catalog" and "web sources" tabs as CSV into a dated folder outside the repository, and runs the dry run against the local development database:
+- [x] Yoram exports the "catalog" and "web sources" tabs as CSV into a dated folder outside the repository, and runs the dry run against the local development database:
 
 ```sh
-DATABASE_URL='postgresql://kobob_dev:synthetic-local-dev-only@127.0.0.1:55440/kobob_dev' npm run import:catalog -- --catalog <catalog.csv> --web <web.csv> --drive-key <key.json> --report <outside-repo>/catalog-dry-run.json
+DATABASE_URL='postgresql://kobob_dev:synthetic-local-dev-only@127.0.0.1:55440/kobob_dev' npm run import:catalog -- --catalog <catalog.csv> --web <web.csv> --report <outside-repo>/catalog-dry-run.json
 ```
 
 Expected, if nothing changed: 0 errors, 165 excluded, 1,214 items, 81 published, 1,129 files. Differences go to Yoram with the report; they are not "fixed" silently. Yoram reads the report's `publicCards` list, which is exactly what visitors will see, and decides the two cataloged dates listed in the spec.
 
-- [ ] Before the production apply, run a production dry run and have Yoram read its report. Yoram resolves `selectedAndPublishing` (site-selected records that would publish) first.
-- [ ] On Yoram's explicit go, apply to the local database, then to production using `KOBOB_DIRECT_URL` through Bitwarden as in the OPERATIONS.md bootstrap command, with `--apply --confirm-host=<host> --confirm-snapshot=<hash from the reviewed dry run>`. Verify counts by query, then check a card on the public site and search as an anonymous visitor.
+- [x] Before the production apply, run a production dry run and have Yoram read its report. Yoram resolves `selectedAndPublishing` (site-selected records that would publish) first.
+- [x] On Yoram's explicit go, apply to the local database, then to production using `KOBOB_DIRECT_URL` through Bitwarden as in the OPERATIONS.md bootstrap command, with `--apply --confirm-host=<host> --confirm-snapshot=<hash from the reviewed dry run>`. Verify counts by query, then check a card on the public site and search as an anonymous visitor.
 
 ---
 
@@ -2505,16 +2507,15 @@ import { createR2Storage } from "../src/lib/storage";
 const { values } = parseArgs({
 	options: {
 		report: { type: "string" },
-		"drive-key": { type: "string" },
 		limit: { type: "string" },
 		apply: { type: "boolean", default: false },
 		"confirm-host": { type: "string" },
 	},
 });
-const { report: reportPath, "drive-key": driveKey } = values;
+const { report: reportPath } = values;
 const databaseUrl = process.env.DATABASE_URL;
-if (!reportPath || !driveKey || !databaseUrl) {
-	console.error("Needs --report --drive-key, DATABASE_URL and R2 settings");
+if (!reportPath || !databaseUrl) {
+	console.error("Needs --report, DATABASE_URL and R2 settings");
 	process.exit(2);
 }
 if (!relative(process.cwd(), resolve(reportPath)).startsWith("..")) {
@@ -2530,7 +2531,7 @@ const config = readStorageConfig(process.env);
 console.log(`Database host: ${host}. Bucket: ${config.bucket}. Mode: ${values.apply ? "APPLY" : "dry run"}`);
 const db = createDatabase(databaseUrl);
 try {
-	const report = await copyMedia(db, createDriveClient(driveKey), createR2Storage(config), {
+	const report = await copyMedia(db, await createDriveClient(), createR2Storage(config), {
 		apply: Boolean(values.apply),
 		...(values.limit ? { limit: Number(values.limit) } : {}),
 	});

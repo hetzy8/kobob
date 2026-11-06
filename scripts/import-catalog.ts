@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { parse } from "csv-parse/sync";
 import { applyBlockers, applyCatalog, resolveSystemFiles } from "../src/import/apply-catalog";
-import { planCatalog, reviewLists, type CatalogRow } from "../src/import/catalog-plan";
+import { confirmationHash, planCatalog, reviewLists, type CatalogRow } from "../src/import/catalog-plan";
 import { createDriveClient } from "../src/import/drive";
 import { createDatabase } from "../src/lib/database";
 import { isOutsideRepository } from "../src/import/report-path";
@@ -28,17 +28,17 @@ try {
 			catalog: { type: "string" },
 			web: { type: "string" },
 			report: { type: "string" },
-			"drive-key": { type: "string" },
+			"family-only": { type: "boolean", default: false },
 			apply: { type: "boolean", default: false },
 			"confirm-host": { type: "string" },
 			"confirm-snapshot": { type: "string" },
 		},
 	});
-	const { catalog, web, report: reportPath, "drive-key": driveKey } = values;
+	const { catalog, web, report: reportPath } = values;
 	applying = Boolean(values.apply);
 	const databaseUrl = process.env.DATABASE_URL;
-	if (!catalog || !web || !reportPath || !driveKey || !databaseUrl) {
-		fail("Needs --catalog --web --report --drive-key and DATABASE_URL");
+	if (!catalog || !web || !reportPath || !databaseUrl) {
+		fail("Needs --catalog --web --report and DATABASE_URL");
 	}
 	let outside: boolean;
 	try {
@@ -64,18 +64,21 @@ try {
 	const rows = (bytes: Buffer): CatalogRow[] =>
 		parse(bytes, { columns: true, bom: true, relax_column_count: true, skip_empty_lines: true });
 	const snapshotHash = createHash("sha256").update(catalogBytes).update("\0").update(webBytes).digest("hex");
-	const plan = planCatalog(rows(catalogBytes), rows(webBytes));
-	const drive = createDriveClient(driveKey);
+	const familyOnly = Boolean(values["family-only"]);
+	const scope = familyOnly ? "family-only" : "full";
+	const confirmation = confirmationHash(snapshotHash, { familyOnly });
+	const plan = planCatalog(rows(catalogBytes), rows(webBytes), { familyOnly });
+	const drive = await createDriveClient();
 	const resolved = await resolveSystemFiles(plan.records, drive.readHead);
 	const blockers = applyBlockers({ errors: plan.errors, unreadable: resolved.unreadable });
-	console.log(`Snapshot hash: ${snapshotHash}`);
+	console.log(`Scope: ${scope}. Snapshot hash: ${confirmation}`);
 	if (values.apply) {
 		if (blockers.length > 0) {
 			for (const blocker of blockers) console.error(blocker);
 			fail("--apply refused: fix the plan and review a clean dry run first");
 		}
-		if (values["confirm-snapshot"] !== snapshotHash) {
-			fail(`--apply needs --confirm-snapshot=${snapshotHash}`);
+		if (values["confirm-snapshot"] !== confirmation) {
+			fail(`--apply needs --confirm-snapshot=${confirmation}`);
 		}
 	}
 	try {
@@ -86,24 +89,28 @@ try {
 	}
 
 	db = createDatabase(databaseUrl);
-	const report = await applyCatalog(db, resolved.records, snapshotHash, { apply: Boolean(values.apply) });
-	const review = reviewLists(resolved.records);
+	const records = resolved.records;
+	const report = await applyCatalog(db, records, snapshotHash, { apply: Boolean(values.apply) });
+	const review = reviewLists(records);
 	const detail = {
 		snapshotHash,
+		scope,
+		confirmation,
 		report,
 		applyBlockers: blockers,
 		errors: plan.errors,
 		excluded: resolved.excluded.map((record) => ({ kobId: record.kobId, name: record.file?.originalFilename })),
 		unreadableSystemCandidates: resolved.unreadable,
-		heldInternet: resolved.records.filter((r) => r.origin === "internet" && !r.publish).map((r) => r.kobId),
+		heldInternet: plan.heldInternet,
 		// Exactly what visitors will see, so Yoram can read it before it goes live.
-		publicCards: resolved.records.filter((r) => r.publish).map((r) => ({ kobId: r.kobId, title: r.title, ...r.source })),
+		publicCards: records.filter((r) => r.publish).map((r) => ({ kobId: r.kobId, title: r.title, description: r.description, ...r.source })),
 		catalogedDates: review.catalogedDates,
 		siteSelected: review.siteSelected,
 	};
 	writeFileSync(reportFd, JSON.stringify(detail, (_key, value) => (typeof value === "bigint" ? String(value) : value), 2));
 	console.log({
-		items: resolved.records.length,
+		items: records.length,
+		internetLeftOut: plan.deferred,
 		excluded: resolved.excluded.length,
 		errors: plan.errors.length,
 		unreadable: resolved.unreadable.length,

@@ -3,7 +3,8 @@
 **Date:** 2026-11-01
 **Status:** direction accepted. Provisioned 2026-11-02: Vercel project `kobob`
 (`fra1`), Neon project `kobob` (Frankfurt); Resend domain `mail.kobob.org`
-(Ireland) on 2026-11-03. Private R2 media not provisioned.
+(Ireland) on 2026-11-03. Private R2 media code is ready; buckets and keys await
+Yoram's steps in OPERATIONS.md → Private media (R2).
 
 ## Decision and alternatives
 

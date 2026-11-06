@@ -26,6 +26,26 @@ Read AGENTS.md, README.md, docs/README.md, the product spec and plan before chan
   imported. Next: Gate A in the plan (PR into `dev`, Codex review, Hebrew
   strings approval, release, Drive service account, Yoram's dry run and
   report review), then stage 2, storage and delivery.
+- Update 2026-11-06: v0.5.0 (`b0fa8fb`) released stage 1. Production had no
+  items at release. The Google organization policy blocks service account keys,
+  so the importer reads Drive through a keyless gcloud login that impersonates
+  the service account (DEVELOPMENT.md). Next: Yoram's dry run and report review.
+- Update 2026-11-06, later: stage 1 imported into production (1,162 items,
+  47 public cards; OPERATIONS.md → Import records). Importer fixes from
+  Yoram's review of the first dry run and from Codex reviews are on `dev`
+  (PRs #34–#36: thousands separators in sizes, an owner publish decision and
+  public note per web source, family-only scope). A five-perspective
+  [panel review](reviews/2026-11-06-panel-review.md) set the order of work
+  (ROADMAP.md → Order of work): ops and backups next, then the viewer
+  (stages 2–4), then the warm home page. The 64 held web sources wait for
+  Yoram's decisions in batches, outside the repository.
+- Update 2026-11-06, last: Yoram approved the
+  [ops and backups design](superpowers/specs/2026-11-06-ops-backups-design.md)
+  but asked for R2 and the five collages selected for the site first. The
+  storage client, media route and copy tool are on `feat/private-media`; buckets,
+  keys and the real copy are Yoram's steps (OPERATIONS.md → Private media (R2)).
+  Then the backup implementation plan. Before copying the whole collection, see
+  the first deviation dated 2026-11-06 in the media plan.
 - Earlier next work: see [ROADMAP.md](ROADMAP.md): phase 2 slice 1
   (navigation, family-only archive and search, branch `feat/public-search`),
   then slices 2-5 (timeline, map, internet sources, life-story editing).

@@ -1,9 +1,12 @@
 # Operations, cost and launch conventions
 
-**Status (2026-11-05):** in production at `https://kobob.vercel.app` (Vercel
-`fra1`, Neon Frankfurt), v0.4.0. Sign-in email through Resend, item
-editing and public search are live and the first administrator exists. Backups, private media and the custom domain
-(`kobob.org`) are not set up yet.
+**Status (2026-11-06):** in production at `https://kobob.vercel.app` (Vercel
+`fra1`, Neon Frankfurt), v0.5.0. Sign-in email through Resend, item
+editing and public search are live and the first administrator exists. The
+catalog import (stage 1) ran on 2026-11-06: 1,162 items, 47 of them public
+link cards (Import records below). Backups, private media and the custom
+domain (`kobob.org`) are not set up yet; backups come next (ROADMAP.md →
+Order of work).
 
 ## Ownership
 
@@ -175,7 +178,40 @@ Done 2026-11-02/03. Lessons for the next domain or sender change:
   first administrator was created this way on 2026-11-03; the sign-in email
   arrived in the Gmail primary inbox.
 
-Private media (R2) is a later slice with its own map entries.
+### Private media (R2)
+
+Kobob has its own buckets and keys and never shares them with another app
+(media design, decision 7). Buckets are private: no public access, no custom
+domain, no CORS.
+
+| Setting | Source | Map name |
+|---|---|---|
+| `R2_ENDPOINT` | plain: `https://<account>.r2.cloudflarestorage.com` | not a secret |
+| `R2_BUCKET` | plain: `kobob-media-production` on Vercel | not a secret |
+| `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` on Vercel | Object Read only, production bucket | `KOBOB_R2_READ_ACCESS_KEY_ID`, `KOBOB_R2_READ_SECRET_ACCESS_KEY` |
+| Same names, operator's import runs only | Object Read & Write, production bucket | Bitwarden only: `KOBOB_R2_WRITE_ACCESS_KEY_ID`, `KOBOB_R2_WRITE_SECRET_ACCESS_KEY` |
+| Same names, local runs only | Object Read & Write, development bucket | Bitwarden only: `KOBOB_R2_DEV_ACCESS_KEY_ID`, `KOBOB_R2_DEV_SECRET_ACCESS_KEY` |
+
+Yoram's steps:
+
+1. Cloudflare → R2: create `kobob-media-production` and
+   `kobob-media-development`, location hint Eastern Europe (near `fra1`). Check
+   that public access stays disabled and add no CORS policy.
+2. R2 → Manage API tokens: create the three tokens in the table, each limited to
+   its one bucket.
+3. Add the four Bitwarden-only values to the `shared` project in the Bitwarden
+   web app. The ops map requires a target, so these have no map entry.
+4. Merge the ops map PR, then from `~/ops` run
+   `node scripts/secrets.mjs rotate KOBOB_R2_READ_ACCESS_KEY_ID KOBOB_R2_READ_SECRET_ACCESS_KEY`
+   (dry run), then again with `--apply`, pasting each value at its prompt. Then
+   `node scripts/secrets.mjs audit`.
+5. Vercel Production: set `R2_ENDPOINT` and `R2_BUCKET`, then redeploy with
+   `gh workflow run vercel-deploy.yml --repo hetzy8/kobob --ref main` and check
+   that `/api/health` shows `storage` true.
+
+The app key cannot write, so the copy always runs from the operator's Mac.
+Commands and report rules: DEVELOPMENT.md → Media copy. R2 holds copies; Drive
+remains the source of the originals until a tested media backup exists.
 
 ## Verification and release
 
@@ -232,6 +268,12 @@ Release checklist:
      archive and search; no migration.
      [Deploy run 42026065465](https://github.com/hetzy8/kobob/actions/runs/42026065465)
      green; health `ok` with every config flag true; `/archive` answers 404.
+   - `v0.5.0`, 2026-11-06: `b0fa8fb` (PR #31), rights rule, public link cards,
+     paged family list and the catalog importer (repository only, not run);
+     migration `20261105133746_media_import` (additive) applied by the build.
+     [Deploy run 42223428711](https://github.com/hetzy8/kobob/actions/runs/42223428711)
+     green; health `ok` on `b0fa8fb` with every config flag true; `/search` with
+     a query answers 200; `/family` redirects to sign-in when signed out.
 6. Delete `dev` and recreate it from the release commit, then retarget any
    open PRs to the new `dev` (`gh pr edit <n> --base dev`). This is the hetzy8
    standards release rule (getmygoals' practice): each cycle starts level with
@@ -249,7 +291,30 @@ deployment. Then apply an annotated `vX.Y.Z` tag to that deployed commit
 Rollback must consider database compatibility; do not run a destructive down
 migration merely to make old code start.
 
+### Import records
+
+Counts only; the export files, reports and row detail stay outside the
+repository (DEVELOPMENT.md → Media and catalog import).
+
+- Stage 1 catalog import, 2026-11-06, on v0.5.0 (`b0fa8fb`) with the
+  importer fixes merged to `dev` (PRs #34–#36; the importer runs on the
+  operator's machine, so it needed no release). Yoram approved the 47 public
+  cards from the dry-run card list; the production dry run matched the local
+  apply exactly before the production apply, which was bound to the database
+  host and the export snapshot. Result: 1,162 items created (1,115 private
+  family items with 1,116 file records, 47 public internet link cards, 9 of
+  them carrying a public note), 165 system files excluded, 64 web sources left
+  out by decision, 0 errors, 0 unreadable. A local rerun of the same export
+  reported 0 created, 1,162 existing, 0 changed, 0 conflicts. Verified as an
+  anonymous visitor: `/` and `/search` with a Hebrew query answer 200, a card
+  opens and links to its source, and the page carries no catalog ids or
+  private notes. Public item count before the import: 0.
+
 ## Preservation and recovery
+
+Decision (Yoram, 2026-11-06, after the
+[panel review](reviews/2026-11-06-panel-review.md)): backups with a rehearsed
+restore come before any family editing and before the first invitation.
 
 The proposal is daily encrypted database and media backups, RPO 24 hours and
 RTO 1 working day. Before launch, approve backup retention and costs, record

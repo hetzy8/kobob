@@ -74,8 +74,9 @@ async function createRecord(tx: Prisma.TransactionClient, record: PlannedRecord,
 		},
 	});
 	// Catalog descriptions stay in the catalog record: some hold review wording.
+	// record.description is the owner's public note, never catalog text.
 	const revision = await tx.itemRevision.create({
-		data: { itemId: item.id, title: record.title, types: record.types, authorId: SYSTEM_ACTOR },
+		data: { itemId: item.id, title: record.title, description: record.description, types: record.types, authorId: SYSTEM_ACTOR },
 	});
 	await tx.item.update({
 		where: { id: item.id },
@@ -146,6 +147,7 @@ export async function applyCatalog(
 			const planned = record.source;
 			stale =
 				existing.publishedRevision?.title !== record.title ||
+				existing.publishedRevision?.description !== record.description ||
 				(planned !== null && !existing.sources.some((source) => sameSource(source, planned)));
 			if (stale) report.staleCards.push(record.kobId);
 		}

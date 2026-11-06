@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
-import { catalog as c, web as w } from "../../src/import/catalog-columns";
-import { planCatalog, reviewLists } from "../../src/import/catalog-plan";
+import { catalog as c, doNotPublish, holdForNow, publishNow, web as w } from "../../src/import/catalog-columns";
+import { confirmationHash, planCatalog, reviewLists } from "../../src/import/catalog-plan";
 
 const family = (id: string, extra = {}) => ({
 	[c.id]: id, [c.originalName]: "synthetic.jpg", [c.type]: "קובץ תמונה", [c.sourceKind]: "Drive",
@@ -14,7 +14,7 @@ const webCatalog = (id: string, extra = {}) => ({
 const webRow = (id: string, extra = {}) => ({
 	[w.id]: id, [w.type]: "כתבה", [w.title]: "Synthetic title", [w.publisher]: "Press", [w.author]: "Writer",
 	[w.publishedText]: "1979", [w.url]: "https://example.test/a", [w.identityBasis]: "שם מפורש והקשר ביוגרפי",
-	[w.saved]: "קישור ותקציר בלבד", [w.licenseSource]: "", ...extra,
+	[w.saved]: "קישור ותקציר בלבד", [w.licenseSource]: "", [w.publishDecision]: publishNow, ...extra,
 });
 
 it("plans a private family record titled by its filename", () => {
@@ -27,7 +27,7 @@ it("plans a private family record titled by its filename", () => {
 	expect(records[0].file?.sizeBytes).toBe(15519895n);
 });
 
-it("publishes an explicitly identified internet record as a link card", () => {
+it("publishes an internet record the owner marked for publishing", () => {
 	const { records } = planCatalog([webCatalog("KOB-000002")], [webRow("KOB-000002")]);
 	expect(records[0]).toMatchObject({
 		origin: "internet", title: "Synthetic title", types: ["article"], publish: true,
@@ -36,12 +36,54 @@ it("publishes an explicitly identified internet record as a link card", () => {
 	});
 });
 
-it("holds a search-match internet record private", () => {
+it("follows the owner's decision, not how the first pass matched the name", () => {
 	const { records } = planCatalog(
 		[webCatalog("KOB-000003")],
 		[webRow("KOB-000003", { [w.identityBasis]: "התאמת שם והקשר מתוצאת חיפוש" })],
 	);
-	expect(records[0].publish).toBe(false);
+	expect(records[0].publish).toBe(true);
+});
+
+it("leaves held and rejected web sources out, even unfinished ones", () => {
+	const { records, errors, deferred, heldInternet } = planCatalog(
+		[webCatalog("KOB-000060"), webCatalog("KOB-000061"), webCatalog("KOB-000062")],
+		[
+			webRow("KOB-000060", { [w.publishDecision]: holdForNow, [w.title]: " " }),
+			webRow("KOB-000061", { [w.publishDecision]: doNotPublish }),
+			webRow("KOB-000062"),
+		],
+	);
+	expect(errors).toEqual([]);
+	expect(records.map((record) => record.kobId)).toEqual(["KOB-000062"]);
+	expect(deferred).toBe(2);
+	expect(heldInternet).toEqual(["KOB-000060", "KOB-000061"]);
+});
+
+it("refuses a web source with no clear publishing decision", () => {
+	const decisions = ["", "כן", undefined];
+	for (const decision of decisions) {
+		const { errors, records } = planCatalog(
+			[webCatalog("KOB-000063")],
+			[webRow("KOB-000063", { [w.publishDecision]: decision })],
+		);
+		expect(errors).toEqual([{ kobId: "KOB-000063", code: "INVALID_PUBLISH_DECISION" }]);
+		expect(records).toEqual([]);
+	}
+});
+
+it("refuses a public note too long to edit on the site", () => {
+	const plan = (note: string) =>
+		planCatalog([webCatalog("KOB-000067")], [webRow("KOB-000067", { [w.publicNote]: note })]);
+	expect(plan("א".repeat(20000)).errors).toEqual([]);
+	expect(plan("א".repeat(20001)).errors).toEqual([{ kobId: "KOB-000067", code: "NOTE_TOO_LONG" }]);
+});
+
+it("carries the public note, and never a family record's catalog text", () => {
+	const { records } = planCatalog(
+		[family("KOB-000064"), webCatalog("KOB-000065"), webCatalog("KOB-000066")],
+		[webRow("KOB-000065", { [w.publicNote]: " אוזכר " }), webRow("KOB-000066")],
+	);
+	expect(records.map((record) => record.description)).toEqual(["", "אוזכר", ""]);
 });
 
 it("keeps a saved internet copy as a file while still publishing the card", () => {
@@ -103,6 +145,17 @@ it("reports duplicate and orphan web rows without planning the duplicated record
 	]);
 });
 
+it("reads sizes with thousands separators, as Sheets exports them", () => {
+	const size = (value: string) =>
+		planCatalog([family("KOB-000033", { [c.size]: value })], []).records[0]?.file?.sizeBytes;
+	expect(size("1,234,567")).toBe(1234567n);
+	expect(size("15,519")).toBe(15519n);
+	const code = (value: string) => planCatalog([family("KOB-000033", { [c.size]: value })], []).errors[0]?.code;
+	for (const bad of ["1,23", "1,2345", ",123", "123,", "1,,234", "1234,567", "1,234.5", "1,234e3"]) {
+		expect(code(bad), bad).toBe("INVALID_SIZE");
+	}
+});
+
 it("accepts only plain decimal or exponent sizes", () => {
 	const code = (size: string) => planCatalog([family("KOB-000030", { [c.size]: size })], []).errors[0]?.code;
 	expect(code("0x10")).toBe("INVALID_SIZE");
@@ -154,4 +207,65 @@ it("lists cataloged dates and site selections for review, skipping blanks", () =
 			{ kobId: "KOB-000042", publish: true },
 		],
 	});
+});
+
+it("leaves internet records out of a family-only import, so nothing publishes", () => {
+	const catalogRows = [family("KOB-000050"), webCatalog("KOB-000051")];
+	const webRows = [webRow("KOB-000051", { [w.identityBasis]: "שם מפורש" })];
+	const full = planCatalog(catalogRows, webRows);
+	expect(full.records.map((record) => record.kobId)).toEqual(["KOB-000050", "KOB-000051"]);
+	expect(full.records[1].publish).toBe(true);
+	expect(full.deferred).toBe(0);
+	const scoped = planCatalog(catalogRows, webRows, { familyOnly: true });
+	expect(scoped.records.map((record) => record.kobId)).toEqual(["KOB-000050"]);
+	expect(scoped.deferred).toBe(1);
+});
+
+it("does not let unfinished web sources block a family-only import", () => {
+	const catalogRows = [
+		family("KOB-000052"),
+		webCatalog("KOB-000053"),
+		webCatalog("KOB-000054"),
+		webCatalog("KOB-000055"),
+		webCatalog("KOB-000056"),
+	];
+	const webRows = [
+		webRow("KOB-000054", { [w.title]: " " }),
+		webRow("KOB-000055", { [w.url]: "javascript:alert(1)" }),
+		webRow("KOB-000056"),
+		webRow("KOB-000056"),
+		webRow("KOB-000099"),
+	];
+	expect(planCatalog(catalogRows, webRows).errors.length).toBeGreaterThan(0);
+	const scoped = planCatalog(catalogRows, webRows, { familyOnly: true });
+	expect(scoped.errors).toEqual([]);
+	expect(scoped.records.map((record) => record.kobId)).toEqual(["KOB-000052"]);
+	expect(scoped.deferred).toBe(4);
+});
+
+it("still checks family rows and identifiers in a family-only import", () => {
+	const catalogRows = [
+		family("KOB-000057", { [c.driveId]: "" }),
+		family("KOB-000058"),
+		webCatalog("KOB-000058"),
+		webCatalog("bad-id"),
+		family("KOB-000059"),
+	];
+	const webRows = [webRow("KOB-000059"), webRow("KOB-000059")];
+	expect(planCatalog(catalogRows, webRows, { familyOnly: true }).errors).toEqual([
+		{ kobId: "KOB-000057", code: "MISSING_DRIVE_ID" },
+		{ kobId: "KOB-000058", code: "DUPLICATE_ID" },
+		{ kobId: "bad-id", code: "INVALID_ID" },
+		{ kobId: "KOB-000059", code: "DUPLICATE_WEB_ROW" },
+	]);
+});
+
+it("ties an apply confirmation to the import scope", () => {
+	const hash = "c".repeat(64);
+	expect(confirmationHash(hash, { familyOnly: false })).toBe(hash);
+	const family = confirmationHash(hash, { familyOnly: true });
+	expect(family).toMatch(/^[0-9a-f]{64}$/);
+	expect(family).not.toBe(hash);
+	expect(family).toBe(confirmationHash(hash, { familyOnly: true }));
+	expect(family).not.toBe(confirmationHash("d".repeat(64), { familyOnly: true }));
 });

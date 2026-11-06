@@ -183,8 +183,8 @@ or ops mutation is included. Its remote run is not verified until GitHub execute
 ## Media and catalog import (stage 1)
 
 Design: [media import](superpowers/specs/2026-11-05-media-import-design.md);
-plan: [media import plan](superpowers/plans/2026-11-05-media-import.md). Built
-on `feat/catalog-import`; it has not been run against real data.
+plan: [media import plan](superpowers/plans/2026-11-05-media-import.md). Run
+on the real catalog on 2026-11-06 (OPERATIONS.md → Import records).
 
 - **Models:** `ExternalSource` (link, publisher, author, license), `MediaFile`
   (original file record with storage key, size and hash), `ItemCatalogRecord`
@@ -194,7 +194,7 @@ on `feat/catalog-import`; it has not been run against real data.
   Withdrawing rights on a public family item unpublishes it, with a warning
   beforehand.
 - **Importer:** `npm run import:catalog -- --catalog <csv> --web <csv>
-  --drive-key <key.json> --report <path>` with `DATABASE_URL` set. It is a dry
+  --report <path>` with `DATABASE_URL` set. It is a dry
   run unless `--apply`, a matching `--confirm-host` and a matching
   `--confirm-snapshot=<hash>` are given; the dry run prints the hash, so an
   apply is tied to the exported files that were reviewed. `--apply` is refused (exit 2)
@@ -204,15 +204,45 @@ on `feat/catalog-import`; it has not been run against real data.
   public items that no longer qualify, stale public cards and items missing
   from the export; `missingFromExport` also lists items excluded as system
   files or with planning errors on that run. Probable system files are confirmed
-  by name and format before they are excluded. The Drive service account
-  needs read-only access to the shared folder.
+  by name and format before they are excluded. `--family-only` leaves internet
+  records out, so nothing publishes and an unfinished web source can't block the
+  run. A rerun never updates an existing item, so a web source left out now is
+  created later with its corrected details. The confirmation hash depends on
+  this flag, so a family-only dry run can't authorize a full apply. Don't use it
+  after web sources exist: it would list them under `missingFromExport`.
+- **Publishing web sources:** the owner decides in the web tab's `החלטת פרסום`
+  column. `לפרסם` creates a public card. `להמתין` and `לא לפרסם` leave the source
+  out, and it can still be created later. Any other value is a planning error.
+  `הערה ציבורית` becomes the item's public description.
+- **Drive access:** the shared folder is read by a service account with Viewer
+  access, with no key file (the Google organization policy blocks keys). The
+  operator needs the Service Account Token Creator role on it, then runs
+  `gcloud auth application-default login --impersonate-service-account=<email>`.
+  The importer refuses any other login, because a personal one could read the
+  whole Drive.
 - **Family list:** `/family` is paged (50 items per page, `?page=`) with a needs-review filter (`?review=1`); it shows a thumbnail only for a verified thumbnail file, so none appear until files are copied in stage 3.
 - **Report rule:** the console prints counts only. Row detail goes to the
   `--report` file, which must be outside the repository and must be a new file:
   an existing report is never overwritten.
-- **Settings for Yoram to add to `.env.example`** (agents cannot edit it): none.
-  The only new setting is the operator-only `--drive-key` path, passed on the
-  command line; keep the key file outside the repository.
+- **Media route:** `GET /api/media/<id>` re-checks a current session and active
+  verified membership on every request, including each byte range. Anonymous,
+  revoked and unknown ids get the same 404. Only `verified` files are served,
+  storage keys never reach the browser, and a range answers with at most 8 MB.
+  JPEG, PNG, GIF, PDF and MP3 display inline; everything else downloads with a
+  neutral type. Storage settings are validated apart from the server settings,
+  so missing ones answer 503 on this route and never block pages.
+- **Media copy:** `npm run import:media -- --report <path>` with `DATABASE_URL`
+  and the `R2_*` settings. It is a dry run unless `--apply` and a matching
+  `--confirm-host` are given. `--only KOB-000001,KOB-000002` limits a run to
+  named catalog ids and `--limit <n>` to the smallest pending files. Each file is
+  read from Drive, checked against its recorded size and hash, uploaded, read
+  back and compared before it is marked `verified`. Thumbnails and TIFF display
+  copies drop embedded metadata such as GPS. A rerun skips verified files and
+  retries failed ones. A missing thumbnail or display copy is retried from the
+  stored original once its hash matches, with no Drive read. Item visibility and
+  rights are never changed.
+- **Settings for Yoram to add to `.env.example`** (agents cannot edit it):
+  `R2_ENDPOINT=`, `R2_BUCKET=`, `R2_ACCESS_KEY_ID=`, `R2_SECRET_ACCESS_KEY=`.
 
 ## Next work
 
