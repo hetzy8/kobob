@@ -321,7 +321,10 @@ repository (DEVELOPMENT.md → Media and catalog import).
   by size, hash and read-back (20,134,347 bytes), 5 thumbnails, 0 failed. The
   items stay private with rights unclear. Verified: the production bucket lists
   5 originals with public access disabled, and a signed-out request for a real
-  file id answers 404. The other 1,111 family file records remain pending. On 2026-11-07 Yoram opened the largest of the five while signed in, and it loaded in full. It is 4.97 MB, over Vercel's documented 4.5 MB response limit. This does not replace the large-file measurement required before the full copy.
+  file id answers 404. The other 1,111 family file records remain pending. On
+  2026-11-07 Yoram opened the 4.97 MB file while signed in, and it worked. That
+  file is over Vercel's documented 4.5 MB response limit. This does not replace
+  the large-file measurement required before the full copy.
 
 ## Preservation and recovery
 
@@ -355,7 +358,11 @@ The private age key, `KOBOB_BACKUP_AGE_PRIVATE_KEY`, is in Bitwarden only. Losin
 makes every dump unreadable. Cost: not yet measured; recorded here after the first
 dump.
 
-A failed run can still have uploaded its dump. If a suspect dump was the first of the month, it holds the month's slot in `monthly/`, and later runs skip that month. Once a good dump exists, copy it to `monthly/` by hand from the Backblaze console.
+A failed run can still have uploaded its dump. If a suspect dump was the first of
+the month, it holds the month's slot in `monthly/`, and later runs skip that month.
+Once a good dump exists, download it and upload it to `monthly/` under its original
+name, since the month check reads the name. The suspect file stays locked for 30
+days.
 
 ### Restore drill
 
@@ -367,6 +374,11 @@ Backblaze console into a new private folder outside the repository. Then, from
 `~/kobob` on current `main`, one line at a time:
 
 ```zsh
+git switch main
+git pull
+npm ci
+npm run db:generate
+setopt pipefail
 D=<that folder>
 DUMP=<the dump file's path>
 PW=synthetic-local-restore-only
@@ -376,30 +388,36 @@ docker run -d --name kobob-restore \
   -p 127.0.0.1:55441:5432 \
   --tmpfs /var/lib/postgresql/data \
   postgres:17.7-alpine
-sleep 10
+until docker exec kobob-restore pg_isready -q -U postgres -h 127.0.0.1; do sleep 1; done
 export BWS_ACCESS_TOKEN="$(security find-generic-password -s ops-secrets-bws -w)"
 P="$(bws project list --output json | jq -r '.[]|select(.name=="shared").id')"
 S="$(bws secret list "$P" --output json)"
 K='.[]|select(.key=="KOBOB_BACKUP_AGE_PRIVATE_KEY").value'
-jq -r "$K" <<<"$S" |
+print -r -- "$S" | jq -r "$K" |
   age -d -i - "$DUMP" |
   gunzip |
   docker exec -i kobob-restore \
     psql -v ON_ERROR_STOP=1 -q -U postgres -d restore >/dev/null
+print "restore: $pipestatus"
 L="postgresql://postgres:$PW@127.0.0.1:55441/restore"
 DATABASE_URL="$L" npm run -s verify:restore > "$D/restored.json"
+print "restored report exit: $?"
 K='.[]|select(.key=="KOBOB_BACKUP_DATABASE_URL").value'
-U="$(jq -r "$K" <<<"$S")"
+U="$(print -r -- "$S" | jq -r "$K")"
 DATABASE_URL="$U" npm run -s verify:restore > "$D/production.json"
+print "production report exit: $?"
+jq .problems "$D/restored.json" "$D/production.json"
 diff "$D/restored.json" "$D/production.json"
 docker rm -f kobob-restore
+unsetopt pipefail
 unset BWS_ACCESS_TOKEN P S K L U PW DUMP
 ```
 
-The restore must finish with no error, and both reports must exit 0. Production is
-read through the read-only backup role. The host always differs. Any other
-difference is acceptable only if explained by activity after the dump, such as
-`Session` or `RateLimit` rows.
+The drill passes only if `restore` shows all zeros, both report exits are 0 and
+both `problems` lists are empty. Production is read through the read-only backup
+role. The host always differs. Any other difference is acceptable only if explained
+by activity after the dump, such as `Session` or `RateLimit` rows. Share counts and
+migration names when reporting, never the host.
 
 **Evidence rule.** Record a drill only with the dump's date and size, the script's
 counts and migration, and who ran it. Without those, the status stays "not
@@ -415,10 +433,14 @@ encrypted backups keep the record until they expire, up to 366 days. After any
 restore, reapply every takedown logged since that dump.
 
 **Recovery from backup.** Restore to a new Neon branch or project with
-`psql -v ON_ERROR_STOP=1` as in the drill. Run `npm run verify:restore` against it.
+`psql -v ON_ERROR_STOP=1` as in the drill. The dump has no owners or grants, so
+restore as the role the app connects with. Run `npm run verify:restore` against it.
 Reapply takedowns and member revocations made since the dump. Repoint
 `KOBOB_DATABASE_URL` and `KOBOB_DIRECT_URL` with
-`node scripts/secrets.mjs rotate <names> --apply` from `~/ops`. Rotate
+`node scripts/secrets.mjs rotate <names> --apply` from `~/ops`. Create
+`kobob_backup` on the new database if it did not carry over, rotate
+`KOBOB_BACKUP_DATABASE_URL`, run `DB Backup` by hand and check the new dump's size.
+Otherwise backups keep dumping the old database and stay green. Rotate
 `KOBOB_AUTH_SECRET` the same way, so old sessions and links die. Only then reopen
 traffic, and check that a revoked member is denied. Do not resurrect stale public
 visibility or access: an item recovered individually returns to private.
@@ -429,20 +451,19 @@ which target. Revoke and replace it at the provider, rotate it with
 `node scripts/secrets.mjs audit`, and check the provider's logs for what it could
 have reached. The Bitwarden-only keys (R2 write and development keys, the private age
 key) are replaced by hand. A leaked private age key exposes every dump still in the
-bucket: generate a new key, and treat the old dumps as exposed until they expire.
+bucket: generate a new key and keep the old private key in Bitwarden under a dated name
+until the last dump using it expires, up to 367 days, or those dumps become
+unreadable. Treat the old dumps as exposed until they expire.
 
 **Lost administrator email.** Yoram verifies the owner's identity outside the site,
 then runs `npm run admin:bootstrap` as in Email delivery above. There is no public
-reset path.
+reset path, and no public admin-creation endpoint. Adding a replacement admin
+revokes obsolete access and records an audit event.
 
-**Site down.** Check `/api/health` first: a 503 with `databaseUrl` true points at the
+**Site down.** Check `/api/health` first: a 503 with `config.databaseUrl` true points at the
 database, and `commit` shows what is live. Then the latest `Vercel Deploy
 (production)` run, Neon's and Vercel's status pages, and the rollback rules in Branch
 and release flow. Do not run a destructive down migration to make old code start.
-
-If the only administrator loses email access, recovery is a documented,
-owner-verified operator procedure, not a public reset/admin-creation endpoint.
-Adding a replacement admin revokes obsolete access and records an audit event.
 
 ## Launch checklist (not completed)
 
