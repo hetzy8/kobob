@@ -32,6 +32,7 @@
 - **A dump under 1,000 bytes is refused and not uploaded:** it cannot be a real database. The half-size rule applies above that.
 - **`pg_dump` stderr is not printed,** since it can contain the host. The script reports only a class: permission denied, or a generic failure.
 - **Object Lock mode is Governance:** it stops the CI key and mistakes, and only the owner's master key could override it.
+- **A size check that cannot run fails the run (changed during Task 3 review):** the dump is still uploaded, and only rclone's "directory not found" status counts as a first run. If real B2 reports an empty prefix differently, the first run goes red with the dump in place; Task 7's first dump checks this. Known `pg_dump` failure classes stop at once with fixed messages. `scripts/db-backup.sh` supersedes the Task 3 code below.
 - **The `hetzy8/ops` tooling writes repository secrets only.** Task 6 adds an optional `environment` to GitHub targets, as a separate ops PR.
 - **`x-vercel-forwarded-for` is confirmed by a probe after release** (Task 7, step 8). A failed probe weakens the client limit but not the global limit, so it does not block the release; it comes back to Yoram.
 

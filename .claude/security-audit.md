@@ -16,8 +16,8 @@ not a check.
 
 - Grep `src/app/**/page.tsx`, `**/actions.ts` and `src/app/api/**/route.ts` for any
   Prisma/`db.` access or service call not preceded by one of the two guards.
-- Public pages (`/`, `/about`, `/achievements`, `/archive`, `/sign-in`, `/verify`)
-  must not read member data or private items.
+- Public pages (`/`, `/about`, `/search`, `/items/[id]`, `/sign-in`, `/verify`)
+  must not read member data or private items. `/api/media/[id]` is member-only.
 - `/api/health` is deliberately public: it may only return `status`, `commit`,
   `deploymentId`, `timestamp` and `config` booleans — any other field is a finding.
 
