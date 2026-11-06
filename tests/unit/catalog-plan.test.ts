@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { catalog as c, web as w } from "../../src/import/catalog-columns";
-import { planCatalog, reviewLists } from "../../src/import/catalog-plan";
+import { familyOnly, planCatalog, reviewLists } from "../../src/import/catalog-plan";
 
 const family = (id: string, extra = {}) => ({
 	[c.id]: id, [c.originalName]: "synthetic.jpg", [c.type]: "קובץ תמונה", [c.sourceKind]: "Drive",
@@ -165,4 +165,14 @@ it("lists cataloged dates and site selections for review, skipping blanks", () =
 			{ kobId: "KOB-000042", publish: true },
 		],
 	});
+});
+
+it("leaves internet records out of a family-only import, so nothing publishes", () => {
+	const { records } = planCatalog(
+		[family("KOB-000050"), webCatalog("KOB-000051")],
+		[webRow("KOB-000051", { [w.identityBasis]: "שם מפורש" })],
+	);
+	expect(records.map((record) => record.kobId)).toEqual(["KOB-000050", "KOB-000051"]);
+	expect(records[1].publish).toBe(true);
+	expect(familyOnly(records).map((record) => record.kobId)).toEqual(["KOB-000050"]);
 });

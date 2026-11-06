@@ -139,6 +139,9 @@ export function planCatalog(catalogRows: CatalogRow[], webRows: CatalogRow[]) {
 }
 
 // What Gate A asks Yoram to decide: cataloged dates and site selections.
+export const familyOnly = (records: PlannedRecord[]) =>
+	records.filter((record) => record.origin !== "internet");
+
 export function reviewLists(records: PlannedRecord[]) {
 	const catalogedDates: { kobId: string; value: string }[] = [];
 	const siteSelected: { kobId: string; publish: boolean }[] = [];

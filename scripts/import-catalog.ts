@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { parse } from "csv-parse/sync";
 import { applyBlockers, applyCatalog, resolveSystemFiles } from "../src/import/apply-catalog";
-import { planCatalog, reviewLists, type CatalogRow } from "../src/import/catalog-plan";
+import { familyOnly, planCatalog, reviewLists, type CatalogRow } from "../src/import/catalog-plan";
 import { createDriveClient } from "../src/import/drive";
 import { createDatabase } from "../src/lib/database";
 import { isOutsideRepository } from "../src/import/report-path";
@@ -28,6 +28,7 @@ try {
 			catalog: { type: "string" },
 			web: { type: "string" },
 			report: { type: "string" },
+			"family-only": { type: "boolean", default: false },
 			apply: { type: "boolean", default: false },
 			"confirm-host": { type: "string" },
 			"confirm-snapshot": { type: "string" },
@@ -85,8 +86,11 @@ try {
 	}
 
 	db = createDatabase(databaseUrl);
-	const report = await applyCatalog(db, resolved.records, snapshotHash, { apply: Boolean(values.apply) });
-	const review = reviewLists(resolved.records);
+	// Existing items are never updated, so a web source left out now is created
+	// later with its corrected details.
+	const records = values["family-only"] ? familyOnly(resolved.records) : resolved.records;
+	const report = await applyCatalog(db, records, snapshotHash, { apply: Boolean(values.apply) });
+	const review = reviewLists(records);
 	const detail = {
 		snapshotHash,
 		report,
@@ -94,15 +98,16 @@ try {
 		errors: plan.errors,
 		excluded: resolved.excluded.map((record) => ({ kobId: record.kobId, name: record.file?.originalFilename })),
 		unreadableSystemCandidates: resolved.unreadable,
-		heldInternet: resolved.records.filter((r) => r.origin === "internet" && !r.publish).map((r) => r.kobId),
+		heldInternet: records.filter((r) => r.origin === "internet" && !r.publish).map((r) => r.kobId),
 		// Exactly what visitors will see, so Yoram can read it before it goes live.
-		publicCards: resolved.records.filter((r) => r.publish).map((r) => ({ kobId: r.kobId, title: r.title, ...r.source })),
+		publicCards: records.filter((r) => r.publish).map((r) => ({ kobId: r.kobId, title: r.title, ...r.source })),
 		catalogedDates: review.catalogedDates,
 		siteSelected: review.siteSelected,
 	};
 	writeFileSync(reportFd, JSON.stringify(detail, (_key, value) => (typeof value === "bigint" ? String(value) : value), 2));
 	console.log({
-		items: resolved.records.length,
+		items: records.length,
+		internetLeftOut: resolved.records.length - records.length,
 		excluded: resolved.excluded.length,
 		errors: plan.errors.length,
 		unreadable: resolved.unreadable.length,

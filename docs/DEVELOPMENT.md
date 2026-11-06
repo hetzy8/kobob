@@ -204,7 +204,10 @@ on `feat/catalog-import`; it has not been run against real data.
   public items that no longer qualify, stale public cards and items missing
   from the export; `missingFromExport` also lists items excluded as system
   files or with planning errors on that run. Probable system files are confirmed
-  by name and format before they are excluded.
+  by name and format before they are excluded. `--family-only` leaves internet
+  records out, so nothing publishes. A rerun never updates an existing item, so
+  a web source left out now is created later with its corrected details. Don't
+  use it after web sources exist: it would list them under `missingFromExport`.
 - **Drive access:** the shared folder is read by a service account with Viewer
   access, with no key file (the Google organization policy blocks keys). The
   operator needs the Service Account Token Creator role on it, then runs
