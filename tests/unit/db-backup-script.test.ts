@@ -37,12 +37,18 @@ beforeEach(() => {
 		"rclone",
 		`echo "$*" >> "$STUB_DIR/rclone.log"
 case "$1 $2" in
-  lsf*daily/) [ -f "$STUB_DIR/daily.txt" ] && cat "$STUB_DIR/daily.txt" ;;
+  lsf*daily/)
+    [ -f "$STUB_DIR/daily.txt" ] && cat "$STUB_DIR/daily.txt"
+    exit "\${STUB_LSF_DAILY_EXIT:-0}" ;;
+  copyto*) exit "\${STUB_COPY_EXIT:-0}" ;;
   lsf*monthly/) [ -f "$STUB_DIR/monthly.txt" ] && cat "$STUB_DIR/monthly.txt" ;;
 esac
 exit 0`,
 	);
-	stub("age", 'echo "$*" > "$STUB_DIR/age.args"\ncat');
+	stub(
+		"age",
+		'echo "$*" > "$STUB_DIR/age.args"\n[ -z "$STUB_AGE_EXIT" ] || exit "$STUB_AGE_EXIT"\ncat',
+	);
 	// 5,000 random bytes barely compress, so the size is known.
 	stub(
 		"pg_dump",
@@ -51,6 +57,7 @@ count=$((count + 1))
 echo "$count" > "$STUB_DIR/attempts"
 if [ "$count" -le "\${STUB_DUMP_FAILS:-0}" ]; then
   echo "\${STUB_DUMP_ERROR:-could not connect to $1}" >&2
+  [ -z "\${STUB_DUMP_PARTIAL:-}" ] || head -c 3000 /dev/urandom
   exit 1
 fi
 head -c "\${STUB_DUMP_BYTES:-5000}" /dev/urandom`,
@@ -184,4 +191,71 @@ it("logs no secrets on success", () => {
 	const { output } = run();
 	for (const secret of ["synthetic-password", "synthetic-key"])
 		expect(output).not.toContain(secret);
+});
+
+it("uploads, then fails, when the previous dump cannot be listed", () => {
+	const { status, output } = run({ STUB_LSF_DAILY_EXIT: "1" });
+	expect(status).toBe(1);
+	expect(uploads().length).toBeGreaterThan(0);
+	expect(output).toContain("previous: unreadable");
+	expect(output).toContain("could not compare");
+});
+
+it("treats a missing daily folder as a first run", () => {
+	const { status, output } = run({ STUB_LSF_DAILY_EXIT: "3" });
+	expect(status).toBe(0);
+	expect(uploads().length).toBeGreaterThan(0);
+	expect(output).not.toContain("could not compare");
+});
+
+it("uploads, then fails, when the previous size is not a number", () => {
+	writeFileSync(
+		join(dir, "daily.txt"),
+		"garbage kobob-2001-01-01T03-00-00Z.sql.gz.age\n",
+	);
+	const { status, output } = run();
+	expect(status).toBe(1);
+	expect(uploads().length).toBeGreaterThan(0);
+	expect(output).toContain("could not compare");
+});
+
+it("reports no upload when the copy fails", () => {
+	const { status, output } = run({ STUB_COPY_EXIT: "1" });
+	expect(status).not.toBe(0);
+	expect(output).not.toContain("Uploaded");
+});
+
+it("uploads nothing when pg_dump fails after writing bytes", () => {
+	const { status } = run({ STUB_DUMP_FAILS: "6", STUB_DUMP_PARTIAL: "1" });
+	expect(status).toBe(1);
+	expect(uploads()).toEqual([]);
+});
+
+it("uploads nothing when age fails", () => {
+	const { status } = run({ STUB_AGE_EXIT: "1" });
+	expect(status).toBe(1);
+	expect(uploads()).toEqual([]);
+});
+
+it.each([
+	[
+		"password authentication failed for user SomeRole",
+		"the backup role's password was refused",
+		"SomeRole",
+	],
+	[
+		"server version mismatch: SomeDetail",
+		"pg_dump does not match the server version",
+		"SomeDetail",
+	],
+])("stops at once on %s with a fixed message", (error, message, detail) => {
+	const { status, output } = run({
+		STUB_DUMP_FAILS: "6",
+		STUB_DUMP_ERROR: `pg_dump: error: ${error}`,
+	});
+	expect(status).toBe(1);
+	expect(output).toContain(message);
+	expect(output).not.toContain(detail);
+	expect(readFileSync(join(dir, "attempts"), "utf8").trim()).toBe("1");
+	expect(uploads()).toEqual([]);
 });
