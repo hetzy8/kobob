@@ -1,7 +1,7 @@
 # Archive data ownership and migration
 
 **Date:** 2026-11-01
-**Status:** catalog imported, files not moved. Stage 1 of the
+**Status:** catalog imported; five selected files copied to R2 (2026-11-06), the rest not moved. Stage 1 of the
 [media import](superpowers/specs/2026-11-05-media-import-design.md) ran on
 2026-11-06 (1,162 items; OPERATIONS.md → Import records); the Drive originals
 stay where they are until stage 3.
