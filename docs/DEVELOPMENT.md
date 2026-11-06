@@ -183,8 +183,8 @@ or ops mutation is included. Its remote run is not verified until GitHub execute
 ## Media and catalog import (stage 1)
 
 Design: [media import](superpowers/specs/2026-11-05-media-import-design.md);
-plan: [media import plan](superpowers/plans/2026-11-05-media-import.md). Built
-on `feat/catalog-import`; it has not been run against real data.
+plan: [media import plan](superpowers/plans/2026-11-05-media-import.md). Run
+on the real catalog on 2026-11-06 (OPERATIONS.md → Import records).
 
 - **Models:** `ExternalSource` (link, publisher, author, license), `MediaFile`
   (original file record with storage key, size and hash), `ItemCatalogRecord`

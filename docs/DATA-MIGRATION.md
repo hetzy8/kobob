@@ -1,9 +1,10 @@
 # Archive data ownership and migration
 
 **Date:** 2026-11-01
-**Status:** planning only; no files moved or imported. The catalog importer
-exists (stage 1 of the [media import](superpowers/specs/2026-11-05-media-import-design.md))
-but has not been run against real data.
+**Status:** catalog imported, files not moved. Stage 1 of the
+[media import](superpowers/specs/2026-11-05-media-import-design.md) ran on
+2026-11-06 (1,162 items; OPERATIONS.md → Import records); the Drive originals
+stay where they are until stage 3.
 
 ## Accepted decisions
 

@@ -3,8 +3,10 @@
 **Status (2026-11-06):** in production at `https://kobob.vercel.app` (Vercel
 `fra1`, Neon Frankfurt), v0.5.0. Sign-in email through Resend, item
 editing and public search are live and the first administrator exists. The
-catalog importer has not been run on real data. Backups, private media and the
-custom domain (`kobob.org`) are not set up yet.
+catalog import (stage 1) ran on 2026-11-06: 1,162 items, 47 of them public
+link cards (Import records below). Backups, private media and the custom
+domain (`kobob.org`) are not set up yet; backups come next (ROADMAP.md →
+Order of work).
 
 ## Ownership
 
@@ -256,7 +258,30 @@ deployment. Then apply an annotated `vX.Y.Z` tag to that deployed commit
 Rollback must consider database compatibility; do not run a destructive down
 migration merely to make old code start.
 
+### Import records
+
+Counts only; the export files, reports and row detail stay outside the
+repository (DEVELOPMENT.md → Media and catalog import).
+
+- Stage 1 catalog import, 2026-11-06, on v0.5.0 (`b0fa8fb`) with the
+  importer fixes merged to `dev` (PRs #34–#36; the importer runs on the
+  operator's machine, so it needed no release). Yoram approved the 47 public
+  cards from the dry-run card list; the production dry run matched the local
+  apply exactly before the production apply, which was bound to the database
+  host and the export snapshot. Result: 1,162 items created (1,115 private
+  family items with 1,116 file records, 47 public internet link cards, 9 of
+  them carrying a public note), 165 system files excluded, 64 web sources left
+  out by decision, 0 errors, 0 unreadable. A local rerun of the same export
+  reported 0 created, 1,162 existing, 0 changed, 0 conflicts. Verified as an
+  anonymous visitor: `/` and `/search` with a Hebrew query answer 200, a card
+  opens and links to its source, and the page carries no catalog ids or
+  private notes. Public item count before the import: 0.
+
 ## Preservation and recovery
+
+Decision (Yoram, 2026-11-06, after the
+[panel review](reviews/2026-11-06-panel-review.md)): backups with a rehearsed
+restore come before any family editing and before the first invitation.
 
 The proposal is daily encrypted database and media backups, RPO 24 hours and
 RTO 1 working day. Before launch, approve backup retention and costs, record

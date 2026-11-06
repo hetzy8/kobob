@@ -1457,12 +1457,12 @@ Verify the wiring without real data. Run `npm run typecheck`; expected: PASS. Ru
 
 ### Gate A: stop for Yoram
 
-- [ ] Open the PR into `dev`. Yoram runs the Codex review. Reply to each point; merge on CI green plus the reply, on Yoram's word.
-- [ ] Before the release, count public items in production by query, because the rights rule applies to their next publish.
-- [ ] Yoram approves the Hebrew strings; then a release to `main` on Yoram's go, because production needs the migration. Follow OPERATIONS.md.
-- [ ] Yoram creates a Google Cloud service account and shares the collection folder with it as Viewer. The organization policy blocks key files, so Yoram takes the Service Account Token Creator role on it and runs `gcloud auth application-default login --impersonate-service-account=<email>`.
+- [x] Open the PR into `dev`. Yoram runs the Codex review. Reply to each point; merge on CI green plus the reply, on Yoram's word.
+- [x] Before the release, count public items in production by query, because the rights rule applies to their next publish.
+- [x] Yoram approves the Hebrew strings; then a release to `main` on Yoram's go, because production needs the migration. Follow OPERATIONS.md.
+- [x] Yoram creates a Google Cloud service account and shares the collection folder with it as Viewer. The organization policy blocks key files, so Yoram takes the Service Account Token Creator role on it and runs `gcloud auth application-default login --impersonate-service-account=<email>`.
 - Note: each dry run and each apply needs its own new `--report` path; the importer refuses to overwrite an existing report.
-- [ ] Yoram exports the "catalog" and "web sources" tabs as CSV into a dated folder outside the repository, and runs the dry run against the local development database:
+- [x] Yoram exports the "catalog" and "web sources" tabs as CSV into a dated folder outside the repository, and runs the dry run against the local development database:
 
 ```sh
 DATABASE_URL='postgresql://kobob_dev:synthetic-local-dev-only@127.0.0.1:55440/kobob_dev' npm run import:catalog -- --catalog <catalog.csv> --web <web.csv> --report <outside-repo>/catalog-dry-run.json
@@ -1470,8 +1470,8 @@ DATABASE_URL='postgresql://kobob_dev:synthetic-local-dev-only@127.0.0.1:55440/ko
 
 Expected, if nothing changed: 0 errors, 165 excluded, 1,214 items, 81 published, 1,129 files. Differences go to Yoram with the report; they are not "fixed" silently. Yoram reads the report's `publicCards` list, which is exactly what visitors will see, and decides the two cataloged dates listed in the spec.
 
-- [ ] Before the production apply, run a production dry run and have Yoram read its report. Yoram resolves `selectedAndPublishing` (site-selected records that would publish) first.
-- [ ] On Yoram's explicit go, apply to the local database, then to production using `KOBOB_DIRECT_URL` through Bitwarden as in the OPERATIONS.md bootstrap command, with `--apply --confirm-host=<host> --confirm-snapshot=<hash from the reviewed dry run>`. Verify counts by query, then check a card on the public site and search as an anonymous visitor.
+- [x] Before the production apply, run a production dry run and have Yoram read its report. Yoram resolves `selectedAndPublishing` (site-selected records that would publish) first.
+- [x] On Yoram's explicit go, apply to the local database, then to production using `KOBOB_DIRECT_URL` through Bitwarden as in the OPERATIONS.md bootstrap command, with `--apply --confirm-host=<host> --confirm-snapshot=<hash from the reviewed dry run>`. Verify counts by query, then check a card on the public site and search as an anonymous visitor.
 
 ---
 
