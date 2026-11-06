@@ -274,6 +274,12 @@ Release checklist:
      [Deploy run 42223428711](https://github.com/hetzy8/kobob/actions/runs/42223428711)
      green; health `ok` on `b0fa8fb` with every config flag true; `/search` with
      a query answers 200; `/family` redirects to sign-in when signed out.
+   - `v0.6.0`, 2026-11-06: `24bdc94` (PR #40), private R2 storage, the
+     access-checked media route and the copy tool; no migration.
+     [Deploy run 42302769871](https://github.com/hetzy8/kobob/actions/runs/42302769871)
+     green; health `ok` on `24bdc94` with every config flag true, including
+     `storage`; `/` and `/search` answer 200; `/family` redirects to sign-in;
+     an unknown media id answers 404.
 6. Delete `dev` and recreate it from the release commit, then retarget any
    open PRs to the new `dev` (`gh pr edit <n> --base dev`). This is the hetzy8
    standards release rule (getmygoals' practice): each cycle starts level with
@@ -309,6 +315,13 @@ repository (DEVELOPMENT.md → Media and catalog import).
   anonymous visitor: `/` and `/search` with a Hebrew query answer 200, a card
   opens and links to its source, and the page carries no catalog ids or
   private notes. Public item count before the import: 0.
+- Selected collages, 2026-11-06, on v0.6.0 (`24bdc94`), by Yoram's choice ahead
+  of ops and backups. Rehearsed first on the development bucket and local
+  database; the production dry run then matched. Result: 5 originals verified
+  by size, hash and read-back (20,134,347 bytes), 5 thumbnails, 0 failed. The
+  items stay private with rights unclear. Verified: the production bucket lists
+  5 originals with public access disabled, and a signed-out request for a real
+  file id answers 404. The other 1,111 family file records remain pending.
 
 ## Preservation and recovery
 
