@@ -28,17 +28,16 @@ try {
 			catalog: { type: "string" },
 			web: { type: "string" },
 			report: { type: "string" },
-			"drive-key": { type: "string" },
 			apply: { type: "boolean", default: false },
 			"confirm-host": { type: "string" },
 			"confirm-snapshot": { type: "string" },
 		},
 	});
-	const { catalog, web, report: reportPath, "drive-key": driveKey } = values;
+	const { catalog, web, report: reportPath } = values;
 	applying = Boolean(values.apply);
 	const databaseUrl = process.env.DATABASE_URL;
-	if (!catalog || !web || !reportPath || !driveKey || !databaseUrl) {
-		fail("Needs --catalog --web --report --drive-key and DATABASE_URL");
+	if (!catalog || !web || !reportPath || !databaseUrl) {
+		fail("Needs --catalog --web --report and DATABASE_URL");
 	}
 	let outside: boolean;
 	try {
@@ -65,7 +64,7 @@ try {
 		parse(bytes, { columns: true, bom: true, relax_column_count: true, skip_empty_lines: true });
 	const snapshotHash = createHash("sha256").update(catalogBytes).update("\0").update(webBytes).digest("hex");
 	const plan = planCatalog(rows(catalogBytes), rows(webBytes));
-	const drive = createDriveClient(driveKey);
+	const drive = await createDriveClient();
 	const resolved = await resolveSystemFiles(plan.records, drive.readHead);
 	const blockers = applyBlockers({ errors: plan.errors, unreadable: resolved.unreadable });
 	console.log(`Snapshot hash: ${snapshotHash}`);

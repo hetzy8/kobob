@@ -26,6 +26,10 @@ Read AGENTS.md, README.md, docs/README.md, the product spec and plan before chan
   imported. Next: Gate A in the plan (PR into `dev`, Codex review, Hebrew
   strings approval, release, Drive service account, Yoram's dry run and
   report review), then stage 2, storage and delivery.
+- Update 2026-11-06: v0.5.0 (`b0fa8fb`) released stage 1. Production had no
+  items at release. The Google organization policy blocks service account keys,
+  so the importer reads Drive through a keyless gcloud login that impersonates
+  the service account (DEVELOPMENT.md). Next: Yoram's dry run and report review.
 - Earlier next work: see [ROADMAP.md](ROADMAP.md): phase 2 slice 1
   (navigation, family-only archive and search, branch `feat/public-search`),
   then slices 2-5 (timeline, map, internet sources, life-story editing).

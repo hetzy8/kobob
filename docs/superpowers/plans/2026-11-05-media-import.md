@@ -31,6 +31,7 @@
 
 The spec was updated to match these on approval (2026-11-05):
 
+- **Keyless Drive access (2026-11-06):** the organization policy blocks service account keys, so `createDriveClient()` takes no key path and is async. It uses a gcloud login that impersonates the service account and refuses any other login. Earlier stage 1 code below still shows the key version; `src/import/drive.ts` is current.
 - **BMP:** `sharp` has no BMP input, so the 2 BMP files stay download-only instead of getting a display copy.
 - **Rights and review actions ship in stage 1,** not stage 4. The rights rule would otherwise stop the family publishing anything after the stage 1 release.
 - **The viewer ships in stage 4,** not stage 2. Stage 2 measures through direct `/api/media/<id>` links, so nothing is shown before files exist.
@@ -1459,12 +1460,12 @@ Verify the wiring without real data. Run `npm run typecheck`; expected: PASS. Ru
 - [ ] Open the PR into `dev`. Yoram runs the Codex review. Reply to each point; merge on CI green plus the reply, on Yoram's word.
 - [ ] Before the release, count public items in production by query, because the rights rule applies to their next publish.
 - [ ] Yoram approves the Hebrew strings; then a release to `main` on Yoram's go, because production needs the migration. Follow OPERATIONS.md.
-- [ ] Yoram creates a Google Cloud service account and shares the collection folder with it as Viewer. The key file stays outside the repository.
+- [ ] Yoram creates a Google Cloud service account and shares the collection folder with it as Viewer. The organization policy blocks key files, so Yoram takes the Service Account Token Creator role on it and runs `gcloud auth application-default login --impersonate-service-account=<email>`.
 - Note: each dry run and each apply needs its own new `--report` path; the importer refuses to overwrite an existing report.
 - [ ] Yoram exports the "catalog" and "web sources" tabs as CSV into a dated folder outside the repository, and runs the dry run against the local development database:
 
 ```sh
-DATABASE_URL='postgresql://kobob_dev:synthetic-local-dev-only@127.0.0.1:55440/kobob_dev' npm run import:catalog -- --catalog <catalog.csv> --web <web.csv> --drive-key <key.json> --report <outside-repo>/catalog-dry-run.json
+DATABASE_URL='postgresql://kobob_dev:synthetic-local-dev-only@127.0.0.1:55440/kobob_dev' npm run import:catalog -- --catalog <catalog.csv> --web <web.csv> --report <outside-repo>/catalog-dry-run.json
 ```
 
 Expected, if nothing changed: 0 errors, 165 excluded, 1,214 items, 81 published, 1,129 files. Differences go to Yoram with the report; they are not "fixed" silently. Yoram reads the report's `publicCards` list, which is exactly what visitors will see, and decides the two cataloged dates listed in the spec.
@@ -2505,16 +2506,15 @@ import { createR2Storage } from "../src/lib/storage";
 const { values } = parseArgs({
 	options: {
 		report: { type: "string" },
-		"drive-key": { type: "string" },
 		limit: { type: "string" },
 		apply: { type: "boolean", default: false },
 		"confirm-host": { type: "string" },
 	},
 });
-const { report: reportPath, "drive-key": driveKey } = values;
+const { report: reportPath } = values;
 const databaseUrl = process.env.DATABASE_URL;
-if (!reportPath || !driveKey || !databaseUrl) {
-	console.error("Needs --report --drive-key, DATABASE_URL and R2 settings");
+if (!reportPath || !databaseUrl) {
+	console.error("Needs --report, DATABASE_URL and R2 settings");
 	process.exit(2);
 }
 if (!relative(process.cwd(), resolve(reportPath)).startsWith("..")) {
@@ -2530,7 +2530,7 @@ const config = readStorageConfig(process.env);
 console.log(`Database host: ${host}. Bucket: ${config.bucket}. Mode: ${values.apply ? "APPLY" : "dry run"}`);
 const db = createDatabase(databaseUrl);
 try {
-	const report = await copyMedia(db, createDriveClient(driveKey), createR2Storage(config), {
+	const report = await copyMedia(db, await createDriveClient(), createR2Storage(config), {
 		apply: Boolean(values.apply),
 		...(values.limit ? { limit: Number(values.limit) } : {}),
 	});
