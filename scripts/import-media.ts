@@ -1,4 +1,4 @@
-import { writeFileSync } from "node:fs";
+import { closeSync, openSync, writeFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { copyMedia } from "../src/import/copy-media";
@@ -47,6 +47,15 @@ const config = readStorageConfig(process.env);
 console.log(
 	`Database host: ${host}. Bucket: ${config.bucket}. Mode: ${values.apply ? "APPLY" : "dry run"}`,
 );
+// Opened first, so an existing report is never overwritten and a bad path fails
+// before anything is copied.
+let reportFd: number;
+try {
+	reportFd = openSync(reportPath, "wx", 0o600);
+} catch {
+	console.error("--report must be a new file in an existing folder");
+	process.exit(2);
+}
 const db = createDatabase(databaseUrl);
 try {
 	const report = await copyMedia(
@@ -60,7 +69,7 @@ try {
 		},
 	);
 	writeFileSync(
-		reportPath,
+		reportFd,
 		JSON.stringify({ ...report, bytes: String(report.bytes) }, null, 2),
 	);
 	console.log({
@@ -73,5 +82,6 @@ try {
 	});
 	if (report.failed.length) process.exitCode = 1;
 } finally {
+	closeSync(reportFd);
 	await db.$disconnect();
 }

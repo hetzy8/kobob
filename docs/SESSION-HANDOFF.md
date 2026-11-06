@@ -39,6 +39,13 @@ Read AGENTS.md, README.md, docs/README.md, the product spec and plan before chan
   (ROADMAP.md → Order of work): ops and backups next, then the viewer
   (stages 2–4), then the warm home page. The 64 held web sources wait for
   Yoram's decisions in batches, outside the repository.
+- Update 2026-11-06, last: Yoram approved the
+  [ops and backups design](superpowers/specs/2026-11-06-ops-backups-design.md)
+  but asked for R2 and the five collages selected for the site first. The
+  storage client, media route and copy tool are on `feat/private-media`; buckets,
+  keys and the real copy are Yoram's steps (OPERATIONS.md → Private media (R2)).
+  Then the backup implementation plan. Before copying the whole collection, see
+  the first deviation dated 2026-11-06 in the media plan.
 - Earlier next work: see [ROADMAP.md](ROADMAP.md): phase 2 slice 1
   (navigation, family-only archive and search, branch `feat/public-search`),
   then slices 2-5 (timeline, map, internet sources, life-story editing).

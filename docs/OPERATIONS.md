@@ -178,7 +178,40 @@ Done 2026-11-02/03. Lessons for the next domain or sender change:
   first administrator was created this way on 2026-11-03; the sign-in email
   arrived in the Gmail primary inbox.
 
-Private media (R2) is a later slice with its own map entries.
+### Private media (R2)
+
+Kobob has its own buckets and keys and never shares them with another app
+(media design, decision 7). Buckets are private: no public access, no custom
+domain, no CORS.
+
+| Setting | Source | Map name |
+|---|---|---|
+| `R2_ENDPOINT` | plain: `https://<account>.r2.cloudflarestorage.com` | not a secret |
+| `R2_BUCKET` | plain: `kobob-media-production` on Vercel | not a secret |
+| `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` on Vercel | Object Read only, production bucket | `KOBOB_R2_READ_ACCESS_KEY_ID`, `KOBOB_R2_READ_SECRET_ACCESS_KEY` |
+| Same names, operator's import runs only | Object Read & Write, production bucket | Bitwarden only: `KOBOB_R2_WRITE_ACCESS_KEY_ID`, `KOBOB_R2_WRITE_SECRET_ACCESS_KEY` |
+| Same names, local runs only | Object Read & Write, development bucket | Bitwarden only: `KOBOB_R2_DEV_ACCESS_KEY_ID`, `KOBOB_R2_DEV_SECRET_ACCESS_KEY` |
+
+Yoram's steps:
+
+1. Cloudflare → R2: create `kobob-media-production` and
+   `kobob-media-development`, location hint Eastern Europe (near `fra1`). Check
+   that public access stays disabled and add no CORS policy.
+2. R2 → Manage API tokens: create the three tokens in the table, each limited to
+   its one bucket.
+3. Add the four Bitwarden-only values to the `shared` project in the Bitwarden
+   web app. The ops map requires a target, so these have no map entry.
+4. Merge the ops map PR, then from `~/ops` run
+   `node scripts/secrets.mjs rotate KOBOB_R2_READ_ACCESS_KEY_ID KOBOB_R2_READ_SECRET_ACCESS_KEY`
+   (dry run), then again with `--apply`, pasting each value at its prompt. Then
+   `node scripts/secrets.mjs audit`.
+5. Vercel Production: set `R2_ENDPOINT` and `R2_BUCKET`, then redeploy with
+   `gh workflow run vercel-deploy.yml --repo hetzy8/kobob --ref main` and check
+   that `/api/health` shows `storage` true.
+
+The app key cannot write, so the copy always runs from the operator's Mac.
+Commands and report rules: DEVELOPMENT.md → Media copy. R2 holds copies; Drive
+remains the source of the originals until a tested media backup exists.
 
 ## Verification and release
 
