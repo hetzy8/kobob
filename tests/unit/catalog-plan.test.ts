@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import { catalog as c, web as w } from "../../src/import/catalog-columns";
-import { familyOnly, planCatalog, reviewLists } from "../../src/import/catalog-plan";
+import { confirmationHash, planCatalog, reviewLists } from "../../src/import/catalog-plan";
 
 const family = (id: string, extra = {}) => ({
 	[c.id]: id, [c.originalName]: "synthetic.jpg", [c.type]: "קובץ תמונה", [c.sourceKind]: "Drive",
@@ -168,11 +168,62 @@ it("lists cataloged dates and site selections for review, skipping blanks", () =
 });
 
 it("leaves internet records out of a family-only import, so nothing publishes", () => {
-	const { records } = planCatalog(
-		[family("KOB-000050"), webCatalog("KOB-000051")],
-		[webRow("KOB-000051", { [w.identityBasis]: "שם מפורש" })],
-	);
-	expect(records.map((record) => record.kobId)).toEqual(["KOB-000050", "KOB-000051"]);
-	expect(records[1].publish).toBe(true);
-	expect(familyOnly(records).map((record) => record.kobId)).toEqual(["KOB-000050"]);
+	const catalogRows = [family("KOB-000050"), webCatalog("KOB-000051")];
+	const webRows = [webRow("KOB-000051", { [w.identityBasis]: "שם מפורש" })];
+	const full = planCatalog(catalogRows, webRows);
+	expect(full.records.map((record) => record.kobId)).toEqual(["KOB-000050", "KOB-000051"]);
+	expect(full.records[1].publish).toBe(true);
+	expect(full.deferred).toBe(0);
+	const scoped = planCatalog(catalogRows, webRows, { familyOnly: true });
+	expect(scoped.records.map((record) => record.kobId)).toEqual(["KOB-000050"]);
+	expect(scoped.deferred).toBe(1);
+});
+
+it("does not let unfinished web sources block a family-only import", () => {
+	const catalogRows = [
+		family("KOB-000052"),
+		webCatalog("KOB-000053"),
+		webCatalog("KOB-000054"),
+		webCatalog("KOB-000055"),
+		webCatalog("KOB-000056"),
+	];
+	const webRows = [
+		webRow("KOB-000054", { [w.title]: " " }),
+		webRow("KOB-000055", { [w.url]: "javascript:alert(1)" }),
+		webRow("KOB-000056"),
+		webRow("KOB-000056"),
+		webRow("KOB-000099"),
+	];
+	expect(planCatalog(catalogRows, webRows).errors.length).toBeGreaterThan(0);
+	const scoped = planCatalog(catalogRows, webRows, { familyOnly: true });
+	expect(scoped.errors).toEqual([]);
+	expect(scoped.records.map((record) => record.kobId)).toEqual(["KOB-000052"]);
+	expect(scoped.deferred).toBe(4);
+});
+
+it("still checks family rows and identifiers in a family-only import", () => {
+	const catalogRows = [
+		family("KOB-000057", { [c.driveId]: "" }),
+		family("KOB-000058"),
+		webCatalog("KOB-000058"),
+		webCatalog("bad-id"),
+		family("KOB-000059"),
+	];
+	const webRows = [webRow("KOB-000059"), webRow("KOB-000059")];
+	expect(planCatalog(catalogRows, webRows, { familyOnly: true }).errors).toEqual([
+		{ kobId: "KOB-000057", code: "MISSING_DRIVE_ID" },
+		{ kobId: "KOB-000058", code: "DUPLICATE_ID" },
+		{ kobId: "bad-id", code: "INVALID_ID" },
+		{ kobId: "KOB-000059", code: "DUPLICATE_WEB_ROW" },
+	]);
+});
+
+it("ties an apply confirmation to the import scope", () => {
+	const hash = "c".repeat(64);
+	expect(confirmationHash(hash, { familyOnly: false })).toBe(hash);
+	const family = confirmationHash(hash, { familyOnly: true });
+	expect(family).toMatch(/^[0-9a-f]{64}$/);
+	expect(family).not.toBe(hash);
+	expect(family).toBe(confirmationHash(hash, { familyOnly: true }));
+	expect(family).not.toBe(confirmationHash("d".repeat(64), { familyOnly: true }));
 });

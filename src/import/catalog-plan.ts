@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { isSafeSourceUrl } from "../lib/source-url";
 import type { ItemTypeValue } from "../services/item-input";
 import {
@@ -106,9 +107,16 @@ function planRow(row: CatalogRow, webRow: CatalogRow | null): PlannedRecord | st
 	};
 }
 
-export function planCatalog(catalogRows: CatalogRow[], webRows: CatalogRow[]) {
+// familyOnly leaves web sources for a later run, so an unfinished one can't block
+// the family's material. Identifiers are still checked across both kinds of row.
+export function planCatalog(
+	catalogRows: CatalogRow[],
+	webRows: CatalogRow[],
+	{ familyOnly = false }: { familyOnly?: boolean } = {},
+) {
 	const records: PlannedRecord[] = [];
 	const errors: PlanError[] = [];
+	const deferred = new Set<string>();
 	const webById = new Map<string, CatalogRow>();
 	const duplicateWebIds = new Set<string>();
 	for (const row of webRows) {
@@ -128,20 +136,31 @@ export function planCatalog(catalogRows: CatalogRow[], webRows: CatalogRow[]) {
 			continue;
 		}
 		seen.add(kobId);
+		if (familyOnly && row[c.sourceKind] === internetSourceKind) {
+			deferred.add(kobId);
+			continue;
+		}
 		if (duplicateWebIds.has(kobId)) continue;
 		const planned = planRow(row, webById.get(kobId) ?? null);
 		if (typeof planned === "string") errors.push({ kobId, code: planned });
 		else records.push(planned);
 	}
-	for (const id of duplicateWebIds) if (seen.has(id)) errors.push({ kobId: id, code: "DUPLICATE_WEB_ROW" });
-	for (const id of webById.keys()) if (!seen.has(id)) errors.push({ kobId: id, code: "ORPHAN_WEB_ROW" });
-	return { records, errors };
+	for (const id of duplicateWebIds)
+		if (seen.has(id) && !deferred.has(id)) errors.push({ kobId: id, code: "DUPLICATE_WEB_ROW" });
+	if (!familyOnly)
+		for (const id of webById.keys()) if (!seen.has(id)) errors.push({ kobId: id, code: "ORPHAN_WEB_ROW" });
+	return { records, errors, deferred: deferred.size };
+}
+
+// The value --confirm-snapshot must match. It depends on the scope, so a reviewed
+// family-only dry run can't authorize a full apply that publishes web sources.
+export function confirmationHash(snapshotHash: string, { familyOnly }: { familyOnly: boolean }) {
+	return familyOnly
+		? createHash("sha256").update(snapshotHash).update("\0family-only").digest("hex")
+		: snapshotHash;
 }
 
 // What Gate A asks Yoram to decide: cataloged dates and site selections.
-export const familyOnly = (records: PlannedRecord[]) =>
-	records.filter((record) => record.origin !== "internet");
-
 export function reviewLists(records: PlannedRecord[]) {
 	const catalogedDates: { kobId: string; value: string }[] = [];
 	const siteSelected: { kobId: string; publish: boolean }[] = [];

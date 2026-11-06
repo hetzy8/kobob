@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { parse } from "csv-parse/sync";
 import { applyBlockers, applyCatalog, resolveSystemFiles } from "../src/import/apply-catalog";
-import { familyOnly, planCatalog, reviewLists, type CatalogRow } from "../src/import/catalog-plan";
+import { confirmationHash, planCatalog, reviewLists, type CatalogRow } from "../src/import/catalog-plan";
 import { createDriveClient } from "../src/import/drive";
 import { createDatabase } from "../src/lib/database";
 import { isOutsideRepository } from "../src/import/report-path";
@@ -64,18 +64,21 @@ try {
 	const rows = (bytes: Buffer): CatalogRow[] =>
 		parse(bytes, { columns: true, bom: true, relax_column_count: true, skip_empty_lines: true });
 	const snapshotHash = createHash("sha256").update(catalogBytes).update("\0").update(webBytes).digest("hex");
-	const plan = planCatalog(rows(catalogBytes), rows(webBytes));
+	const familyOnly = Boolean(values["family-only"]);
+	const scope = familyOnly ? "family-only" : "full";
+	const confirmation = confirmationHash(snapshotHash, { familyOnly });
+	const plan = planCatalog(rows(catalogBytes), rows(webBytes), { familyOnly });
 	const drive = await createDriveClient();
 	const resolved = await resolveSystemFiles(plan.records, drive.readHead);
 	const blockers = applyBlockers({ errors: plan.errors, unreadable: resolved.unreadable });
-	console.log(`Snapshot hash: ${snapshotHash}`);
+	console.log(`Scope: ${scope}. Snapshot hash: ${confirmation}`);
 	if (values.apply) {
 		if (blockers.length > 0) {
 			for (const blocker of blockers) console.error(blocker);
 			fail("--apply refused: fix the plan and review a clean dry run first");
 		}
-		if (values["confirm-snapshot"] !== snapshotHash) {
-			fail(`--apply needs --confirm-snapshot=${snapshotHash}`);
+		if (values["confirm-snapshot"] !== confirmation) {
+			fail(`--apply needs --confirm-snapshot=${confirmation}`);
 		}
 	}
 	try {
@@ -86,13 +89,13 @@ try {
 	}
 
 	db = createDatabase(databaseUrl);
-	// Existing items are never updated, so a web source left out now is created
-	// later with its corrected details.
-	const records = values["family-only"] ? familyOnly(resolved.records) : resolved.records;
+	const records = resolved.records;
 	const report = await applyCatalog(db, records, snapshotHash, { apply: Boolean(values.apply) });
 	const review = reviewLists(records);
 	const detail = {
 		snapshotHash,
+		scope,
+		confirmation,
 		report,
 		applyBlockers: blockers,
 		errors: plan.errors,
@@ -107,7 +110,7 @@ try {
 	writeFileSync(reportFd, JSON.stringify(detail, (_key, value) => (typeof value === "bigint" ? String(value) : value), 2));
 	console.log({
 		items: records.length,
-		internetLeftOut: resolved.records.length - records.length,
+		internetLeftOut: plan.deferred,
 		excluded: resolved.excluded.length,
 		errors: plan.errors.length,
 		unreadable: resolved.unreadable.length,
