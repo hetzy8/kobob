@@ -51,7 +51,7 @@ import is finalized.
    phase 8. Includes the operational findings below (sign-in rate bucket,
    takedown and incident runbook, docs drift).
 3. **"Pictures on a phone":** media stages 2–4 as one milestone, done when
-   Yoram opens ten family photos on his phone. Preconditions from the security
+   Yoram opens ten family photos on a phone. Preconditions from the security
    review: private buckets only, membership re-checked on every request
    including each byte range, EXIF/GPS stripped from derivatives, originals
    never public, sniffed content types, a per-session byte ceiling. From the
