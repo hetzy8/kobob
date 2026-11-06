@@ -51,7 +51,7 @@ banner) rather than by palette. Each step gets its own design and release.
    findings: sign-in rate bucket per client, takedown and incident runbook.
 3. "Pictures on a phone": media stages 2–4 (storage and delivery, file copy,
    review pages) as one milestone; done when Yoram opens ten family photos on
-   his phone.
+   a phone.
 4. Warm home page and life story in the "living-room wall" direction (phase 2
    slice 5 moves ahead of timeline and map): portrait, years, one sentence,
    six captioned photos, warm palette and Hebrew display type; item pages
