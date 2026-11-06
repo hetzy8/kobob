@@ -316,3 +316,150 @@ it("reports named items with nothing left to copy", async () => {
 	expect(rerun.considered).toBe(0);
 	expect(rerun.notPending).toEqual(["KOB-000015", "KOB-999999"]);
 });
+
+// Fails each write under `prefix` once, as a brief storage outage would.
+function failOnce(storage: ObjectStorage, prefix: string): ObjectStorage {
+	let failed = false;
+	return {
+		read: storage.read,
+		write: async (key, body, contentType) => {
+			if (key.startsWith(prefix) && !failed) {
+				failed = true;
+				throw new Error("synthetic outage");
+			}
+			await storage.write(key, body, contentType);
+		},
+	};
+}
+
+it("retries a missing thumbnail from storage on the next run, without Drive", async () => {
+	const bytes = await jpeg();
+	const original = await pending("KOB-000016", bytes, "image/jpeg");
+	const { objects, storage } = fakeStorage();
+	const first = await copyMedia(
+		db,
+		fakeDrive({ "KOB-000016": bytes }),
+		failOnce(storage, "thumbnails/"),
+		{ apply: true },
+	);
+	expect(first.derivativesFailed).toEqual([
+		{ kobId: "KOB-000016", code: "DERIVATIVE_FAILED" },
+	]);
+	const retry = await copyMedia(db, fakeDrive({}), storage, { apply: true });
+	expect(retry).toMatchObject({
+		considered: 0,
+		derivativesConsidered: 1,
+		derivativesRepaired: 1,
+		derivativesFailed: [],
+	});
+	const thumbnail = await db.mediaFile.findFirstOrThrow({
+		where: { itemId: original.itemId, role: "thumbnail" },
+	});
+	expect(thumbnail.status).toBe("verified");
+	expect(objects.has(thumbnail.storageKey)).toBe(true);
+	const again = await copyMedia(db, fakeDrive({}), storage, { apply: true });
+	expect(again.derivativesConsidered).toBe(0);
+});
+
+it("creates only the missing role when a TIFF lost its display copy", async () => {
+	const bytes = await tiff();
+	const original = await pending("KOB-000017", bytes, "image/tiff");
+	const { storage } = fakeStorage();
+	await copyMedia(
+		db,
+		fakeDrive({ "KOB-000017": bytes }),
+		failOnce(storage, "displays/"),
+		{ apply: true },
+	);
+	const before = await db.mediaFile.findFirstOrThrow({
+		where: { itemId: original.itemId, role: "thumbnail" },
+	});
+	const retry = await copyMedia(db, fakeDrive({}), storage, { apply: true });
+	expect(retry.derivativesRepaired).toBe(1);
+	expect(
+		await db.mediaFile.count({
+			where: { itemId: original.itemId, role: "display", status: "verified" },
+		}),
+	).toBe(1);
+	const after = await db.mediaFile.findUniqueOrThrow({
+		where: { id: before.id },
+	});
+	expect(after.updatedAt).toEqual(before.updatedAt);
+});
+
+it("counts missing derivatives on a dry run without writing", async () => {
+	const bytes = await jpeg();
+	await pending("KOB-000018", bytes, "image/jpeg");
+	const { objects, storage } = fakeStorage();
+	await copyMedia(
+		db,
+		fakeDrive({ "KOB-000018": bytes }),
+		failOnce(storage, "thumbnails/"),
+		{ apply: true },
+	);
+	const size = objects.size;
+	const dry = await copyMedia(db, fakeDrive({}), storage, { apply: false });
+	expect(dry).toMatchObject({
+		derivativesConsidered: 1,
+		derivativesRepaired: 0,
+	});
+	expect(objects.size).toBe(size);
+});
+
+it("refuses to derive from a stored original that no longer matches its hash", async () => {
+	const bytes = await jpeg();
+	const original = await pending("KOB-000019", bytes, "image/jpeg");
+	const { objects, storage } = fakeStorage();
+	await copyMedia(
+		db,
+		fakeDrive({ "KOB-000019": bytes }),
+		failOnce(storage, "thumbnails/"),
+		{ apply: true },
+	);
+	objects.set(original.storageKey, await tiff());
+	const retry = await copyMedia(db, fakeDrive({}), storage, { apply: true });
+	expect(retry.derivativesFailed).toEqual([
+		{ kobId: "KOB-000019", code: "STORED_ORIGINAL_MISMATCH" },
+	]);
+	expect(
+		await db.mediaFile.count({
+			where: { itemId: original.itemId, role: "thumbnail" },
+		}),
+	).toBe(0);
+});
+
+it("limits derivative retries to the named items", async () => {
+	const bytes = await jpeg();
+	await pending("KOB-000020", bytes, "image/jpeg");
+	const { storage } = fakeStorage();
+	await copyMedia(
+		db,
+		fakeDrive({ "KOB-000020": bytes }),
+		failOnce(storage, "thumbnails/"),
+		{ apply: true },
+	);
+	const other = await copyMedia(db, fakeDrive({}), storage, {
+		apply: true,
+		only: ["KOB-000021"],
+	});
+	expect(other.derivativesConsidered).toBe(0);
+});
+
+it("does not report a named file left out by the limit as not pending", async () => {
+	const bytes = await jpeg();
+	await pending("KOB-000022", bytes, "image/jpeg");
+	await pending("KOB-000023", bytes, "image/jpeg");
+	const { storage } = fakeStorage();
+	const report = await copyMedia(
+		db,
+		fakeDrive({ "KOB-000022": bytes, "KOB-000023": bytes }),
+		storage,
+		{
+			apply: false,
+			limit: 1,
+			only: ["KOB-000022", "KOB-000023", "KOB-999999"],
+		},
+	);
+	expect(report.considered).toBe(1);
+	expect(report.notPending).toEqual(["KOB-999999"]);
+});

@@ -238,7 +238,9 @@ on the real catalog on 2026-11-06 (OPERATIONS.md → Import records).
   read from Drive, checked against its recorded size and hash, uploaded, read
   back and compared before it is marked `verified`. Thumbnails and TIFF display
   copies drop embedded metadata such as GPS. A rerun skips verified files and
-  retries failed ones. Item visibility and rights are never changed.
+  retries failed ones. A missing thumbnail or display copy is retried from the
+  stored original once its hash matches, with no Drive read. Item visibility and
+  rights are never changed.
 - **Settings for Yoram to add to `.env.example`** (agents cannot edit it):
   `R2_ENDPOINT=`, `R2_BUCKET=`, `R2_ACCESS_KEY_ID=`, `R2_SECRET_ACCESS_KEY=`.
 

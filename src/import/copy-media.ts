@@ -17,6 +17,9 @@ export type CopyReport = {
 	copied: { kobId: string; fileId: string }[];
 	failed: { kobId: string; code: string }[];
 	derivativesFailed: { kobId: string; code: string }[];
+	// Verified originals from earlier runs with a thumbnail or display copy missing.
+	derivativesConsidered: number;
+	derivativesRepaired: number;
 	// Named with `only` but with no unverified original: already copied, or unknown.
 	notPending: string[];
 	bytes: bigint;
@@ -57,18 +60,25 @@ async function writeDerived(
 	});
 }
 
+const expectedDerivatives = (mimeType: string) => [
+	...(needsThumbnail(mimeType) ? (["thumbnail"] as const) : []),
+	...(needsDisplayCopy(mimeType) ? (["display"] as const) : []),
+];
+
 export async function copyMedia(
 	db: Database,
 	drive: DriveClient,
 	storage: ObjectStorage,
 	{ apply, limit, only }: { apply: boolean; limit?: number; only?: string[] },
 ): Promise<CopyReport> {
+	const named = only ? { item: { kobId: { in: only } } } : {};
+	const pendingWhere = {
+		role: "original" as const,
+		status: { not: "verified" as const },
+		...named,
+	};
 	const files = await db.mediaFile.findMany({
-		where: {
-			role: "original",
-			status: { not: "verified" },
-			...(only ? { item: { kobId: { in: only } } } : {}),
-		},
+		where: pendingWhere,
 		include: {
 			item: {
 				select: { kobId: true, catalogRecord: { select: { row: true } } },
@@ -77,14 +87,51 @@ export async function copyMedia(
 		orderBy: { sizeBytes: "asc" },
 		...(limit ? { take: limit } : {}),
 	});
-	const pending = new Set(files.map((file) => file.item.kobId));
+	// Read apart from `files`, so a file the limit left out still counts as pending.
+	const pending = only
+		? await db.mediaFile.findMany({
+				where: pendingWhere,
+				select: { item: { select: { kobId: true } } },
+			})
+		: [];
+	const pendingIds = new Set(pending.map((file) => file.item.kobId));
+	// Listed before copying: files verified by this run derive in its own loop.
+	const verified = await db.mediaFile.findMany({
+		where: { role: "original", status: "verified", ...named },
+		include: {
+			item: {
+				select: {
+					kobId: true,
+					files: {
+						where: { status: "verified" },
+						select: { role: true },
+					},
+				},
+			},
+		},
+		orderBy: { sizeBytes: "asc" },
+	});
+	const repairs = verified
+		.map((file) => {
+			const present = new Set(file.item.files.map(({ role }) => role));
+			return {
+				file,
+				missing: expectedDerivatives(file.mimeType).filter(
+					(role) => !present.has(role),
+				),
+			};
+		})
+		.filter(({ missing }) => missing.length > 0)
+		.slice(0, limit);
 	const report: CopyReport = {
 		considered: files.length,
 		verified: 0,
 		copied: [],
 		failed: [],
 		derivativesFailed: [],
-		notPending: (only ?? []).filter((kobId) => !pending.has(kobId)),
+		derivativesConsidered: repairs.length,
+		derivativesRepaired: 0,
+		notPending: (only ?? []).filter((kobId) => !pendingIds.has(kobId)),
 		bytes: 0n,
 	};
 	if (!apply) return report;
@@ -160,6 +207,30 @@ export async function copyMedia(
 			});
 		}
 	}
+	for (const { file, missing } of repairs) {
+		const kobId = file.item.kobId ?? file.itemId;
+		try {
+			const stored = await readAll(await storage.read(file.storageKey));
+			if (!file.sha256 || sha256(stored) !== file.sha256)
+				throw new CopyError("STORED_ORIGINAL_MISMATCH");
+			for (const role of missing)
+				await writeDerived(
+					db,
+					storage,
+					file.itemId,
+					role,
+					file.originalFilename,
+					await (role === "thumbnail"
+						? makeThumbnail(stored)
+						: makeDisplayCopy(stored)),
+				);
+			report.derivativesRepaired++;
+		} catch (error) {
+			const code =
+				error instanceof CopyError ? error.message : "DERIVATIVE_FAILED";
+			report.derivativesFailed.push({ kobId, code });
+		}
+	}
 	await db.importRun.create({
 		data: {
 			kind: "media",
@@ -171,6 +242,7 @@ export async function copyMedia(
 				verified: report.verified,
 				failed: report.failed.length,
 				derivativesFailed: report.derivativesFailed.length,
+				derivativesRepaired: report.derivativesRepaired,
 				bytes: String(report.bytes),
 			},
 		},

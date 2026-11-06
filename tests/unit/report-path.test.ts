@@ -41,3 +41,9 @@ it("refuses a differently-cased path to the repository on a case-insensitive vol
 it("throws when the parent directory is missing", () => {
 	expect(() => isOutsideRepository(join(base, "missing", "report.json"), repo)).toThrow();
 });
+
+it("treats a dot-prefixed name inside the repository as inside", () => {
+	mkdirSync(join(repo, "..sub"));
+	expect(isOutsideRepository(join(repo, "..review.json"), repo)).toBe(false);
+	expect(isOutsideRepository(join(repo, "..sub", "report.json"), repo)).toBe(false);
+});

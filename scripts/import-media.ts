@@ -1,11 +1,15 @@
 import { closeSync, openSync, writeFileSync } from "node:fs";
-import { relative, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 import { copyMedia } from "../src/import/copy-media";
 import { createDriveClient } from "../src/import/drive";
+import { isOutsideRepository } from "../src/import/report-path";
 import { readStorageConfig } from "../src/lib/config";
 import { createDatabase } from "../src/lib/database";
 import { createR2Storage } from "../src/lib/storage";
+
+const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 // Operator command. Dry run unless --apply and --confirm-host match. Drive is
 // only read. Prints counts; row detail goes to the report outside the repository.
@@ -24,7 +28,14 @@ if (!reportPath || !databaseUrl) {
 	console.error("Needs --report, DATABASE_URL and R2 settings");
 	process.exit(2);
 }
-if (!relative(process.cwd(), resolve(reportPath)).startsWith("..")) {
+let outside = false;
+try {
+	outside = isOutsideRepository(reportPath, repositoryRoot);
+} catch {
+	console.error("--report must be in an existing folder");
+	process.exit(2);
+}
+if (!outside) {
 	console.error("--report must be outside the repository");
 	process.exit(2);
 }
@@ -77,6 +88,8 @@ try {
 		verified: report.verified,
 		failed: report.failed.length,
 		derivativesFailed: report.derivativesFailed.length,
+		derivativesConsidered: report.derivativesConsidered,
+		derivativesRepaired: report.derivativesRepaired,
 		notPending: report.notPending.length,
 		bytes: String(report.bytes),
 	});
