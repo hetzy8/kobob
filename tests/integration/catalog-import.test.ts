@@ -22,6 +22,7 @@ const record = (kobId: string, extra: Partial<PlannedRecord> = {}): PlannedRecor
 	kobId,
 	origin: "family",
 	title: "synthetic.jpg",
+	description: "",
 	types: ["picture"],
 	rightsStatus: "unknown",
 	publish: false,
@@ -66,6 +67,12 @@ it("publishes a card readable by visitors, with nothing private", async () => {
 	const view = await reader.getPublicItem(item.id);
 	expect(view?.title).toBe("Public card");
 	expect(JSON.stringify(view)).not.toContain("PRIVATE-NOTE");
+});
+
+it("shows a card's public note to visitors", async () => {
+	await applyCatalog(db, [{ ...card("KOB-000010"), description: "synthetic note" }], "h1", { apply: true });
+	const item = await db.item.findUniqueOrThrow({ where: { kobId: "KOB-000010" } });
+	expect((await reader.getPublicItem(item.id))?.description).toBe("synthetic note");
 });
 
 it("keeps a search-match internet record away from visitors", async () => {

@@ -74,8 +74,9 @@ async function createRecord(tx: Prisma.TransactionClient, record: PlannedRecord,
 		},
 	});
 	// Catalog descriptions stay in the catalog record: some hold review wording.
+	// record.description is the owner's public note, never catalog text.
 	const revision = await tx.itemRevision.create({
-		data: { itemId: item.id, title: record.title, types: record.types, authorId: SYSTEM_ACTOR },
+		data: { itemId: item.id, title: record.title, description: record.description, types: record.types, authorId: SYSTEM_ACTOR },
 	});
 	await tx.item.update({
 		where: { id: item.id },

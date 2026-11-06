@@ -4,9 +4,11 @@ import type { ItemTypeValue } from "../services/item-input";
 import {
 	catalog as c,
 	catalogTypes,
-	explicitIdentityPrefix,
+	doNotPublish,
+	holdForNow,
 	internetSourceKind,
 	needsClarificationPrefix,
+	publishNow,
 	web as w,
 	webTypes,
 } from "./catalog-columns";
@@ -18,6 +20,9 @@ export type PlannedRecord = {
 	kobId: string;
 	origin: "family" | "internet";
 	title: string;
+	// Shown to visitors. Family records never get one from the catalog, whose
+	// descriptions can hold review wording.
+	description: string;
 	types: ItemTypeValue[];
 	rightsStatus: "unknown" | "needs_clarification";
 	publish: boolean;
@@ -95,10 +100,11 @@ function planRow(row: CatalogRow, webRow: CatalogRow | null): PlannedRecord | st
 		kobId: row[c.id],
 		origin: internet ? "internet" : "family",
 		title,
+		description: internet ? (webRow?.[w.publicNote] ?? "").trim() : "",
 		types: [type],
 		// Clearing rights stays a family decision, even with a documented license.
 		rightsStatus: (row[c.rights] ?? "").startsWith(needsClarificationPrefix) ? "needs_clarification" : "unknown",
-		publish: internet && (webRow?.[w.identityBasis] ?? "").startsWith(explicitIdentityPrefix),
+		publish: internet,
 		source,
 		file,
 		systemCandidate: !internet && isSystemFileName(name),
@@ -117,6 +123,7 @@ export function planCatalog(
 	const records: PlannedRecord[] = [];
 	const errors: PlanError[] = [];
 	const deferred = new Set<string>();
+	const heldInternet: string[] = [];
 	const webById = new Map<string, CatalogRow>();
 	const duplicateWebIds = new Set<string>();
 	for (const row of webRows) {
@@ -141,7 +148,20 @@ export function planCatalog(
 			continue;
 		}
 		if (duplicateWebIds.has(kobId)) continue;
-		const planned = planRow(row, webById.get(kobId) ?? null);
+		const webRow = webById.get(kobId) ?? null;
+		if (webRow && row[c.sourceKind] === internetSourceKind) {
+			const decision = (webRow[w.publishDecision] ?? "").trim();
+			if (decision === holdForNow || decision === doNotPublish) {
+				deferred.add(kobId);
+				heldInternet.push(kobId);
+				continue;
+			}
+			if (decision !== publishNow) {
+				errors.push({ kobId, code: "INVALID_PUBLISH_DECISION" });
+				continue;
+			}
+		}
+		const planned = planRow(row, webRow);
 		if (typeof planned === "string") errors.push({ kobId, code: planned });
 		else records.push(planned);
 	}
@@ -149,7 +169,7 @@ export function planCatalog(
 		if (seen.has(id) && !deferred.has(id)) errors.push({ kobId: id, code: "DUPLICATE_WEB_ROW" });
 	if (!familyOnly)
 		for (const id of webById.keys()) if (!seen.has(id)) errors.push({ kobId: id, code: "ORPHAN_WEB_ROW" });
-	return { records, errors, deferred: deferred.size };
+	return { records, errors, deferred: deferred.size, heldInternet };
 }
 
 // The value --confirm-snapshot must match. It depends on the scope, so a reviewed

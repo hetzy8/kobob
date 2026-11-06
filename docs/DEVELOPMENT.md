@@ -210,6 +210,10 @@ on `feat/catalog-import`; it has not been run against real data.
   created later with its corrected details. The confirmation hash depends on
   this flag, so a family-only dry run can't authorize a full apply. Don't use it
   after web sources exist: it would list them under `missingFromExport`.
+- **Publishing web sources:** the owner decides in the web tab's `החלטת פרסום`
+  column. `לפרסם` creates a public card. `להמתין` and `לא לפרסם` leave the source
+  out, and it can still be created later. Any other value is a planning error.
+  `הערה ציבורית` becomes the item's public description.
 - **Drive access:** the shared folder is read by a service account with Viewer
   access, with no key file (the Google organization policy blocks keys). The
   operator needs the Service Account Token Creator role on it, then runs
