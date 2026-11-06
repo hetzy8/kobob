@@ -1,8 +1,8 @@
 import { readdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { createDatabase, type Database } from "../src/lib/database";
 import { failureCodes } from "../src/lib/failure-codes";
-import { createDatabase } from "../src/lib/database";
 import { verifyRestore } from "../src/ops/verify-restore";
 
 // Operator command for the restore drill (docs/OPERATIONS.md). The session is
@@ -22,14 +22,15 @@ try {
 	process.exit(2);
 }
 url.searchParams.set("options", "-c default_transaction_read_only=on");
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const migrations = readdirSync(resolve(root, "prisma/migrations"), {
-	withFileTypes: true,
-})
-	.filter((entry) => entry.isDirectory())
-	.map((entry) => entry.name);
-const db = createDatabase(url.toString());
+let db: Database | undefined;
 try {
+	const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+	const migrations = readdirSync(resolve(root, "prisma/migrations"), {
+		withFileTypes: true,
+	})
+		.filter((entry) => entry.isDirectory())
+		.map((entry) => entry.name);
+	db = createDatabase(url.toString());
 	// Fail closed: this runs against production, so do not assume the option
 	// above took effect.
 	const [mode] = await db.$queryRaw<
@@ -37,7 +38,9 @@ try {
 	>`
 		SHOW default_transaction_read_only`;
 	if (mode?.default_transaction_read_only !== "on")
-		throw new Error("The session is not read-only");
+		throw Object.assign(new Error("The session is not read-only"), {
+			code: "NOT_READ_ONLY",
+		});
 	const report = await verifyRestore(db, migrations);
 	console.log(JSON.stringify({ host: url.host, ...report }, null, 2));
 	if (report.problems.length) process.exitCode = 1;
@@ -48,5 +51,5 @@ try {
 	);
 	process.exitCode = 2;
 } finally {
-	await db.$disconnect();
+	await db?.$disconnect().catch(() => {});
 }

@@ -43,4 +43,5 @@ it("prints a fixed line, not the error, when the database is unreachable", () =>
 	expect(output).not.toContain(PASSWORD);
 	expect(output).not.toContain(ROLE);
 	expect(output).not.toContain("at ");
+	expect(output).not.toContain("127.0.0.1");
 }, 70_000);

@@ -429,7 +429,7 @@ no revoked member exists; integration tests cover the behavior.
 **Takedown request.** Make the item private in the interface. As a signed-out
 visitor, confirm its page answers 404 and search no longer finds it. Log the date
 and a private reference outside the repository. Tell the requester the truth:
-encrypted backups keep the record until they expire, up to 366 days. After any
+encrypted backups keep the record until they expire, up to 367 days. After any
 restore, reapply every takedown logged since that dump.
 
 **Recovery from backup.** Restore to a new Neon branch or project with
@@ -437,10 +437,17 @@ restore, reapply every takedown logged since that dump.
 restore as the role the app connects with. Run `npm run verify:restore` against it.
 Reapply takedowns and member revocations made since the dump. Repoint
 `KOBOB_DATABASE_URL` and `KOBOB_DIRECT_URL` with
-`node scripts/secrets.mjs rotate <names> --apply` from `~/ops`. Create
-`kobob_backup` on the new database if it did not carry over, rotate
-`KOBOB_BACKUP_DATABASE_URL`, run `DB Backup` by hand and check the new dump's size.
-Otherwise backups keep dumping the old database and stay green. Rotate
+`node scripts/secrets.mjs rotate <names> --apply` from `~/ops`. If `kobob_backup` did
+not carry over to the new database, create it with a password from
+`openssl rand -hex 32`:
+
+```sql
+CREATE ROLE kobob_backup WITH LOGIN PASSWORD '<generated>';
+GRANT pg_read_all_data TO kobob_backup;
+```
+
+Rotate `KOBOB_BACKUP_DATABASE_URL`, run `DB Backup` by hand and check the new dump's
+size. Otherwise backups keep dumping the old database and stay green. Rotate
 `KOBOB_AUTH_SECRET` the same way, so old sessions and links die. Only then reopen
 traffic, and check that a revoked member is denied. Do not resurrect stale public
 visibility or access: an item recovered individually returns to private.
@@ -460,8 +467,8 @@ then runs `npm run admin:bootstrap` as in Email delivery above. There is no publ
 reset path, and no public admin-creation endpoint. Adding a replacement admin
 revokes obsolete access and records an audit event.
 
-**Site down.** Check `/api/health` first: a 503 with `config.databaseUrl` true points at the
-database, and `commit` shows what is live. Then the latest `Vercel Deploy
+**Site down.** Check `/api/health` first: a 503 with `config.databaseUrl` true points
+at the database, and `commit` shows what is live. Then the latest `Vercel Deploy
 (production)` run, Neon's and Vercel's status pages, and the rollback rules in Branch
 and release flow. Do not run a destructive down migration to make old code start.
 

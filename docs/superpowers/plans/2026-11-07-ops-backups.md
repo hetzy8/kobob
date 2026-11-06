@@ -32,7 +32,7 @@
 - **A dump under 1,000 bytes is refused and not uploaded:** it cannot be a real database. The half-size rule applies above that.
 - **`pg_dump` stderr is not printed,** since it can contain the host. The script reports only a class: permission denied, or a generic failure.
 - **Object Lock mode is Governance:** it stops the CI key and mistakes, and only the owner's master key could override it.
-- **A size check that cannot run fails the run (changed during Task 3 review):** the dump is still uploaded, and only an empty listing or rclone's "directory not found" status counts as a first run. If real B2 reports an empty prefix differently, the first run goes red with the dump in place; Task 7's first dump (step 8) checks this. Known `pg_dump` failure classes stop at once with fixed messages. `scripts/db-backup.sh` supersedes the Task 3 code below.
+- **A size check that cannot run fails the run (changed during Task 3 review):** the dump is still uploaded, and only an empty listing or rclone's "directory not found" status counts as a first run. If real B2 reports an empty prefix differently, the first run goes red with the dump in place; Task 7's first dump (step 8) checks this. Known `pg_dump` failure classes stop at once with fixed messages. The repository's `scripts/db-backup.sh`, `scripts/verify-restore.ts` and `docs/OPERATIONS.md` supersede the code and text in Tasks 3 to 5 below.
 - **The `hetzy8/ops` tooling writes repository secrets only.** Task 6 adds an optional `environment` to GitHub targets, as a separate ops PR.
 - **`x-vercel-forwarded-for` is confirmed by a probe after release** (Task 7, step 9). A failed probe weakens the client limit but not the global limit, so it does not block the release; it comes back to Yoram.
 - **Recovery also repoints the backup role (found in final review, not in the spec):** otherwise backups keep dumping the old database and stay green.
@@ -1118,19 +1118,21 @@ GRANT pg_read_all_data TO kobob_backup;
 
 Build the direct URL from the existing direct host (no `-pooler`) with `?sslmode=require`, and keep it for step 6.
 
-- [ ] **Step 2: Bucket.** Backblaze console → Create a Bucket: name `kobob-db-backups` (add a suffix if taken), files private, Object Lock **enabled**. Then on the bucket:
+- [ ] **Step 2: Bucket.** Backblaze console → Create a Bucket: choose a name and keep it out of Git, files private, Object Lock **enabled**. Then on the bucket:
   - Object Lock: default retention, mode Governance, 30 days.
   - Lifecycle Settings → custom rules: prefix `daily/`, hide after 32 days, delete 1 day after hiding; prefix `monthly/`, hide after 366 days, delete 1 day after hiding.
 
 - [ ] **Step 3: Keys.** The console cannot make a write-and-list key, so use the CLI. `brew install b2-tools age`, `b2 account authorize` with a master key, then:
 
 ```zsh
-b2 key create --bucket kobob-db-backups kobob-backup-ci listBuckets,listFiles,writeFiles
-b2 key create --bucket kobob-db-backups kobob-backup-monitor listBuckets,listFiles
+B=<bucket name>
+b2 key create --bucket "$B" kobob-backup-ci listBuckets,listFiles,writeFiles
+b2 key create --bucket "$B" kobob-backup-monitor listBuckets,listFiles
 b2 account clear
+unset B
 ```
 
-If the CLI's syntax has changed, `b2 key create --help` is the reference; the capabilities must stay exactly these.
+Each key is shown only once. Keep both somewhere private: the CI key is needed at steps 5 and 6, the monitor key at step 12. If the CLI's syntax has changed, `b2 key create --help` is the reference; the capabilities must stay exactly these.
 
 - [ ] **Step 4: Age key.** Run `age-keygen` with no file argument, so the key stays off disk. Add the `AGE-SECRET-KEY-…` line to Bitwarden `shared` as `KOBOB_BACKUP_AGE_PRIVATE_KEY` in the web app, and keep the `age1…` public key for step 6. Clear the terminal.
 
@@ -1159,7 +1161,7 @@ docker run --rm \
 unset I K B
 ```
 
-Expected: listing status 0 or 3, upload status 0, and the file listed with its size. Any other result stops here and comes back to the agent; `scripts/db-backup.sh` would fail the same way. The rehearsal file holds no data and can be deleted from the console after its 30-day lock.
+Expected: listing status 0 or 3, upload status 0, and the file listed with its size. Any other result stops here and comes back to the agent; `scripts/db-backup.sh` would fail the same way. The rehearsal file holds no data and can be deleted from the console after its 30-day lock. The workflow runs on `ubuntu-latest` and logs its rclone version, so compare that version with this one at step 8.
 
 - [ ] **Step 6: Environment and secrets.**
 
@@ -1175,7 +1177,7 @@ Then from `~/ops`, on `main`: `node scripts/secrets.mjs rotate KOBOB_BACKUP_DATA
 
 - [ ] **Step 7: Release.** After Gate A, on Yoram's go: the `dev` → `main` PR per OPERATIONS.md, smoke gate green, tag `v0.7.0`, record it, recreate `dev`. No migration. Confirm on production: the tab title is `יקי חץ` and the banner is gone.
 
-- [ ] **Step 8: First dump.** `gh workflow run db-backup.yml --repo hetzy8/kobob --ref main`, then `gh run watch --repo hetzy8/kobob` on it. Expected: green. In the Backblaze console: one file in `daily/` and one in `monthly/`, with Object Lock on them. Read the public log and confirm it shows sizes and object names only. Then confirm a run on another branch is refused: `gh workflow run db-backup.yml --repo hetzy8/kobob --ref dev` must fail at the Environment gate.
+- [ ] **Step 8: First dump.** `gh workflow run db-backup.yml --repo hetzy8/kobob --ref main`, then `gh run watch --repo hetzy8/kobob` on it. Expected: green. In the Backblaze console: the new file is in `daily/` and `monthly/` has one file for this month, with Object Lock on them. A 03:00 run may already have added its own files. Read the public log and confirm it shows sizes and object names only. Then confirm a run on another branch is refused: `gh workflow run db-backup.yml --repo hetzy8/kobob --ref dev` must fail at the Environment gate.
 
 - [ ] **Step 9: Probe the address header.** With a read-only connection to count, and synthetic non-member addresses so no mail is sent:
 
@@ -1183,7 +1185,8 @@ Then from `~/ops`, on `main`: `node scripts/secrets.mjs rotate KOBOB_BACKUP_DATA
 export BWS_ACCESS_TOKEN="$(security find-generic-password -s ops-secrets-bws -w)"
 P="$(bws project list --output json | jq -r '.[]|select(.name=="shared").id')"
 S="$(bws secret list "$P" --output json)"
-U="$(jq -r '.[]|select(.key=="KOBOB_BACKUP_DATABASE_URL").value' <<<"$S")"
+K='.[]|select(.key=="KOBOB_BACKUP_DATABASE_URL").value'
+U="$(print -r -- "$S" | jq -r "$K")"
 Q='select count(*) from "RateLimit"
   where key like $$client:%$$
   and "lastRequest" > extract(epoch from now())*1000 - 900000'
@@ -1198,10 +1201,12 @@ for n in 1 2 3; do
     -d "{\"email\":\"probe$n@example.test\"}"
 done
 docker run --rm postgres:17.7-alpine psql "$U" -Atc "$Q"
-unset BWS_ACCESS_TOKEN P S U Q O
+unset BWS_ACCESS_TOKEN P S K U Q O
 ```
 
-From this network, the second count should be at most 1 higher than the first, since all three requests came from one real address. Then repeat one request and the count from another network, such as a phone hotspot, within 15 minutes. It should be exactly 1 higher.
+Limit rows are per clock quarter hour, so every count must fall inside one quarter hour (:00-:14, :15-:29, :30-:44, :45-:59). Start just after a mark. If the clock crosses one, wait for the next mark and start over.
+
+From this network, the second count should be at most 1 higher than the first, since all three requests came from one real address. Then switch to another network, such as a phone hotspot, and run the whole block again. Its second count should be exactly 1 higher than its first.
 
 - At most +1, then +1 from the other network: the header works and cannot be spoofed.
 - +3 from this network: **the header can be spoofed.** A stranger could escape the client limit, though the global limit still holds. Bring it to Yoram, with the option of reading `x-real-ip` or the last `x-forwarded-for` entry.
@@ -1218,7 +1223,7 @@ From this network, the second count should be at most 1 higher than the first, s
   - `.github/workflows/nightly-monitor.yml`: map `KOBOB_B2_READ_KEY_ID` and `KOBOB_B2_READ_KEY` into its env, like the existing `B2_READ_*` lines. Without this the check reads 'not set' every night.
   - Confirm the monitor reports kobob's dump age after its next run.
 
-- [ ] **Step 13: Wait for a scheduled run.** The next 03:00 UTC run is green and adds a second file to `daily/` and none to `monthly/`. Then tick the launch item in a small docs PR.
+- [ ] **Step 13: Wait for a scheduled run.** The next 03:00 UTC run is green and adds one more file to `daily/` and none to `monthly/`, unless a new month has begun. Then tick the launch item in a small docs PR.
 
 ## Done when
 
