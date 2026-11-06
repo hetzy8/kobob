@@ -35,6 +35,7 @@ export type PlannedRecord = {
 
 const KOB_ID = /^KOB-\d{6}$/;
 const MAX_TITLE = 200; // matches itemInputSchema, so the record stays editable
+const MAX_NOTE = 20000; // the same, for the description
 
 // Visitors must never be sent to a private Drive or Docs link.
 const PRIVATE_SOURCE_HOSTS = new Set(["drive.google.com", "docs.google.com", "drive.usercontent.google.com"]);
@@ -69,6 +70,8 @@ function planRow(row: CatalogRow, webRow: CatalogRow | null): PlannedRecord | st
 	const title = ((internet ? webRow?.[w.title] : name) ?? "").trim();
 	if (!title) return "MISSING_TITLE";
 	if (title.length > MAX_TITLE) return "TITLE_TOO_LONG";
+	const description = internet ? (webRow?.[w.publicNote] ?? "").trim() : "";
+	if (description.length > MAX_NOTE) return "NOTE_TOO_LONG";
 	const driveFileId = row[c.driveId]?.trim() ?? "";
 	if (!internet && !driveFileId) return "MISSING_DRIVE_ID";
 	let file: PlannedRecord["file"] = null;
@@ -100,7 +103,7 @@ function planRow(row: CatalogRow, webRow: CatalogRow | null): PlannedRecord | st
 		kobId: row[c.id],
 		origin: internet ? "internet" : "family",
 		title,
-		description: internet ? (webRow?.[w.publicNote] ?? "").trim() : "",
+		description,
 		types: [type],
 		// Clearing rights stays a family decision, even with a documented license.
 		rightsStatus: (row[c.rights] ?? "").startsWith(needsClarificationPrefix) ? "needs_clarification" : "unknown",

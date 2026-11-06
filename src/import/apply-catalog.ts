@@ -147,6 +147,7 @@ export async function applyCatalog(
 			const planned = record.source;
 			stale =
 				existing.publishedRevision?.title !== record.title ||
+				existing.publishedRevision?.description !== record.description ||
 				(planned !== null && !existing.sources.some((source) => sameSource(source, planned)));
 			if (stale) report.staleCards.push(record.kobId);
 		}

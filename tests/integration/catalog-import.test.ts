@@ -163,6 +163,19 @@ it("reports a public item whose record no longer qualifies, without changing it"
 	expect((await stored("KOB-000002")).visibility).toBe("public");
 });
 
+it("reports a changed public note on every run and keeps what visitors see", async () => {
+	await applyCatalog(db, [{ ...card("KOB-000011"), description: "Note A" }], "h1", { apply: true });
+	const changed = { ...card("KOB-000011"), description: "Note B", row: { catalog: { note: "CHANGED" }, web: null } };
+	for (const hash of ["h2", "h3"]) {
+		const report = await applyCatalog(db, [changed], hash, { apply: true });
+		expect(report.staleCards).toEqual(["KOB-000011"]);
+		expect(report.changed).toEqual([]);
+	}
+	const item = await db.item.findUniqueOrThrow({ where: { kobId: "KOB-000011" } });
+	expect((await reader.getPublicItem(item.id))?.description).toBe("Note A");
+	expect((await stored("KOB-000011")).catalogRecord?.row).toEqual({ catalog: { note: "PRIVATE-NOTE" }, web: null });
+});
+
 it("reports a stale public card on every run and does not refresh its catalog row", async () => {
 	await applyCatalog(db, [card("KOB-000002")], "h1", { apply: true });
 	const retitled = { ...card("KOB-000002"), title: "Retitled card", row: { catalog: { note: "CHANGED" }, web: null } };

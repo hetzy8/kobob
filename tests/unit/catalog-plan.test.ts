@@ -71,6 +71,13 @@ it("refuses a web source with no clear publishing decision", () => {
 	}
 });
 
+it("refuses a public note too long to edit on the site", () => {
+	const plan = (note: string) =>
+		planCatalog([webCatalog("KOB-000067")], [webRow("KOB-000067", { [w.publicNote]: note })]);
+	expect(plan("א".repeat(20000)).errors).toEqual([]);
+	expect(plan("א".repeat(20001)).errors).toEqual([{ kobId: "KOB-000067", code: "NOTE_TOO_LONG" }]);
+});
+
 it("carries the public note, and never a family record's catalog text", () => {
 	const { records } = planCatalog(
 		[family("KOB-000064"), webCatalog("KOB-000065"), webCatalog("KOB-000066")],
