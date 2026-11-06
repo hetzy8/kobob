@@ -224,7 +224,25 @@ on the real catalog on 2026-11-06 (OPERATIONS.md → Import records).
 - **Report rule:** the console prints counts only. Row detail goes to the
   `--report` file, which must be outside the repository and must be a new file:
   an existing report is never overwritten.
-- **Settings for Yoram to add to `.env.example`** (agents cannot edit it): none.
+- **Media route:** `GET /api/media/<id>` re-checks a current session and active
+  verified membership on every request, including each byte range. Anonymous,
+  revoked and unknown ids get the same 404. Only `verified` files are served,
+  storage keys never reach the browser, and a range answers with at most 8 MB.
+  JPEG, PNG, GIF, PDF and MP3 display inline; everything else downloads with a
+  neutral type. Storage settings are validated apart from the server settings,
+  so missing ones answer 503 on this route and never block pages.
+- **Media copy:** `npm run import:media -- --report <path>` with `DATABASE_URL`
+  and the `R2_*` settings. It is a dry run unless `--apply` and a matching
+  `--confirm-host` are given. `--only KOB-000001,KOB-000002` limits a run to
+  named catalog ids and `--limit <n>` to the smallest pending files. Each file is
+  read from Drive, checked against its recorded size and hash, uploaded, read
+  back and compared before it is marked `verified`. Thumbnails and TIFF display
+  copies drop embedded metadata such as GPS. A rerun skips verified files and
+  retries failed ones. A missing thumbnail or display copy is retried from the
+  stored original once its hash matches, with no Drive read. Item visibility and
+  rights are never changed.
+- **Settings for Yoram to add to `.env.example`** (agents cannot edit it):
+  `R2_ENDPOINT=`, `R2_BUCKET=`, `R2_ACCESS_KEY_ID=`, `R2_SECRET_ACCESS_KEY=`.
 
 ## Next work
 

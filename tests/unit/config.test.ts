@@ -3,8 +3,10 @@ import {
 	emailConfigValidity,
 	readEmailConfig,
 	readServerConfig,
+	readStorageConfig,
 	requireTestDatabaseUrl,
 	serverConfigValidity,
+	storageConfigValidity,
 	validConfigBaseline,
 } from "../../src/lib/config";
 
@@ -188,5 +190,34 @@ describe("email configuration", () => {
 			emailFrom: false,
 		});
 		expect(emailConfigValidity({})).toEqual({ resend: false, emailFrom: false });
+	});
+});
+
+describe("storage settings", () => {
+	const valid = {
+		R2_ENDPOINT: "https://account.r2.cloudflarestorage.com",
+		R2_BUCKET: "synthetic-bucket",
+		R2_ACCESS_KEY_ID: "synthetic-id",
+		R2_SECRET_ACCESS_KEY: "synthetic-secret",
+	};
+	it("accepts complete https settings", () => {
+		expect(readStorageConfig(valid).bucket).toBe("synthetic-bucket");
+		expect(storageConfigValidity(valid)).toEqual({ storage: true });
+	});
+	it.each(Object.keys(valid))("rejects a missing %s and names only the setting", (name) => {
+		const env = { ...valid, [name]: "" };
+		expect(() => readStorageConfig(env)).toThrow(`Missing or invalid ${name}`);
+		expect(storageConfigValidity(env)).toEqual({ storage: false });
+	});
+	it("rejects a non-https endpoint", () => {
+		expect(() => readStorageConfig({ ...valid, R2_ENDPOINT: "http://a.test" })).toThrow("Missing or invalid R2_ENDPOINT");
+	});
+	it("never includes a secret in an error", () => {
+		expect.assertions(1);
+		try {
+			readStorageConfig({ ...valid, R2_ENDPOINT: "bad" });
+		} catch (error) {
+			expect(String(error)).not.toContain("synthetic-secret");
+		}
 	});
 });

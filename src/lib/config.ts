@@ -122,3 +122,24 @@ export function emailConfigValidity(env: Environment) {
 		emailFrom: passes("EMAIL_FROM"),
 	};
 }
+
+// Validated apart from readServerConfig so missing storage never blocks pages.
+export function readStorageConfig(env: Environment) {
+	const endpoint = setting(env, "R2_ENDPOINT");
+	if (parseUrl(endpoint, "R2_ENDPOINT").protocol !== "https:")
+		throw new Error("Missing or invalid R2_ENDPOINT");
+	return Object.freeze({
+		endpoint,
+		bucket: setting(env, "R2_BUCKET"),
+		accessKeyId: setting(env, "R2_ACCESS_KEY_ID"),
+		secretAccessKey: setting(env, "R2_SECRET_ACCESS_KEY"),
+	});
+}
+export function storageConfigValidity(env: Environment) {
+	try {
+		readStorageConfig(env);
+		return { storage: true };
+	} catch {
+		return { storage: false };
+	}
+}

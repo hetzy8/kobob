@@ -33,6 +33,10 @@ export default defineConfig({
 			RESEND_API_KEY: "",
 			EMAIL_FROM: "",
 			EMAIL_IN_DEVELOPMENT: "",
+			R2_ENDPOINT: "",
+			R2_BUCKET: "",
+			R2_ACCESS_KEY_ID: "",
+			R2_SECRET_ACCESS_KEY: "",
 		},
 	},
 });

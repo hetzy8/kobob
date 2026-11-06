@@ -71,6 +71,10 @@ editable life-story page); a wider release smoke gate; a family review
 research queue for sources that still need a person to confirm them (64 held
 after stage 1).
 
+Update (Yoram, 2026-11-06): before step 2, R2 is configured and the five
+collages Yoram selected for the site are copied there, private to members. The
+rest of step 3 keeps its place after ops and backups.
+
 Until phase 9, every phase keeps all interface text in `src/locales/he.ts`
 (never inline in components) and avoids left/right-specific layout, so the
 English version adds a second locale rather than rewriting pages.
