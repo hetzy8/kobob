@@ -1,9 +1,10 @@
 # Operations, cost and launch conventions
 
-**Status (2026-11-05):** in production at `https://kobob.vercel.app` (Vercel
-`fra1`, Neon Frankfurt), v0.4.0. Sign-in email through Resend, item
-editing and public search are live and the first administrator exists. Backups, private media and the custom domain
-(`kobob.org`) are not set up yet.
+**Status (2026-11-06):** in production at `https://kobob.vercel.app` (Vercel
+`fra1`, Neon Frankfurt), v0.5.0. Sign-in email through Resend, item
+editing and public search are live and the first administrator exists. The
+catalog importer has not been run on real data. Backups, private media and the
+custom domain (`kobob.org`) are not set up yet.
 
 ## Ownership
 
@@ -232,6 +233,12 @@ Release checklist:
      archive and search; no migration.
      [Deploy run 42026065465](https://github.com/hetzy8/kobob/actions/runs/42026065465)
      green; health `ok` with every config flag true; `/archive` answers 404.
+   - `v0.5.0`, 2026-11-06: `b0fa8fb` (PR #31), rights rule, public link cards,
+     paged family list and the catalog importer (repository only, not run);
+     migration `20261105133746_media_import` (additive) applied by the build.
+     [Deploy run 42223428711](https://github.com/hetzy8/kobob/actions/runs/42223428711)
+     green; health `ok` on `b0fa8fb` with every config flag true; `/search` with
+     a query answers 200; `/family` redirects to sign-in when signed out.
 6. Delete `dev` and recreate it from the release commit, then retarget any
    open PRs to the new `dev` (`gh pr edit <n> --base dev`). This is the hetzy8
    standards release rule (getmygoals' practice): each cycle starts level with
