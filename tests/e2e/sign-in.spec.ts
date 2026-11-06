@@ -55,6 +55,7 @@ test("public foundation has Hebrew RTL root, relative navigation and no private 
 	page,
 }) => {
 	await page.goto("/");
+	await expect(page.locator("body")).not.toContainText("גרסת פיתוח");
 	await expect(page.locator("html")).toHaveAttribute("lang", "he");
 	await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
 	await expect(page.getByRole("navigation")).toBeVisible();
