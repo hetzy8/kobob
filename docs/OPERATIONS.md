@@ -301,6 +301,13 @@ Release checklist:
      [`Nightly` run 42362016644](https://github.com/hetzy8/kobob/actions/runs/42362016644)
      green on `dev` in 4m59s. The Neon server reports PostgreSQL 18.6, so the
      backup tooling is re-pinned to 18 before the first dump (PR #45).
+   - `v0.7.1`, 2026-11-07: `04e1664` (PR #47), backup tooling on
+     `postgresql-client-18` (PR #45) and the pinned rclone v1.75.2 release
+     with checksum, because apt's 1.60 still calls Backblaze API v1, which
+     the account refuses (PR #48, found by the upload rehearsal); no migration,
+     no application change.
+     [Deploy run 42368411128](https://github.com/hetzy8/kobob/actions/runs/42368411128)
+     green; health `ok` on `04e1664` with every config flag true.
 6. Delete `dev` and recreate it from the release commit, then retarget any
    open PRs to the new `dev` (`gh pr edit <n> --base dev`). This is the hetzy8
    standards release rule (getmygoals' practice): each cycle starts level with
