@@ -230,7 +230,13 @@ branch or PR creates a Vercel deployment. A push to `main` runs
 `.github/workflows/vercel-deploy.yml`: it calls the Vercel deploy hook, then a
 smoke gate waits until `/api/health` reports the merged commit on a new
 deployment id with a reachable database and probes `/` and `/sign-in`.
-CI (`Verify`) runs on pull requests only and skips docs-only changes.
+CI (`.github/workflows/ci.yml`, workflow `CI`) runs on pull requests only and
+skips docs-only changes. Its two jobs run in parallel: `Unit tests` (lint,
+typecheck, unit, integration) and `E2E tests` (the `@sanity` browser subset,
+then the production build). The whole browser suite runs in `Nightly`
+(`.github/workflows/nightly.yml`) on `dev` at 02:00 UTC and on manual dispatch
+(`gh workflow run nightly.yml`); a failure emails the workflow's last
+committer. Check the latest nightly with `gh run list --workflow=nightly.yml --limit 1`.
 
 The workflow needs repository variable `PROD_URL` and secret
 `VERCEL_DEPLOY_HOOK_URL`, mapped in `hetzy8/ops/secrets/targets.json` and
@@ -239,7 +245,8 @@ them the workflow fails loudly.
 
 Release checklist:
 
-1. `dev` CI is green on the latest merged PRs; list what the batch contains.
+1. `dev` CI is green on the latest merged PRs and the latest `Nightly` on `dev`
+   is green, or its failure is understood; list what the batch contains.
 2. Yoram gives an explicit go; open the `dev` → `main` PR
    (`gh pr create --base main --head dev`) and wait for its checks.
 3. Before merging, confirm migrations are backward-compatible with the code

@@ -68,7 +68,7 @@ async function createItem(page: Page, title: string) {
 	return id;
 }
 
-test("explains that publishing needs cleared rights, then allows it", async ({ page }) => {
+test("explains that publishing needs cleared rights, then allows it", { tag: "@sanity" }, async ({ page }) => {
 	await signIn(page, "rights@example.test");
 	const id = await createItem(page, "Synthetic rights item");
 	await db.item.update({ where: { id }, data: { rightsStatus: "unknown" } });
@@ -170,7 +170,7 @@ test("the old public archive and achievements pages are gone", async ({ page }) 
 	}
 });
 
-test("a stale save keeps the member's input and shows the latest version", async ({
+test("a stale save keeps the member's input and shows the latest version", { tag: "@sanity" }, async ({
 	browser,
 }) => {
 	const a = await newMemberPage(browser, "a@example.test");
@@ -202,7 +202,7 @@ test("a stale save keeps the member's input and shows the latest version", async
 	await expect(a.getByLabel(copy.items.title)).toHaveValue("Typed by B");
 });
 
-test("archive hides an item and restore brings it back as private", async ({
+test("archive hides an item and restore brings it back as private", { tag: "@sanity" }, async ({
 	page,
 }) => {
 	await signIn(page, "editor@example.test");
@@ -649,7 +649,7 @@ test("family sub-pages hide private content while logout is pending", async ({
 	}
 });
 
-test("family pages are Hebrew RTL and require sign-in", async ({ page }) => {
+test("family pages are Hebrew RTL and require sign-in", { tag: "@sanity" }, async ({ page }) => {
 	for (const path of [
 		"/family/items/new",
 		"/family/archived",
@@ -738,7 +738,7 @@ test("a public link card shows its source details and nothing private", async ({
 	expect(html).not.toContain("javascript:");
 });
 
-test("the family list pages and filters items needing review", async ({ page }) => {
+test("the family list pages and filters items needing review", { tag: "@sanity" }, async ({ page }) => {
 	await signIn(page, "paging@example.test");
 	for (let index = 0; index < 51; index++) {
 		const item = await db.item.create({ data: { reviewStatus: index === 0 ? "needs_review" : "reviewed" } });

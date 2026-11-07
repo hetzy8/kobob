@@ -85,10 +85,10 @@ decisions and implemented behavior as different statuses.
 - Reviews (owner rule 2026-11-02, every hetzy8 project): never request a
   Copilot review; Copilot is off because AI-credit spend is capped at $0. Yoram
   runs one Codex review per code PR and posts it as a PR issue comment from
-  `hetzy8` (read `gh api repos/hetzy8/kobob/issues/N/comments`). Merge on CI
-  green plus a reply on the PR answering each point (fixed, or why not, with
-  evidence). Pushing fixes does not earn a second review. Docs-only PRs need
-  no review.
+  `hetzy8` (read `gh api repos/hetzy8/kobob/issues/N/comments`). Merge on a green
+  `CI` run (both jobs) plus a reply on the PR answering each point (fixed, or why
+  not, with evidence). Pushing fixes does not earn a second review. Docs-only PRs
+  need no review.
 - Keep README.md as the human entry point and docs/README.md as the map.
   Dated designs live in `docs/superpowers/specs/`; dated executable plans live
   in `docs/superpowers/plans/`. Update status and affected docs with behavior.
@@ -102,7 +102,9 @@ decisions and implemented behavior as different statuses.
   isolated test databases and mocked delivery; never a production `.env`.
 - Keep CI bounded and relevant. No workflows or dependencies are introduced
   during planning work; add only those needed by an authorized implementation
-  slice. Never claim a check was run without its actual result.
+  slice. New browser tests run nightly by default and get the `@sanity` tag only
+  under the rule in docs/DEVELOPMENT.md. Never claim a check was run without its
+  actual result.
 
 ## Secrets, costs, and operations
 

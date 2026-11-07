@@ -7,6 +7,7 @@ const testOrigin = `http://127.0.0.1:${testPort}`;
 const databaseUrl = requireTestDatabaseUrl(process.env);
 export default defineConfig({
 	testDir: "./tests/e2e",
+	globalSetup: "./tests/e2e/warm-up.ts",
 	fullyParallel: false,
 	workers: 1,
 	use: {

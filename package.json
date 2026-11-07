@@ -15,6 +15,7 @@
 		"test:unit": "vitest run tests/unit",
 		"test:integration": "vitest run tests/integration",
 		"test:e2e": "NODE_OPTIONS=--conditions=react-server playwright test",
+		"test:e2e:sanity": "NODE_OPTIONS=--conditions=react-server playwright test --grep @sanity",
 		"db:generate": "prisma generate",
 		"db:test:up": "docker compose -p kobob-test -f compose.test.yml up -d --wait",
 		"db:test:down": "docker compose -p kobob-test -f compose.test.yml down",
