@@ -1,7 +1,7 @@
 # Architecture and stack recommendation
 
 **Date:** 2026-11-01
-**Status:** hosting direction accepted; initial local application/auth foundation implemented; no services provisioned
+**Status:** hosting direction accepted; in production since 2026-11-02 on the stack below (HOSTING.md records what is provisioned; this document's details were written before that and are kept as the decision record)
 
 ## Evidence before selection
 

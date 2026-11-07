@@ -17,6 +17,7 @@ this file holds only what is specific to Kobob. Keep it true: a stale line here 
 | `docs/HOSTING.md` | Provider direction, cost evidence, provisioning gates |
 | `docs/OPERATIONS.md` | Secrets, branch/release flow, backups, launch checklist |
 | `docs/DATA-MIGRATION.md` | Source preservation, import and cutover plan |
+| `docs/reviews/*.md` | Dated review records (panel reviews); append-only, decisions recorded with their reason |
 | `.env.example` | Every setting the code reads, empty placeholders only |
 
 **Append-only records — tick or add dated notes, never rewrite:**
