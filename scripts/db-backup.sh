@@ -13,7 +13,7 @@ for name in BACKUP_DATABASE_URL B2_KEY_ID B2_KEY B2_BUCKET AGE_PUBLIC_KEY; do
 done
 [ "$missing" = "0" ] || exit 1
 
-pg_dump_bin="${PG_DUMP_BIN:-/usr/lib/postgresql/17/bin/pg_dump}"
+pg_dump_bin="${PG_DUMP_BIN:-/usr/lib/postgresql/18/bin/pg_dump}"
 retry_seconds="${BACKUP_RETRY_SECONDS:-20}"
 export PGCONNECT_TIMEOUT=20
 export RCLONE_CONFIG_B2_TYPE=b2

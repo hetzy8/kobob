@@ -112,7 +112,9 @@ Steps, in order:
 1. Merge this repository's release-flow PR into `dev`, so `vercel.json`
    (Git deploys off, region `fra1`) is on the branch Vercel sees.
 2. Neon console: create project `kobob`, region AWS Europe Central 1
-   (Frankfurt, next to `fra1`), Postgres 17 (CI uses 17.7). Keep the pooled and
+   (Frankfurt, next to `fra1`), Postgres 17 (CI uses 17.7). On 2026-11-07
+   `SHOW server_version` reported 18.6, so the backup tooling pins 18; the
+   test database stays on 17.7, which the app does not notice. Keep the pooled and
    direct connection strings for step 5; do not paste them anywhere else.
 3. Vercel, from `~/kobob`: `vercel project add kobob`, then
    `vercel link --yes --project kobob`, then `vercel git connect`. In Project
@@ -394,7 +396,7 @@ docker run -d --name kobob-restore \
   -e POSTGRES_DB=restore \
   -p 127.0.0.1:55441:5432 \
   --tmpfs /var/lib/postgresql/data \
-  postgres:17.7-alpine
+  postgres:18.6-alpine
 until docker exec kobob-restore pg_isready -q -U postgres -h 127.0.0.1; do sleep 1; done
 export BWS_ACCESS_TOKEN="$(security find-generic-password -s ops-secrets-bws -w)"
 P="$(bws project list --output json | jq -r '.[]|select(.name=="shared").id')"
