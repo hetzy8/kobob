@@ -1,4 +1,4 @@
-name: Verify
+name: CI
 on:
   # PRs only (into dev for features, into main for releases), as in sana. main
   # receives only release merges that were already green on their PR, and
@@ -11,13 +11,18 @@ on:
       - "**.md"
 permissions:
   contents: read
+# One run per PR; a new push cancels the previous run of the same PR.
 concurrency:
-  group: verify-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number }}
   cancel-in-progress: true
+# Two independent jobs so the PR gate takes about as long as the browser job
+# alone. The browser job runs only the @sanity subset; the full suite runs in
+# nightly.yml. See docs/superpowers/specs/2026-11-07-ci-sanity-nightly-design.md.
 jobs:
-  verify:
+  unit:
+    name: Unit tests
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     services:
       postgres:
         image: postgres:17.7-alpine
@@ -45,6 +50,35 @@ jobs:
       - run: npm run typecheck
       - run: npm run test:unit
       - run: npm run test:integration
+  e2e:
+    name: E2E tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17.7-alpine
+        env:
+          POSTGRES_USER: kobob_test
+          POSTGRES_PASSWORD: synthetic-ci-only
+          POSTGRES_DB: kobob_test
+        ports: [5432:5432]
+        options: >-
+          --health-cmd "pg_isready -U kobob_test -d kobob_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://kobob_test:synthetic-ci-only@127.0.0.1:5432/kobob_test
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run db:generate
+      - run: npm run db:test:migrate
       - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - run: npm run test:e2e:sanity
+      # The browser tests run against `next dev`, so this is the PR's only
+      # production-compile check. Locally and in CI the build never migrates.
       - run: npm run build
