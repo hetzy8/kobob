@@ -287,6 +287,18 @@ Release checklist:
      green; health `ok` on `24bdc94` with every config flag true, including
      `storage`; `/` and `/search` answer 200; `/family` redirects to sign-in;
      an unknown media id answers 404.
+   - `v0.7.0`, 2026-11-07: `30ef6a6` (PR #44), encrypted database backups
+     (`DB Backup`, secrets not yet provisioned), restore verification, the
+     per-client sign-in limit, `admin:recover`, and CI split into `CI`
+     (`Unit tests`, `E2E tests` with the `@sanity` subset) plus `Nightly`; no
+     migration.
+     [Deploy run 42361889618](https://github.com/hetzy8/kobob/actions/runs/42361889618)
+     green; health `ok` on `30ef6a6` with every config flag true; `/`,
+     `/search?q=a` and `/sign-in` answer 200; `/family` redirects to sign-in;
+     an unknown media id and `/archive` answer 404; title `יקי חץ`. First
+     [`Nightly` run 42362016644](https://github.com/hetzy8/kobob/actions/runs/42362016644)
+     green on `dev` in 4m59s. The Neon server reports PostgreSQL 18.6, so the
+     backup tooling is re-pinned to 18 before the first dump (PR #45).
 6. Delete `dev` and recreate it from the release commit, then retarget any
    open PRs to the new `dev` (`gh pr edit <n> --base dev`). This is the hetzy8
    standards release rule (getmygoals' practice): each cycle starts level with
