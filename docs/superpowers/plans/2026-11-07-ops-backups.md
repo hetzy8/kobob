@@ -1167,7 +1167,7 @@ Expected: listing status 0 or 3, upload status 0, and the file listed with its s
 
 **Result of the second rehearsal (2026-11-07 13:52):** passed with `rclone/rclone:1.75.2`. `kobob-rehearsal.txt` is in `rehearsal/` at 10 bytes with Object Lock, confirmed in the Backblaze console. The CI key and the pinned rclone work against this account; the apt package was the only cause. Step 8 should log `rclone v1.75.2`.
 
-- [ ] **Step 6: Environment and secrets.**
+- [x] **Step 6: Environment and secrets.**
 
 ```zsh
 E=repos/hetzy8/kobob/environments/backup
@@ -1178,6 +1178,8 @@ unset E B
 ```
 
 Then from `~/ops`, on `main`: `node scripts/secrets.mjs rotate KOBOB_BACKUP_DATABASE_URL KOBOB_B2_BACKUP_KEY_ID KOBOB_B2_BACKUP_KEY KOBOB_B2_BACKUP_BUCKET KOBOB_BACKUP_AGE_PUBLIC_KEY` (dry run), again with `--apply`, pasting each value, then `node scripts/secrets.mjs audit`. Confirm the Environment was used: `gh secret list --repo hetzy8/kobob` must show no `B2_*`, `AGE_*` or `BACKUP_*` names. If it shows any, the ops change was missing: delete them and stop.
+
+**Result of Step 6 (2026-11-07):** done. The `backup` Environment exists with a custom branch policy admitting only `main`; its five secrets are `AGE_PUBLIC_KEY`, `B2_BUCKET`, `B2_KEY`, `B2_KEY_ID` and `BACKUP_DATABASE_URL`, written by ops `secrets.mjs rotate --apply` (first write, nothing old to revoke; the five values are now in Bitwarden `shared`). Audit shows only the two pre-existing getmygoals gaps. Repo-level secrets hold only `VERCEL_DEPLOY_HOOK_URL`.
 
 - [x] **Step 7: Release.** Done 2026-11-07 as v0.7.0 (`30ef6a6`, PR #44, deploy run 42361889618 green). Step 1 then found PostgreSQL 18.6 on Neon; PR #45 re-pins the tooling to 18 and needs its own release before step 8. Original text: After Gate A, on Yoram's go: the `dev` → `main` PR per OPERATIONS.md, smoke gate green, tag `v0.7.0`, record it, recreate `dev`. No migration. Confirm on production: the tab title is `יקי חץ` and the banner is gone.
 
