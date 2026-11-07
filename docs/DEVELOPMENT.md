@@ -169,16 +169,26 @@ with its isolated PostgreSQL service on port 5432. The migration round-trip
 check creates a schema inside a transaction and rolls it back; it is not a
 production down-migration or a backup restore drill.
 
-`npm run check` runs lint, types, unit, integration, browser tests and build.
-`npm test` is the unit suite only; it is not evidence of complete verification.
-Browser fixtures use the real auth integration and database with mocked email,
-then exercise the actual HTTP routes. Traces/screenshots are disabled to avoid
-storing credential-bearing browser artifacts. Never publish auth failure
-artifacts or private fixture output without review.
+`npm run check` runs lint, types, unit, integration, the full browser suite and
+build; it is the local equivalent of the nightly. `npm test` is the unit suite
+only; it is not evidence of complete verification. Browser fixtures use the real
+auth integration and database with mocked email, then exercise the actual HTTP
+routes. Traces/screenshots are disabled to avoid storing credential-bearing
+browser artifacts. Never publish auth failure artifacts or private fixture output
+without review. Before any browser test, `tests/e2e/warm-up.ts` requests every
+route under `src/app` once: `next dev` compiles a route on first request and
+then reloads open pages, which aborts a navigation in flight, so a cold route
+would make results depend on test order.
 
-The PR workflow is bounded to 15 minutes, read-only repository permissions,
-one Chromium browser, isolated PostgreSQL and no live email/storage. No deployment
-or ops mutation is included. Its remote run is not verified until GitHub executes it.
+The PR workflow (`CI`) has two parallel jobs with read-only repository
+permissions, isolated PostgreSQL and no live email/storage: `Unit tests` (lint,
+typecheck, unit, integration; 10 minutes) and `E2E tests` (one Chromium browser
+running `npm run test:e2e:sanity`, then the build; 15 minutes). The sanity
+subset is the tests tagged `@sanity` in `tests/e2e`; a test joins it when it
+proves an access boundary, a revocation, a publish decision or the Hebrew RTL
+shell for a flow production users reach. Everything else runs in `Nightly` on
+`dev`, which runs the whole cycle. No deployment or ops mutation is included in
+either workflow. A workflow change is not verified until GitHub executes it.
 
 ## Media and catalog import (stage 1)
 
@@ -343,8 +353,8 @@ A transaction-scoped advisory lock serializes administration and bootstrap,
 including concurrent last-verified-active-admin checks. A private audit table
 records actor/target IDs, action and time without copying email values. No role
 promotion UI, member deletion or production data is included. Administrator email
-changes are deliberately unavailable in the UI; a verified owner-recovery flow
-is still required before enabling that operation for the sole administrator.
+changes for the sole administrator are deliberately unavailable in the UI; the
+owner-recovery path is `npm run admin:recover` (OPERATIONS.md → Runbook).
 
 `npm run admin:bootstrap` is an explicit interactive operator command. Configure
 an isolated local database and server settings in the process environment first;

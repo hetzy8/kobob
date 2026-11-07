@@ -28,13 +28,6 @@ a:hover {
 	outline: 3px solid #91621e;
 	outline-offset: 4px;
 }
-.preview {
-	padding: 0.5rem 1.5rem;
-	border-block-end: 1px solid var(--line);
-	color: var(--muted);
-	font-size: 0.8rem;
-	text-align: center;
-}
 .site-header {
 	display: flex;
 	align-items: center;

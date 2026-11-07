@@ -1,8 +1,8 @@
 import { test, expect } from "@playwright/test";
 // The post-deploy smoke gate reads this endpoint; its shape is a contract.
-test("health reports a reachable database without caching or leaking detail", async ({
-	request,
-}) => {
+test("health reports a reachable database without caching or leaking detail", {
+	tag: "@sanity",
+}, async ({ request }) => {
 	const response = await request.get("/api/health");
 	expect(response.status()).toBe(200);
 	expect(response.headers()["cache-control"]).toContain("no-store");

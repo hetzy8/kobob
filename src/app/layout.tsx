@@ -16,9 +16,6 @@ export default function RootLayout({
 				<a className="skip-link" href="#main">
 					{copy.skip}
 				</a>
-				<div className="preview" lang="he">
-					{copy.preview}
-				</div>
 				<header className="site-header" lang="he">
 					<Link href="/" className="wordmark">
 						{copy.title}

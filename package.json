@@ -15,14 +15,17 @@
 		"test:unit": "vitest run tests/unit",
 		"test:integration": "vitest run tests/integration",
 		"test:e2e": "NODE_OPTIONS=--conditions=react-server playwright test",
+		"test:e2e:sanity": "NODE_OPTIONS=--conditions=react-server playwright test --grep @sanity",
 		"db:generate": "prisma generate",
 		"db:test:up": "docker compose -p kobob-test -f compose.test.yml up -d --wait",
 		"db:test:down": "docker compose -p kobob-test -f compose.test.yml down",
 		"db:test:migrate": "node --conditions=react-server --import tsx scripts/migrate-test-database.ts",
 		"check": "npm run lint && npm run typecheck && npm run test:unit && npm run test:integration && npm run test:e2e && npm run build",
 		"admin:bootstrap": "node --conditions=react-server --import tsx scripts/bootstrap-admin.ts",
+		"admin:recover": "node --conditions=react-server --import tsx scripts/recover-admin.ts",
 		"import:catalog": "node --conditions=react-server --import tsx scripts/import-catalog.ts",
-		"import:media": "node --conditions=react-server --import tsx scripts/import-media.ts"
+		"import:media": "node --conditions=react-server --import tsx scripts/import-media.ts",
+		"verify:restore": "node --conditions=react-server --import tsx scripts/verify-restore.ts"
 	},
 	"dependencies": {
 		"@aws-sdk/client-s3": "3.1162.0",

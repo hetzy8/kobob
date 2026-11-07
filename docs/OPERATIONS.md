@@ -230,7 +230,13 @@ branch or PR creates a Vercel deployment. A push to `main` runs
 `.github/workflows/vercel-deploy.yml`: it calls the Vercel deploy hook, then a
 smoke gate waits until `/api/health` reports the merged commit on a new
 deployment id with a reachable database and probes `/` and `/sign-in`.
-CI (`Verify`) runs on pull requests only and skips docs-only changes.
+CI (`.github/workflows/ci.yml`, workflow `CI`) runs on pull requests only and
+skips docs-only changes. Its two jobs run in parallel: `Unit tests` (lint,
+typecheck, unit, integration) and `E2E tests` (the `@sanity` browser subset,
+then the production build). The whole browser suite runs in `Nightly`
+(`.github/workflows/nightly.yml`) on `dev` at 02:00 UTC and on manual dispatch
+(`gh workflow run nightly.yml`); a failure emails the workflow's last
+committer. Check the latest nightly with `gh run list --workflow=nightly.yml --limit 1`.
 
 The workflow needs repository variable `PROD_URL` and secret
 `VERCEL_DEPLOY_HOOK_URL`, mapped in `hetzy8/ops/secrets/targets.json` and
@@ -239,7 +245,8 @@ them the workflow fails loudly.
 
 Release checklist:
 
-1. `dev` CI is green on the latest merged PRs; list what the batch contains.
+1. `dev` CI is green on the latest merged PRs and the latest `Nightly` on `dev`
+   is green, or its failure is understood; list what the batch contains.
 2. Yoram gives an explicit go; open the `dev` → `main` PR
    (`gh pr create --base main --head dev`) and wait for its checks.
 3. Before merging, confirm migrations are backward-compatible with the code
@@ -274,6 +281,12 @@ Release checklist:
      [Deploy run 42223428711](https://github.com/hetzy8/kobob/actions/runs/42223428711)
      green; health `ok` on `b0fa8fb` with every config flag true; `/search` with
      a query answers 200; `/family` redirects to sign-in when signed out.
+   - `v0.6.0`, 2026-11-06: `24bdc94` (PR #40), private R2 storage, the
+     access-checked media route and the copy tool; no migration.
+     [Deploy run 42302769871](https://github.com/hetzy8/kobob/actions/runs/42302769871)
+     green; health `ok` on `24bdc94` with every config flag true, including
+     `storage`; `/` and `/search` answer 200; `/family` redirects to sign-in;
+     an unknown media id answers 404.
 6. Delete `dev` and recreate it from the release commit, then retarget any
    open PRs to the new `dev` (`gh pr edit <n> --base dev`). This is the hetzy8
    standards release rule (getmygoals' practice): each cycle starts level with
@@ -309,27 +322,167 @@ repository (DEVELOPMENT.md → Media and catalog import).
   anonymous visitor: `/` and `/search` with a Hebrew query answer 200, a card
   opens and links to its source, and the page carries no catalog ids or
   private notes. Public item count before the import: 0.
+- Selected collages, 2026-11-06, on v0.6.0 (`24bdc94`), by Yoram's choice ahead
+  of ops and backups. Rehearsed first on the development bucket and local
+  database; the production dry run then matched. Result: 5 originals verified
+  by size, hash and read-back (20,134,347 bytes), 5 thumbnails, 0 failed. The
+  items stay private with rights unclear. Verified: the production bucket lists
+  5 originals with public access disabled, and a signed-out request for a real
+  file id answers 404. The other 1,111 family file records remain pending. On
+  2026-11-07 Yoram opened the 4.97 MB file while signed in, and it worked. That
+  file is over Vercel's documented 4.5 MB response limit. This does not replace
+  the large-file measurement required before the full copy.
 
 ## Preservation and recovery
 
 Decision (Yoram, 2026-11-06, after the
 [panel review](reviews/2026-11-06-panel-review.md)): backups with a rehearsed
-restore come before any family editing and before the first invitation.
+restore come before any family editing and before the first invitation. Design:
+[ops and backups](superpowers/specs/2026-11-06-ops-backups-design.md). Target: RPO
+24 hours, RTO 1 working day. Never commit backup payloads to GitHub. Media is not
+backed up here: R2 holds copies, and Drive holds the originals. Media backup must
+be added before family uploads exist.
 
-The proposal is daily encrypted database and media backups, RPO 24 hours and
-RTO 1 working day. Before launch, approve backup retention and costs, record
-where keys live, document database/object-store restore order, and rehearse
-restoring to a separate environment. The rehearsal verifies representative
-content, ordering, media, private/public/archive states, revisions and
-revoked-member denial on protected operations. Normal item recovery returns to
-private. Disaster recovery must reconcile later unpublishing/revocation actions
-before reopening traffic; do not resurrect stale public visibility or access. Rotate
-session/token secrets after a restore when required to prevent old access
-from becoming valid again. Never commit backup payloads to GitHub.
+### Database backup
 
-If the only administrator loses email access, recovery is a documented,
-owner-verified operator procedure, not a public reset/admin-creation endpoint.
-Adding a replacement admin revokes obsolete access and records an audit event.
+`DB Backup` (`.github/workflows/db-backup.yml`) runs daily at 03:00 UTC from `main`
+in the `backup` Environment, and writes `daily/` and `monthly/` in a private B2
+bucket. The dump is encrypted before upload. Object Lock (Governance, 30 days)
+protects recent dumps; lifecycle rules expire `daily/` at 32 days and `monthly/` at
+366. Failed runs email Yoram through GitHub's notifications, and the ops monitor
+reports dump age. GitHub disables schedules after 60 days without repository
+activity; when the monitor reports an old dump, check that first and run
+`gh workflow enable db-backup.yml --repo hetzy8/kobob`.
+
+| Secret in Environment `backup` | Source | Map name |
+|---|---|---|
+| `BACKUP_DATABASE_URL` | Direct, non-pooled URL of the read-only role `kobob_backup` | `KOBOB_BACKUP_DATABASE_URL` |
+| `B2_KEY_ID`, `B2_KEY` | Bucket-scoped key: `listBuckets,listFiles,writeFiles` | `KOBOB_B2_BACKUP_KEY_ID`, `KOBOB_B2_BACKUP_KEY` |
+| `B2_BUCKET` | Bucket name | `KOBOB_B2_BACKUP_BUCKET` |
+| `AGE_PUBLIC_KEY` | Public half of the age key | `KOBOB_BACKUP_AGE_PUBLIC_KEY` |
+
+The private age key, `KOBOB_BACKUP_AGE_PRIVATE_KEY`, is in Bitwarden only. Losing it
+makes every dump unreadable. Cost: not yet measured; recorded here after the first
+dump.
+
+A failed run can still have uploaded its dump. If a suspect dump was the first of
+the month, it holds the month's slot in `monthly/`, and later runs skip that month.
+Once a good dump exists, download it and upload it to `monthly/` under its original
+name, since the month check reads the name. The suspect file stays locked for 30
+days.
+
+### Restore drill
+
+Status: not rehearsed.
+
+Run on the operator Mac after the first dump, after any material schema change or
+key change, and at least every six months. Download the newest dump from the
+Backblaze console into a new private folder outside the repository. Then, from
+`~/kobob` on current `main`, one line at a time:
+
+```zsh
+git switch main
+git pull
+npm ci
+npm run db:generate
+setopt pipefail
+D=<that folder>
+DUMP=<the dump file's path>
+PW=synthetic-local-restore-only
+docker run -d --name kobob-restore \
+  -e POSTGRES_PASSWORD="$PW" \
+  -e POSTGRES_DB=restore \
+  -p 127.0.0.1:55441:5432 \
+  --tmpfs /var/lib/postgresql/data \
+  postgres:17.7-alpine
+until docker exec kobob-restore pg_isready -q -U postgres -h 127.0.0.1; do sleep 1; done
+export BWS_ACCESS_TOKEN="$(security find-generic-password -s ops-secrets-bws -w)"
+P="$(bws project list --output json | jq -r '.[]|select(.name=="shared").id')"
+S="$(bws secret list "$P" --output json)"
+K='.[]|select(.key=="KOBOB_BACKUP_AGE_PRIVATE_KEY").value'
+print -r -- "$S" | jq -r "$K" |
+  age -d -i - "$DUMP" |
+  gunzip |
+  docker exec -i kobob-restore \
+    psql -v ON_ERROR_STOP=1 -q -U postgres -d restore >/dev/null
+print "restore: $pipestatus"
+L="postgresql://postgres:$PW@127.0.0.1:55441/restore"
+DATABASE_URL="$L" npm run -s verify:restore > "$D/restored.json"
+print "restored report exit: $?"
+K='.[]|select(.key=="KOBOB_BACKUP_DATABASE_URL").value'
+U="$(print -r -- "$S" | jq -r "$K")"
+DATABASE_URL="$U" npm run -s verify:restore > "$D/production.json"
+print "production report exit: $?"
+jq .problems "$D/restored.json" "$D/production.json"
+diff "$D/restored.json" "$D/production.json"
+docker rm -f kobob-restore
+unsetopt pipefail
+unset BWS_ACCESS_TOKEN P S K L U PW DUMP
+```
+
+The drill passes only if `restore` shows all zeros, both report exits are 0 and
+both `problems` lists are empty. Production is read through the read-only backup
+role. The host always differs. Any other difference is acceptable only if explained
+by activity after the dump, such as `Session` or `RateLimit` rows. Share counts and
+migration names when reporting, never the host.
+
+**Evidence rule.** Record a drill only with the dump's date and size, the script's
+counts and migration, and who ran it. Without those, the status stays "not
+rehearsed". The first drill records revoked-member denial as not applicable, since
+no revoked member exists; integration tests cover the behavior.
+
+### Runbook
+
+**Takedown request.** Make the item private in the interface. As a signed-out
+visitor, confirm its page answers 404 and search no longer finds it. Log the date
+and a private reference outside the repository. Tell the requester the truth:
+encrypted backups keep the record until they expire, up to 367 days. After any
+restore, reapply every takedown logged since that dump.
+
+**Recovery from backup.** Restore to a new Neon branch or project with
+`psql -v ON_ERROR_STOP=1` as in the drill. The dump has no owners or grants, so
+restore as the role the app connects with. Run `npm run verify:restore` against it.
+Reapply takedowns and member revocations made since the dump. Repoint
+`KOBOB_DATABASE_URL` and `KOBOB_DIRECT_URL` with
+`node scripts/secrets.mjs rotate <names> --apply` from `~/ops`. If `kobob_backup` did
+not carry over to the new database, create it with a password from
+`openssl rand -hex 32`:
+
+```sql
+CREATE ROLE kobob_backup WITH LOGIN PASSWORD '<generated>';
+GRANT pg_read_all_data TO kobob_backup;
+```
+
+Rotate `KOBOB_BACKUP_DATABASE_URL`, run `DB Backup` by hand and check the new dump's
+size. Otherwise backups keep dumping the old database and stay green. Rotate
+`KOBOB_AUTH_SECRET` the same way, so old sessions and links die. Only then reopen
+traffic, and check that a revoked member is denied. Do not resurrect stale public
+visibility or access: an item recovered individually returns to private.
+
+**Leaked secret.** `secrets/targets.json` in `hetzy8/ops` shows which secret reaches
+which target. Revoke and replace it at the provider, rotate it with
+`node scripts/secrets.mjs rotate <name> --apply`, run
+`node scripts/secrets.mjs audit`, and check the provider's logs for what it could
+have reached. The Bitwarden-only keys (R2 write and development keys, the private age
+key) are replaced by hand. A leaked private age key exposes every dump still in the
+bucket: generate a new key and keep the old private key in Bitwarden under a dated name
+until the last dump using it expires, up to 367 days, or those dumps become
+unreadable. Treat the old dumps as exposed until they expire.
+
+**Lost administrator email.** Yoram verifies the owner's identity outside the site,
+then runs `npm run admin:recover` in their own terminal, with the same values as the
+`admin:bootstrap` command in Email delivery above. `admin:bootstrap` only creates the
+first administrator and refuses here. `admin:recover` asks for the lost address and the
+replacement, and needs an explicit RECOVER. It moves that active administrator to the
+replacement, which no other member may already hold; ends their sessions and pending
+links; requires the new mailbox to verify; and records a `recover` audit event. Sign in
+from the new mailbox, then check that the old address gets no link. There is no public
+reset path, and no public admin-creation endpoint.
+
+**Site down.** Check `/api/health` first: a 503 with `config.databaseUrl` true points
+at the database, and `commit` shows what is live. Then the latest `Vercel Deploy
+(production)` run, Neon's and Vercel's status pages, and the rollback rules in Branch
+and release flow. Do not run a destructive down migration to make old code start.
 
 ## Launch checklist (not completed)
 

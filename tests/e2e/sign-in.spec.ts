@@ -55,6 +55,7 @@ test("public foundation has Hebrew RTL root, relative navigation and no private 
 	page,
 }) => {
 	await page.goto("/");
+	await expect(page.locator("body")).not.toContainText("גרסת פיתוח");
 	await expect(page.locator("html")).toHaveAttribute("lang", "he");
 	await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
 	await expect(page.getByRole("navigation")).toBeVisible();
@@ -77,7 +78,7 @@ test("public foundation has Hebrew RTL root, relative navigation and no private 
 		),
 	).toBe(true);
 });
-test("requires explicit confirmation, removes the token from the address bar, then enforces revocation", async ({
+test("requires explicit confirmation, removes the token from the address bar, then enforces revocation", { tag: "@sanity" }, async ({
 	page,
 }) => {
 	await page.goto(await emailLink());
@@ -100,7 +101,7 @@ test("requires explicit confirmation, removes the token from the address bar, th
 		page.getByRole("heading", { name: expected.family }),
 	).toHaveCount(0);
 });
-test("locks private UI when logout fails without claiming server revocation, then retries", async ({
+test("locks private UI when logout fails without claiming server revocation, then retries", { tag: "@sanity" }, async ({
 	page,
 }) => {
 	await page.goto(await emailLink());
@@ -130,7 +131,7 @@ test("locks private UI when logout fails without claiming server revocation, the
 	await expect(page).toHaveURL(`${config.origin}/`);
 	expect(await db.session.count()).toBe(0);
 });
-test("shows an honest expired-link state and blocks raw auth endpoints", async ({
+test("shows an honest expired-link state and blocks raw auth endpoints", { tag: "@sanity" }, async ({
 	page,
 	request,
 }) => {
@@ -230,7 +231,7 @@ test("reads a fresh verification fragment in the same document", async ({
 	await confirmSignIn(page);
 });
 
-test("administrator adds, changes, revokes and restores membership", async ({
+test("administrator adds, changes, revokes and restores membership", { tag: "@sanity" }, async ({
 	page,
 }) => {
 	await page.goto(await emailLink("admin"));
@@ -261,7 +262,7 @@ test("administrator adds, changes, revokes and restores membership", async ({
 		row.getByRole("button", { name: "ביטול גישה", exact: true }),
 	).toBeVisible();
 });
-test("anonymous and ordinary family users cannot view membership", async ({
+test("anonymous and ordinary family users cannot view membership", { tag: "@sanity" }, async ({
 	page,
 }) => {
 	await page.goto("/admin/members");
@@ -294,7 +295,7 @@ test("an open admin form cannot mutate membership after role removal", async ({
 	);
 });
 
-test("the media route gives visitors the same 404 for any id", async ({ request }) => {
+test("the media route gives visitors the same 404 for any id", { tag: "@sanity" }, async ({ request }) => {
 	const response = await request.get("/api/media/missing-id");
 	expect(response.status()).toBe(404);
 	expect(response.headers()["cache-control"]).toContain("no-store");

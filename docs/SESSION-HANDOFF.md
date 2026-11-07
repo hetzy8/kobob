@@ -41,11 +41,14 @@ Read AGENTS.md, README.md, docs/README.md, the product spec and plan before chan
   Yoram's decisions in batches, outside the repository.
 - Update 2026-11-06, last: Yoram approved the
   [ops and backups design](superpowers/specs/2026-11-06-ops-backups-design.md)
-  but asked for R2 and the five collages selected for the site first. The
-  storage client, media route and copy tool are on `feat/private-media`; buckets,
-  keys and the real copy are Yoram's steps (OPERATIONS.md → Private media (R2)).
-  Then the backup implementation plan. Before copying the whole collection, see
-  the first deviation dated 2026-11-06 in the media plan.
+  but asked for R2 and the five collages selected for the site first. Done:
+  v0.6.0 (`24bdc94`) released storage and the media route, and the five are
+  copied to production, private (OPERATIONS.md → Import records). Next: the
+  backup implementation plan. Before copying the whole collection, see the
+  deviation dated 2026-11-06 in the media plan.
+- Update 2026-11-07: the [ops and backups design](superpowers/specs/2026-11-06-ops-backups-design.md)
+  is implemented on `feat/ops-backups`; drill pending (OPERATIONS.md → Restore
+  drill).
 - Earlier next work: see [ROADMAP.md](ROADMAP.md): phase 2 slice 1
   (navigation, family-only archive and search, branch `feat/public-search`),
   then slices 2-5 (timeline, map, internet sources, life-story editing).

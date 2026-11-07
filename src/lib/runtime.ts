@@ -3,6 +3,7 @@ import { after } from "next/server";
 import { readServerConfig } from "./config";
 import { createDatabase, type Database } from "./database";
 import { createAuthSystem } from "./auth-system";
+import { clientAddressFrom } from "./client-address";
 import { createResendSender } from "./email";
 import { createLinkSender } from "./link-sender";
 let instance: ReturnType<typeof createAuthSystem> | undefined;
@@ -20,6 +21,7 @@ export function accessSystem() {
 	instance = createAuthSystem({
 		db: database(),
 		config,
+		clientAddress: clientAddressFrom,
 		// Live mail is sent after the response (see link-sender), so the member
 		// sees the same confirmation, in the same time, as a non-member.
 		sendLink: createLinkSender({
