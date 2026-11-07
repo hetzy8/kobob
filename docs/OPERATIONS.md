@@ -395,7 +395,7 @@ sequenceDiagram
     script->>bucket: copyto monthly/ when the month has no dump yet
     script-->>workflow: exit 1 if under 1000 bytes or under half the previous size
     monitor->>bucket: 04:30 UTC, list daily/ with the list-only key
-    monitor-->>Admin: newest dump age and size; act when none within 26 h
+    monitor-->>Admin: newest dump age and size, act when none within 26 h
     Admin->>bucket: restore drill: download the newest dump
     Admin->>Admin: age -d with the private key, gunzip, psql into a throwaway Postgres 18
     Admin->>Admin: verify:restore on the restored and the production database, compare
