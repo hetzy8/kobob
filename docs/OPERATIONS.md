@@ -1,11 +1,14 @@
 # Operations, cost and launch conventions
 
-**Status (2026-11-06):** in production at `https://kobob.vercel.app` (Vercel
-`fra1`, Neon Frankfurt), v0.5.0. Sign-in email through Resend, item
+**Status (2026-11-07):** in production at `https://kobob.vercel.app` (Vercel
+`fra1`, Neon Frankfurt), v0.7.1. Sign-in email through Resend, item
 editing and public search are live and the first administrator exists. The
 catalog import (stage 1) ran on 2026-11-06: 1,162 items, 47 of them public
-link cards (Import records below). Backups, private media and the custom
-domain (`kobob.org`) are not set up yet; backups come next (ROADMAP.md →
+link cards (Import records below). Private R2 holds the five selected collages
+only. Encrypted database backups run nightly to a private Backblaze bucket, the
+first dump restored cleanly in a drill on 2026-11-07, and the ops monitor
+watches the bucket (Database backup and Restore drill below). The custom
+domain (`kobob.org`) is not set up yet; media stages 2–4 come next (ROADMAP.md →
 Order of work).
 
 ## Ownership
@@ -290,10 +293,15 @@ Release checklist:
      `storage`; `/` and `/search` answer 200; `/family` redirects to sign-in;
      an unknown media id answers 404.
    - `v0.7.0`, 2026-11-07: `30ef6a6` (PR #44), encrypted database backups
-     (`DB Backup`, secrets not yet provisioned), restore verification, the
+     (`DB Backup`; its secrets were provisioned on 2026-11-07, Database backup
+     below), restore verification, the
      per-client sign-in limit, `admin:recover`, and CI split into `CI`
      (`Unit tests`, `E2E tests` with the `@sanity` subset) plus `Nightly`; no
      migration.
+     The per-client limit was probed on production on 2026-11-07: requests
+     carrying forged forwarded-for headers add no rate-limit bucket, and a
+     second network gets its own, so the header cannot be spoofed and visitors
+     do not share a bucket.
      [Deploy run 42361889618](https://github.com/hetzy8/kobob/actions/runs/42361889618)
      green; health `ok` on `30ef6a6` with every config flag true; `/`,
      `/search?q=a` and `/sign-in` answer 200; `/family` redirects to sign-in;
@@ -301,6 +309,13 @@ Release checklist:
      [`Nightly` run 42362016644](https://github.com/hetzy8/kobob/actions/runs/42362016644)
      green on `dev` in 4m59s. The Neon server reports PostgreSQL 18.6, so the
      backup tooling is re-pinned to 18 before the first dump (PR #45).
+   - `v0.7.1`, 2026-11-07: `04e1664` (PR #47), backup tooling on
+     `postgresql-client-18` (PR #45) and the pinned rclone v1.75.2 release
+     with checksum, because apt's 1.60 still calls Backblaze API v1, which
+     the account refuses (PR #48, found by the upload rehearsal); no migration,
+     no application change.
+     [Deploy run 42368411128](https://github.com/hetzy8/kobob/actions/runs/42368411128)
+     green; health `ok` on `04e1664` with every config flag true.
 6. Delete `dev` and recreate it from the release commit, then retarget any
    open PRs to the new `dev` (`gh pr edit <n> --base dev`). This is the hetzy8
    standards release rule (getmygoals' practice): each cycle starts level with
@@ -368,6 +383,28 @@ reports dump age. GitHub disables schedules after 60 days without repository
 activity; when the monitor reports an old dump, check that first and run
 `gh workflow enable db-backup.yml --repo hetzy8/kobob`.
 
+```mermaid
+sequenceDiagram
+    participant workflow as DB Backup (Environment backup, main only)
+    participant script as scripts/db-backup.sh
+    participant neon as Neon, role kobob_backup
+    participant bucket as Backblaze bucket
+    participant monitor as hetzy8/ops nightly monitor
+    actor Admin
+    workflow->>script: 03:00 UTC
+    script->>bucket: rclone lsf daily/ (size of the previous dump)
+    script->>neon: pg_dump --no-owner --no-privileges (up to 6 attempts)
+    script->>script: gzip -9, age -r AGE_PUBLIC_KEY
+    script->>bucket: rclone copyto daily/kobob-<stamp>.sql.gz.age
+    script->>bucket: copyto monthly/ when the month has no dump yet
+    script-->>workflow: exit 1 if under 1000 bytes or under half the previous size
+    monitor->>bucket: 04:30 UTC, list daily/ with the list-only key
+    monitor-->>Admin: newest dump age and size, act when none within 26 h
+    Admin->>bucket: restore drill: download the newest dump
+    Admin->>Admin: age -d with the private key, gunzip, psql into a throwaway Postgres 18
+    Admin->>Admin: verify:restore on the restored and the production database, compare
+```
+
 | Secret in Environment `backup` | Source | Map name |
 |---|---|---|
 | `BACKUP_DATABASE_URL` | Direct, non-pooled URL of the read-only role `kobob_backup` | `KOBOB_BACKUP_DATABASE_URL` |
@@ -376,8 +413,11 @@ activity; when the monitor reports an old dump, check that first and run
 | `AGE_PUBLIC_KEY` | Public half of the age key | `KOBOB_BACKUP_AGE_PUBLIC_KEY` |
 
 The private age key, `KOBOB_BACKUP_AGE_PRIVATE_KEY`, is in Bitwarden only. Losing it
-makes every dump unreadable. Cost: not yet measured; recorded here after the first
-dump.
+makes every dump unreadable. Cost: measured 2026-11-07. The first dump is 345,597 bytes.
+At that size the full retention (32 daily plus 12 monthly dumps) is about 15 MB,
+far inside Backblaze's 10 GB free allowance, so the bucket costs nothing today.
+Beyond the allowance B2 lists $6.95 per TB-month with egress free up to three
+times stored data (pricing page, read 2026-11-07).
 
 A failed run can still have uploaded its dump. If a suspect dump was the first of
 the month, it holds the month's slot in `monthly/`, and later runs skip that month.
@@ -387,7 +427,17 @@ days.
 
 ### Restore drill
 
-Status: not rehearsed.
+Status: rehearsed 2026-11-07 by Yoram, with the agent reading reports. Dump
+`daily/kobob-2026-11-07T13-00-15Z.sql.gz.age`, 345,597 bytes, from the first run
+(42374898823). Restore `0 0 0 0 0`, both reports exit 0, both `problems` empty.
+Restored counts: Item 1,162 (family/private 1,115, internet/public 47), ItemRevision
+1,162, ItemCatalogRecord 1,162, EditorialAudit 1,162, MediaFile 1,121, ExternalSource
+47, ImportRun 2, User 1, Session 3, MembershipAudit 1, RateLimit 3, `_prisma_migrations`
+4; latest and newest migration `20261105133746_media_import`. The only differences
+from production were the host and RateLimit (15, from the same day's header probe).
+Revoked-member denial: not applicable, no revoked member exists. The first attempt
+failed before restoring anything because the runbook mounted the tmpfs at the
+Postgres 17 data path; fixed in the block below.
 
 Run on the operator Mac after the first dump, after any material schema change or
 key change, and at least every six months. Download the newest dump from the
@@ -407,7 +457,7 @@ docker run -d --name kobob-restore \
   -e POSTGRES_PASSWORD="$PW" \
   -e POSTGRES_DB=restore \
   -p 127.0.0.1:55441:5432 \
-  --tmpfs /var/lib/postgresql/data \
+  --tmpfs /var/lib/postgresql \
   postgres:18.6-alpine
 until docker exec kobob-restore pg_isready -q -U postgres -h 127.0.0.1; do sleep 1; done
 export BWS_ACCESS_TOKEN="$(security find-generic-password -s ops-secrets-bws -w)"
@@ -512,7 +562,9 @@ and release flow. Do not run a destructive down migration to make old code start
   public access. Metadata, relationships and media obey the same boundary.
 - [ ] Private media, caches, metadata and preview data boundaries are checked.
 - [ ] Restore drill and rollback procedure are recorded.
-- [ ] Ops monitoring/configuration is added in a separate authorized PR.
+- [x] Ops monitoring/configuration is added in a separate authorized PR. Done
+  2026-11-07: hetzy8/ops PR #86 watches the backup bucket's dump age and
+  `DB Backup`; still to confirm in the first nightly monitor report.
 - [ ] A verified production deployment and its annotated version tag exist.
 
 ## Accepted direction and migration gates

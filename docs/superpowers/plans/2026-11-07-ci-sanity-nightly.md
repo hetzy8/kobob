@@ -8,6 +8,8 @@
 
 **Tech Stack:** GitHub Actions, Playwright 1.64 (`test(title, { tag }, fn)`), npm scripts, PostgreSQL 17 service container. Spec: `docs/superpowers/specs/2026-11-07-ci-sanity-nightly-design.md`.
 
+**Status (2026-11-07):** all steps done and released in v0.7.0 (PR #43 into `dev`, release PR #44). Evidence: twelve `@sanity` tags in `tests/e2e`, `test:e2e:sanity` in package.json, `.github/workflows/ci.yml` named `CI` with the two jobs, `.github/workflows/nightly.yml`, the docs named in Task 4, and the first `Nightly` run 42362016644 green on `dev`. Deviation: Task 5 Step 4's dispatch could only run after the release, since the workflow must exist on `main` to be dispatched (commit `5e5f2e3`). Ticked in one pass on 2026-11-07.
+
 ## Global Constraints
 
 - Workflows keep `permissions: contents: read`, SHA-pinned `actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09` and `actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444`, Node `'24'`, the `postgres:17.7-alpine` service with user `kobob_test`, password `synthetic-ci-only`, database `kobob_test`, and `NEXT_TELEMETRY_DISABLED: '1'`.
@@ -31,7 +33,7 @@
 **Interfaces:**
 - Produces: npm script `test:e2e:sanity` that runs only tests tagged `@sanity`. Task 2 calls it from the workflow.
 
-- [ ] **Step 1: Confirm the current count of tagged tests is zero**
+- [x] **Step 1: Confirm the current count of tagged tests is zero**
 
 Run (needs the test database, see Global Constraints):
 ```bash
@@ -40,7 +42,7 @@ NODE_OPTIONS=--conditions=react-server npx playwright test --grep @sanity --list
 ```
 Expected: `Error: No tests found` (exit code 1). The full list `NODE_OPTIONS=--conditions=react-server npx playwright test --list | tail -1` prints `Total: 36 tests in 3 files`.
 
-- [ ] **Step 2: Add the tag to the twelve tests**
+- [x] **Step 2: Add the tag to the twelve tests**
 
 Playwright's details object goes between the title and the function. Change each `test(` line below exactly as shown; leave the function bodies untouched.
 
@@ -81,7 +83,7 @@ test("the family list pages and filters items needing review", { tag: "@sanity" 
 
 Then run `npx biome format --write tests/e2e` so line wrapping matches the repo style; `npx biome lint tests/e2e` must report no errors.
 
-- [ ] **Step 3: Verify the tag selects exactly twelve tests**
+- [x] **Step 3: Verify the tag selects exactly twelve tests**
 
 Run:
 ```bash
@@ -89,7 +91,7 @@ NODE_OPTIONS=--conditions=react-server npx playwright test --grep @sanity --list
 ```
 Expected: `Total: 12 tests in 3 files`.
 
-- [ ] **Step 4: Add the script**
+- [x] **Step 4: Add the script**
 
 In `package.json`, directly after the `"test:e2e"` line, add:
 ```json
@@ -97,12 +99,12 @@ In `package.json`, directly after the `"test:e2e"` line, add:
 ```
 `"test:e2e"` and `"check"` stay unchanged.
 
-- [ ] **Step 5: Run the sanity subset through the script**
+- [x] **Step 5: Run the sanity subset through the script**
 
 Run: `npm run test:e2e:sanity 2>&1 | tail -3`
 Expected: the last lines include `12 passed` and no `failed`. Note the wall time Playwright prints (expect roughly one to two minutes).
 
-- [ ] **Step 6: Run the full suite once to prove nothing else changed**
+- [x] **Step 6: Run the full suite once to prove nothing else changed**
 
 Run: `npm run test:e2e 2>&1 | tail -3`
 Expected: `36 passed`.
@@ -111,7 +113,7 @@ Expected: `36 passed`.
 
 The sanity subset failed on `archive hides an item` with `net::ERR_ABORTED` and `a stale save keeps` timed out when run first: cold route compilation under `next dev` makes open pages reload mid-test (see the spec, "Found while implementing"). Added `tests/e2e/warm-up.ts` as `globalSetup` in `playwright.config.ts`; it requests every `page.tsx`/`route.ts` under `src/app` once, with `[segments]` replaced by `warm-up`, plus one unknown path for the not-found page. After it, the subset passed 12/12 twice and the full suite 36/36.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add tests/e2e package.json
@@ -135,12 +137,12 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `npm run test:e2e:sanity` from Task 1.
 - Produces: check names `Unit tests` and `E2E tests` under workflow `CI`, which the docs in Task 4 name.
 
-- [ ] **Step 1: Lint the current file to confirm the linter works**
+- [x] **Step 1: Lint the current file to confirm the linter works**
 
 Run: `docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest .github/workflows/ci.yml; echo "exit $?"`
 Expected: no findings, `exit 0`.
 
-- [ ] **Step 2: Replace the file**
+- [x] **Step 2: Replace the file**
 
 Write `.github/workflows/ci.yml` with exactly:
 ```yaml
@@ -230,17 +232,17 @@ jobs:
       - run: npm run build
 ```
 
-- [ ] **Step 3: Lint the new file**
+- [x] **Step 3: Lint the new file**
 
 Run: `docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest .github/workflows/ci.yml; echo "exit $?"`
 Expected: no findings, `exit 0`.
 
-- [ ] **Step 4: Check the job names and scripts resolve**
+- [x] **Step 4: Check the job names and scripts resolve**
 
 Run: `grep -n "name: \|run: npm run" .github/workflows/ci.yml` and compare each `npm run X` with `grep -n '"X"' package.json`.
 Expected: `name: CI`, `name: Unit tests`, `name: E2E tests`; every script named exists in `package.json` (`db:generate`, `db:test:migrate`, `lint`, `typecheck`, `test:unit`, `test:integration`, `test:e2e:sanity`, `build`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add .github/workflows/ci.yml
@@ -264,7 +266,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: the full `test:e2e` script (unchanged) and the same setup steps as Task 2.
 - Produces: workflow `Nightly`, job `Full cycle`, which the docs in Task 4 name; `gh run list --workflow=nightly.yml` lists its runs.
 
-- [ ] **Step 1: Write the file**
+- [x] **Step 1: Write the file**
 
 Write `.github/workflows/nightly.yml` with exactly:
 ```yaml
@@ -322,17 +324,17 @@ jobs:
       - run: npm run build
 ```
 
-- [ ] **Step 2: Lint it**
+- [x] **Step 2: Lint it**
 
 Run: `docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:latest .github/workflows/nightly.yml; echo "exit $?"`
 Expected: no findings, `exit 0`.
 
-- [ ] **Step 3: Check the schedule does not collide with the backup**
+- [x] **Step 3: Check the schedule does not collide with the backup**
 
 Run: `grep -n "cron" .github/workflows/*.yml`
 Expected: `db-backup.yml` at `"0 3 * * *"` and `nightly.yml` at `"0 2 * * *"`; different hours.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add .github/workflows/nightly.yml
@@ -357,7 +359,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Interfaces:**
 - Consumes: names `CI`, `Unit tests`, `E2E tests`, `Nightly`, `Full cycle`, script `test:e2e:sanity`, tag `@sanity` from Tasks 1 to 3.
 
-- [ ] **Step 1: OPERATIONS.md, branch and release flow**
+- [x] **Step 1: OPERATIONS.md, branch and release flow**
 
 Replace line 233:
 ```
@@ -384,7 +386,7 @@ with:
    is green, or its failure is understood; list what the batch contains.
 ```
 
-- [ ] **Step 2: DEVELOPMENT.md, verification section**
+- [x] **Step 2: DEVELOPMENT.md, verification section**
 
 Replace lines 172 to 181 (the two paragraphs starting "`npm run check` runs" and "The PR workflow is bounded") with:
 ```
@@ -407,7 +409,7 @@ shell for a flow production users reach. Everything else runs in `Nightly` on
 either workflow. A workflow change is not verified until GitHub executes it.
 ```
 
-- [ ] **Step 3: AGENTS.md**
+- [x] **Step 3: AGENTS.md**
 
 On lines 88 to 89, change `Merge on CI\n  green plus a reply` so it reads `Merge on a green `CI` run (both jobs)\n  plus a reply`, keeping the surrounding sentence intact:
 ```
@@ -432,16 +434,16 @@ with:
   actual result.
 ```
 
-- [ ] **Step 4: Spec status**
+- [x] **Step 4: Spec status**
 
 In `docs/superpowers/specs/2026-11-07-ci-sanity-nightly-design.md` line 3, change `approved design, not yet implemented` to `implemented 2026-11-07 (plan: ../plans/2026-11-07-ci-sanity-nightly.md)`.
 
-- [ ] **Step 5: Check no stale name remains**
+- [x] **Step 5: Check no stale name remains**
 
 Run: `grep -rn '`Verify`\|name: Verify' AGENTS.md docs .github | grep -v "superpowers/specs/2026-11-07-ci-sanity-nightly-design.md:7"`
 Expected: no output (the spec's problem statement keeps the old name on purpose).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add AGENTS.md docs/OPERATIONS.md docs/DEVELOPMENT.md docs/superpowers/specs/2026-11-07-ci-sanity-nightly-design.md
@@ -459,7 +461,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Interfaces:**
 - Consumes: everything above. Acceptance per the spec: two checks under `CI`, about 2 minutes; a manual `Nightly` run on this branch's file checks out `dev` and passes.
 
-- [ ] **Step 1: Stop the local test database and push**
+- [x] **Step 1: Stop the local test database and push**
 
 Run:
 ```bash
@@ -468,7 +470,7 @@ git push -u origin chore/ci-sanity-nightly
 ```
 Expected: the branch appears on the remote.
 
-- [ ] **Step 2: Open the PR to dev**
+- [x] **Step 2: Open the PR to dev**
 
 ```bash
 gh pr create --base dev --head chore/ci-sanity-nightly \
@@ -488,12 +490,12 @@ EOF
 )"
 ```
 
-- [ ] **Step 3: Watch the CI run**
+- [x] **Step 3: Watch the CI run**
 
 Run: `gh pr checks --watch` then `gh run list --workflow=ci.yml --limit 1 --json databaseId,conclusion,createdAt,updatedAt`
 Expected: two checks, `Unit tests` and `E2E tests`, both `pass`; the run's `updatedAt` minus `createdAt` is about 2 to 3 minutes. If `E2E tests` fails, open its log with `gh run view <id> --log-failed` and fix on this branch before continuing.
 
-- [ ] **Step 4: Dispatch the nightly from this branch**
+- [x] **Step 4: Dispatch the nightly from this branch**
 
 Run:
 ```bash
@@ -506,12 +508,12 @@ Expected: the job `Full cycle` passes. In the run log, the checkout step shows `
 
 **Result of Step 4 (2026-11-07):** not possible before a release. After v0.7.0 reached `main` the same day, `gh workflow run nightly.yml --ref main` ran green in 4m59s, checking out `dev` ([run 42362016644](https://github.com/hetzy8/kobob/actions/runs/42362016644)). `gh workflow run nightly.yml --ref chore/ci-sanity-nightly` answers `HTTP 404: workflow nightly.yml not found on the default branch`, and the workflows API lists only `Verify`, `Vercel Deploy (production)` and Copilot. GitHub indexes a workflow that has only `schedule` and `workflow_dispatch` triggers when its file first reaches the default branch, so `Nightly` (and `DB Backup` from PR #42) exist for GitHub only after the next `dev` → `main` release. The first nightly dispatch is a release-checklist item, not a PR gate. The steps themselves are the ones `CI` ran green on this PR, plus `ref: dev` on the checkout.
 
-- [ ] **Step 5: Comment the evidence on the PR**
+- [x] **Step 5: Comment the evidence on the PR**
 
 ```bash
 gh pr comment --body "CI run: <ci run url> (Unit tests + E2E tests green, <m>m<s>s). Nightly dispatch from this branch: <nightly run url> (Full cycle green on dev)."
 ```
 
-- [ ] **Step 6: Hand over**
+- [x] **Step 6: Hand over**
 
 The owner runs one Codex review per code PR and merges. Report the PR URL, both run URLs and the measured CI duration.

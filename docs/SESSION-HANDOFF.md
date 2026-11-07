@@ -1,6 +1,6 @@
 # Session handoff
 
-**Updated:** 2026-11-04 (current state below); the sections after it are the
+**Updated:** 2026-11-07 (current state below); the sections after it are the
 2026-11-01 record, kept for history; where they disagree, this section wins.
 **Purpose:** resume from repository evidence, not chat or machine-local memory.
 Read AGENTS.md, README.md, docs/README.md, the product spec and plan before changes.
@@ -49,6 +49,19 @@ Read AGENTS.md, README.md, docs/README.md, the product spec and plan before chan
 - Update 2026-11-07: the [ops and backups design](superpowers/specs/2026-11-06-ops-backups-design.md)
   is implemented on `feat/ops-backups`; drill pending (OPERATIONS.md → Restore
   drill).
+- Update 2026-11-07, later: v0.7.0 (`30ef6a6`) released the backups, restore
+  verification, the per-client sign-in limit, `admin:recover` and the CI split
+  with the `Nightly` workflow; v0.7.1 (`04e1664`) re-pinned the backup tooling
+  to PostgreSQL 18 and a current rclone. The same day: the `backup` Environment
+  and its secrets were provisioned, the first dump ran and restored cleanly in
+  a drill, the sign-in limit's address header was probed on production, and
+  hetzy8/ops PR #86 added the bucket to the nightly monitor (all recorded in
+  OPERATIONS.md and ticked in the
+  [ops and backups plan](superpowers/plans/2026-11-07-ops-backups.md)). Open:
+  the plan's Step 12 confirmation (the monitor's first report) and Step 13 (the
+  first scheduled dump), both due 2026-11-08; then the launch item "Restore
+  drill and rollback procedure are recorded". Next work after that: media
+  stages 2–4 (ROADMAP.md → Order of work).
 - Earlier next work: see [ROADMAP.md](ROADMAP.md): phase 2 slice 1
   (navigation, family-only archive and search, branch `feat/public-search`),
   then slices 2-5 (timeline, map, internet sources, life-story editing).
@@ -60,6 +73,8 @@ Read AGENTS.md, README.md, docs/README.md, the product spec and plan before chan
 - PRs #1 and #2 were merged. Yoram then explicitly requested implementation.
 - Current branch: `feat/member-access-foundation`.
 - [PR #3](https://github.com/hetzy8/kobob/pull/3) is open; do not merge by assumption.
+  (2026-11-07: PR #3 and the housekeeping PR #6 named below merged long ago;
+  no PR is open at this update.)
 - Last verified implementation commit: `3a61e6966b33610501ad7f5bb2c29c0d50fd4850`.
   [CI run 41323082083](https://github.com/hetzy8/kobob/actions/runs/41323082083)
   completed successfully. Handoff documentation is a subsequent change; check

@@ -951,7 +951,7 @@ docker run -d --name kobob-restore \
   -e POSTGRES_PASSWORD="$PW" \
   -e POSTGRES_DB=restore \
   -p 127.0.0.1:55441:5432 \
-  --tmpfs /var/lib/postgresql/data \
+  --tmpfs /var/lib/postgresql \
   postgres:17.7-alpine
 sleep 10
 export BWS_ACCESS_TOKEN="$(security find-generic-password -s ops-secrets-bws -w)"
@@ -1109,7 +1109,7 @@ Give each a `note`: its purpose, that it is kobob-only, and for the two keys `Bu
 
 Agents give these commands and read back results; values never pass through an agent. Each step is Yoram's. Steps 1 to 5 can start at once. The ops PR (Task 6) is merged before step 6, and Gate A is passed before step 7, so the secrets exist before the workflow reaches `main` and the first scheduled run cannot fail on missing secrets.
 
-- [ ] **Step 1: Neon.** In the Neon SQL editor, on the kobob project: `SHOW server_version;`. It must start with 17; otherwise stop, since the script and workflow pin 17. Then, with a password from `openssl rand -hex 32`, so nothing in it can break the URL:
+- [x] **Step 1: Neon.** In the Neon SQL editor, on the kobob project: `SHOW server_version;`. It must start with 17; otherwise stop, since the script and workflow pin 17. Then, with a password from `openssl rand -hex 32`, so nothing in it can break the URL:
 
 ```sql
 CREATE ROLE kobob_backup WITH LOGIN PASSWORD '<generated>';
@@ -1117,6 +1117,8 @@ GRANT pg_read_all_data TO kobob_backup;
 ```
 
 Build the direct URL from the existing direct host (no `-pooler`) with `?sslmode=require`, and keep it for step 6.
+
+**Result of Step 1 (2026-11-07):** the server is PostgreSQL 18.6, so the tooling was re-pinned to 18 (PR #45) instead of stopping. The first dump (run 42372314950) failed with "password authentication failed" for `kobob_backup`: the stored URL was well-formed (direct host, right user) but its password did not match the role. Fixed by resetting the password with `ALTER ROLE`, re-granting `pg_read_all_data`, and pushing only `KOBOB_BACKUP_DATABASE_URL` again from ops; a local `psql` on the stored URL then connected as `kobob_backup`.
 
 - [ ] **Step 2: Bucket.** Backblaze console → Create a Bucket: choose a name and keep it out of Git, files private, Object Lock **enabled**. Then on the bucket:
   - Object Lock: default retention, mode Governance, 30 days.
@@ -1136,7 +1138,7 @@ Each key is shown only once. Keep both somewhere private: the CI key is needed a
 
 - [ ] **Step 4: Age key.** Run `age-keygen` with no file argument, so the key stays off disk. Add the `AGE-SECRET-KEY-…` line to Bitwarden `shared` as `KOBOB_BACKUP_AGE_PRIVATE_KEY` in the web app, and keep the `age1…` public key for step 6. Clear the terminal.
 
-- [ ] **Step 5: Rehearse the upload.** This is the first real test of the CI key with the rclone the workflow installs, and a problem found after the release costs another release. From any terminal, pasting the CI key when asked:
+- [x] **Step 5: Rehearse the upload.** This is the first real test of the CI key with the rclone the workflow installs, and a problem found after the release costs another release. From any terminal, pasting the CI key when asked:
 
 ```zsh
 read -rs "I?CI key id: "; echo
@@ -1165,7 +1167,9 @@ Expected: listing status 0 or 3, upload status 0, and the file listed with its s
 
 **Result of Step 5 (2026-11-07):** failed with apt's rclone 1.60.1: `failed to authorize account: ... This request is not currently supported on API version number 1 (400 bad_request)`. Backblaze refuses API v1 for this account, and the workflow installed the same apt package, so it would have failed identically. Fix: `db-backup.yml` installs the pinned release build `v1.75.2` (deb, checksum verified). Rehearse again with the matching image: replace the `ubuntu:24.04` run with `rclone/rclone:1.75.2`, which has rclone as its entrypoint, running the three rclone commands one container each (`lsf` of `daily/`, `copyto` of a one-line file mounted from a temp dir, `lsf` of `rehearsal/`); same expected results.
 
-- [ ] **Step 6: Environment and secrets.**
+**Result of the second rehearsal (2026-11-07 13:52):** passed with `rclone/rclone:1.75.2`. `kobob-rehearsal.txt` is in `rehearsal/` at 10 bytes with Object Lock, confirmed in the Backblaze console. The CI key and the pinned rclone work against this account; the apt package was the only cause. Step 8 should log `rclone v1.75.2`.
+
+- [x] **Step 6: Environment and secrets.**
 
 ```zsh
 E=repos/hetzy8/kobob/environments/backup
@@ -1177,11 +1181,15 @@ unset E B
 
 Then from `~/ops`, on `main`: `node scripts/secrets.mjs rotate KOBOB_BACKUP_DATABASE_URL KOBOB_B2_BACKUP_KEY_ID KOBOB_B2_BACKUP_KEY KOBOB_B2_BACKUP_BUCKET KOBOB_BACKUP_AGE_PUBLIC_KEY` (dry run), again with `--apply`, pasting each value, then `node scripts/secrets.mjs audit`. Confirm the Environment was used: `gh secret list --repo hetzy8/kobob` must show no `B2_*`, `AGE_*` or `BACKUP_*` names. If it shows any, the ops change was missing: delete them and stop.
 
+**Result of Step 6 (2026-11-07):** done. The `backup` Environment exists with a custom branch policy admitting only `main`; its five secrets are `AGE_PUBLIC_KEY`, `B2_BUCKET`, `B2_KEY`, `B2_KEY_ID` and `BACKUP_DATABASE_URL`, written by ops `secrets.mjs rotate --apply` (first write, nothing old to revoke; the five values are now in Bitwarden `shared`). Audit shows only the two pre-existing getmygoals gaps. Repo-level secrets hold only `VERCEL_DEPLOY_HOOK_URL`.
+
 - [x] **Step 7: Release.** Done 2026-11-07 as v0.7.0 (`30ef6a6`, PR #44, deploy run 42361889618 green). Step 1 then found PostgreSQL 18.6 on Neon; PR #45 re-pins the tooling to 18 and needs its own release before step 8. Original text: After Gate A, on Yoram's go: the `dev` → `main` PR per OPERATIONS.md, smoke gate green, tag `v0.7.0`, record it, recreate `dev`. No migration. Confirm on production: the tab title is `יקי חץ` and the banner is gone.
 
-- [ ] **Step 8: First dump.** `gh workflow run db-backup.yml --repo hetzy8/kobob --ref main`, then `gh run watch --repo hetzy8/kobob` on it. Expected: green. In the Backblaze console: the new file is in `daily/` and `monthly/` has one file for this month, with Object Lock on them. A 03:00 run may already have added its own files. Read the public log and confirm it shows sizes and object names only. Then confirm a run on another branch is refused: `gh workflow run db-backup.yml --repo hetzy8/kobob --ref dev` must fail at the Environment gate.
+- [x] **Step 8: First dump.** `gh workflow run db-backup.yml --repo hetzy8/kobob --ref main`, then `gh run watch --repo hetzy8/kobob` on it. Expected: green. In the Backblaze console: the new file is in `daily/` and `monthly/` has one file for this month, with Object Lock on them. A 03:00 run may already have added its own files. Read the public log and confirm it shows sizes and object names only. Then confirm a run on another branch is refused: `gh workflow run db-backup.yml --repo hetzy8/kobob --ref dev` must fail at the Environment gate.
 
-- [ ] **Step 9: Probe the address header.** With a read-only connection to count, and synthetic non-member addresses so no mail is sent:
+**Result of Step 8 (2026-11-07):** run 42374898823 green on `main` with pg_dump 18.6 and rclone v1.75.2: dump 345597 bytes (previous: none), uploaded `daily/kobob-2026-11-07T13-00-15Z.sql.gz.age` and the same name under `monthly/`. The public log shows sizes and object names only. The `dev` dispatch (run 42375012762) failed with no steps run: "Branch \"dev\" is not allowed to deploy to backup due to environment protection rules". The Backblaze console shows `daily/` and `monthly/` at 345.6 KB each, uploaded 15:00 local, beside `rehearsal/`; the bucket has Object Lock enabled.
+
+- [x] **Step 9: Probe the address header.** With a read-only connection to count, and synthetic non-member addresses so no mail is sent:
 
 ```zsh
 export BWS_ACCESS_TOKEN="$(security find-generic-password -s ops-secrets-bws -w)"
@@ -1214,9 +1222,15 @@ From this network, the second count should be at most 1 higher than the first, s
 - +3 from this network: **the header can be spoofed.** A stranger could escape the client limit, though the global limit still holds. Bring it to Yoram, with the option of reading `x-real-ip` or the last `x-forwarded-for` entry.
 - +0 from the other network: **every visitor shares one bucket,** so the lockout fix is not working. Do not record it as confirmed. Fix it before inviting anyone.
 
-- [ ] **Step 10: Restore drill.** Follow OPERATIONS.md → Restore drill. Share the two reports' counts and migration with the agent, never the host.
+**Result of Step 9 (2026-11-07):** confirmed, the header works and cannot be spoofed. Hotspot: exactly +1 (one key, count 3). Home: +2, which is none of the listed outcomes; the rows showed two keys in one quarter with counts 2 and 1, and the home connection turned out to have two public egress addresses (two ISP ranges seen from the same Mac), so Vercel saw two real clients. A second home run at 15:15 settled it: three requests without the spoof headers added one key with count 3, and three with the spoof headers added no key and raised that count to 6. Note for the next run of this probe: a home network with more than one egress address can legitimately give more than +1; only +3 from three requests, or a new key appearing for spoofed requests, means the header is spoofable.
 
-- [ ] **Step 11: Record.** A docs PR into `dev` records, under the evidence rule: dump date and size, the script's counts and migration, who ran it. Also the dump size against the 10 GB allowance, the current price from Backblaze's pricing page, and the probe result. Nothing recorded names the production host. Change `Status: not rehearsed` only then. Tick `Restore drill and rollback procedure` in the launch checklist only after step 13.
+- [x] **Step 10: Restore drill.** Follow OPERATIONS.md → Restore drill. Share the two reports' counts and migration with the agent, never the host.
+
+**Result of Step 10 (2026-11-07):** passed on the second attempt. The first attempt died at `docker run`: the `postgres:18.6-alpine` image refuses a mount at `/var/lib/postgresql/data` (the Postgres 17 path); the runbook now mounts the tmpfs at `/var/lib/postgresql` (PR #53). Restore `0 0 0 0 0`, both report exits 0, both `problems` empty; differences from production were the host and RateLimit only. Counts and migration are in OPERATIONS.md → Restore drill.
+
+- [x] **Step 11: Record.** A docs PR into `dev` records, under the evidence rule: dump date and size, the script's counts and migration, who ran it. Also the dump size against the 10 GB allowance, the current price from Backblaze's pricing page, and the probe result. Nothing recorded names the production host. Change `Status: not rehearsed` only then. Tick `Restore drill and rollback procedure` in the launch checklist only after step 13.
+
+**Result of Step 11 (2026-11-07):** recorded in OPERATIONS.md: the drill under Restore drill, the measured cost under Database backup (about 15 MB at full retention against the 10 GB allowance; $6.95 per TB-month beyond it), and the probe result under the v0.7.0 release note. The launch item stays unticked until step 13.
 
 - [ ] **Step 12: Ops monitor, on Yoram's authorization.** A `hetzy8/ops` PR. Read `.github/monitor/vendors/backblaze.mjs` first, and any workflow that passes `B2_READ_KEY_ID`, to check that a second entry works:
   - `projects.json`, kobob: add `DB Backup` to `workflows`, and `"backupWithinHours": 26`.

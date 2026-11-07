@@ -1,8 +1,10 @@
 # Local development and verification
 
-**Status (2026-11-04):** access foundation, member administration, sign-in
-email and item editing are in production (v0.3.0, see OPERATIONS.md). The only
-production member is the first administrator; no real family content exists.
+**Status (2026-11-07):** access foundation, member administration, sign-in
+email, item editing, public search, private media storage, the catalog import
+and encrypted database backups are in production (v0.7.1, see OPERATIONS.md).
+The only production member is the first administrator; the catalog holds 1,162
+imported items, 47 of them public link cards.
 
 ## Current slice
 
@@ -35,6 +37,21 @@ Checks at this slice: 76 unit tests, 60 integration tests, 28 browser tests
 (11 existing and 17 for item editing), lint, typecheck and the webpack build
 pass (Node 20 locally; the project targets Node 24).
 
+Item lifecycle, from `transition` and `setRightsStatus` in
+`src/services/editorial.ts` (`state` active or archived, `visibility` private
+or public; archived items are always private):
+
+```mermaid
+stateDiagram-v2
+    [*] --> private : create
+    private --> public : publish (a family item needs rightsStatus cleared)
+    public --> public : publish again when the working revision differs
+    public --> private : make-private, or rights withdrawn on a family item
+    private --> archived : archive
+    public --> archived : archive (published revision cleared)
+    archived --> private : restore
+```
+
 Public navigation and search (2026-11-05, phase 2 slice 1): visitors see Life
 story and Search; signed-in members also see Archive, which opens `/family`.
 Achievements and the public `/archive` were removed. `/search` matches the
@@ -42,6 +59,15 @@ published revision's text, tags, non-family-only people, places and years
 (`src/services/search.ts`). Yoram approved the `searchPage` strings on 2026-11-05.
 Checks at this slice: 82 unit, 65 integration and 30 browser tests, lint,
 typecheck and the webpack build pass.
+
+Ops and backups (2026-11-07, v0.7.0): `scripts/db-backup.sh` dumps, encrypts
+with age and uploads to Backblaze (run by `DB Backup`; unit-tested with fake
+tools in `tests/unit/db-backup-script.test.ts`); `npm run verify:restore`
+prints a restored database's table counts and migration, never content
+(`scripts/verify-restore.ts`); the sign-in limit is keyed per client through
+`src/lib/client-address.ts`; `npm run admin:recover` moves a lost
+administrator address (OPERATIONS.md → Runbook). The CI split into `CI` and
+`Nightly` is described under Isolated test database below.
 
 ## Toolchain and engineering choices
 

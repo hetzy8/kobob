@@ -38,7 +38,8 @@ references independently of delivery mode and never assume copying rights.
 | Membership, verification and audit records | PostgreSQL | Separate role/session checks; no public user directory |
 | Original files and browser-friendly derivatives | Private R2 | Separate immutable originals and versioned derivatives; no public bucket |
 | Existing Drive originals and frozen catalog | Drive | Preserved migration evidence; no destructive moves |
-| Database and media recovery copies | Independent private backup destination, to select | Separate credentials, retention and restore rehearsal |
+| Database recovery copies | Private Backblaze B2 bucket (2026-11-07): nightly encrypted dumps, 32-day daily and 366-day monthly retention, Object Lock | Separate read-only database role and bucket-scoped keys; restore rehearsed 2026-11-07 (OPERATIONS.md → Restore drill) |
+| Media recovery copies | Not yet backed up; R2 holds five files and Drive keeps the originals | To decide with media stages 2–4 |
 
 ## Preserve meaning
 
