@@ -28,7 +28,16 @@ jobs:
           sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
           sudo apt-get update -qq
-          sudo apt-get install -y -qq postgresql-client-18 age rclone
+          sudo apt-get install -y -qq postgresql-client-18 age
+          # Ubuntu 24.04's apt rclone is 1.60 (2022) and still calls Backblaze's
+          # API v1, which Backblaze refuses for this account ("not currently
+          # supported on API version number 1", upload rehearsal 2026-11-07).
+          # Install the pinned release build and check its published checksum.
+          RCLONE_VERSION=v1.75.2
+          RCLONE_SHA256=efbfe852181f7191eb3c9043ed1ab49c9b2d0ba045c61c926a5da111c939ec5c
+          curl -fsSLo /tmp/rclone.deb "https://downloads.rclone.org/${RCLONE_VERSION}/rclone-${RCLONE_VERSION}-linux-amd64.deb"
+          echo "${RCLONE_SHA256}  /tmp/rclone.deb" | sha256sum -c -
+          sudo dpkg -i /tmp/rclone.deb
           /usr/lib/postgresql/18/bin/pg_dump --version
           rclone version | head -1
       - name: Dump, encrypt and upload

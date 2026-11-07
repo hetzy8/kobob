@@ -1163,6 +1163,8 @@ unset I K B
 
 Expected: listing status 0 or 3, upload status 0, and the file listed with its size. Any other result stops here and comes back to the agent; `scripts/db-backup.sh` would fail the same way. The rehearsal file holds no data and can be deleted from the console after its 30-day lock. The workflow runs on `ubuntu-latest` and logs its rclone version, so compare that version with this one at step 8.
 
+**Result of Step 5 (2026-11-07):** failed with apt's rclone 1.60.1: `failed to authorize account: ... This request is not currently supported on API version number 1 (400 bad_request)`. Backblaze refuses API v1 for this account, and the workflow installed the same apt package, so it would have failed identically. Fix: `db-backup.yml` installs the pinned release build `v1.75.2` (deb, checksum verified). Rehearse again with the matching image: replace the `ubuntu:24.04` run with `rclone/rclone:1.75.2`, which has rclone as its entrypoint, running the three rclone commands one container each (`lsf` of `daily/`, `copyto` of a one-line file mounted from a temp dir, `lsf` of `rehearsal/`); same expected results.
+
 - [ ] **Step 6: Environment and secrets.**
 
 ```zsh
