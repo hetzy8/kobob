@@ -34,7 +34,9 @@ runs daily at 03:00 UTC and on manual dispatch. Steps:
 
 1. Check that every required secret is present; fail loudly if not.
 2. Install the `pg_dump` matching the Neon server major (the local image is
-   Postgres 17; the plan confirms production's version first).
+   Postgres 17; the plan confirms production's version first. Confirmed
+   2026-11-07: production is 18.6, so the workflow, the script's default and
+   the restore drill pin 18).
 3. Run `pg_dump --no-owner --no-privileges | gzip -9 | age -r <public key>`
    under `set -o pipefail`, retrying while Neon wakes from suspend. Plain SQL
    never reaches disk unencrypted. The whole database is dumped, including
