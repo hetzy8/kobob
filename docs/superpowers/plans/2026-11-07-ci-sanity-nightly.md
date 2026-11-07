@@ -107,6 +107,10 @@ Expected: the last lines include `12 passed` and no `failed`. Note the wall time
 Run: `npm run test:e2e 2>&1 | tail -3`
 Expected: `36 passed`.
 
+- [x] **Step 6a (added during execution): warm the dev server before the suite**
+
+The sanity subset failed on `archive hides an item` with `net::ERR_ABORTED` and `a stale save keeps` timed out when run first: cold route compilation under `next dev` makes open pages reload mid-test (see the spec, "Found while implementing"). Added `tests/e2e/warm-up.ts` as `globalSetup` in `playwright.config.ts`; it requests every `page.tsx`/`route.ts` under `src/app` once, with `[segments]` replaced by `warm-up`, plus one unknown path for the not-found page. After it, the subset passed 12/12 twice and the full suite 36/36.
+
 - [ ] **Step 7: Commit**
 
 ```bash

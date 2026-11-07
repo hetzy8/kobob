@@ -86,6 +86,17 @@ Scripts in `package.json`:
 - `check` keeps running the full suite; it is the local equivalent of the
   nightly, not of the PR gate.
 
+Found while implementing: `next dev` compiles each route on its first request
+and then tells every open page to rebuild; about half a second later those
+pages reload, which aborts any navigation they have in flight
+(`net::ERR_ABORTED`). The full suite hid this because early tests compiled
+every route before the sensitive ones ran; the sanity subset exposed it (the
+archive test failed on `page.goto('/items/<id>')`, and the stale-save test
+timed out when run first). `tests/e2e/warm-up.ts`, a Playwright `globalSetup`,
+requests every route under `src/app` once before any test, deriving the paths
+from the directory so new pages are covered automatically. Tests also run two
+to three times faster against the warmed server.
+
 Rule for new tests: a test joins the sanity set when it proves an access
 boundary, a revocation, a publish decision or the Hebrew RTL shell for a flow
 that production users reach; everything else runs nightly. The set is listed
