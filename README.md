@@ -7,7 +7,10 @@ The domain may change; keep site URLs configurable and item identities stable.
 GitHub work is English; the website interface is Hebrew. Family content still
 requires approval.
 
-**Status (2026-11-04): v0.3.0 in production at https://kobob.vercel.app.**
+**Status (2026-11-07): v0.7.1 in production at https://kobob.vercel.app.**
+Since v0.3.0: public search, private media storage, the catalog import (1,162
+items), encrypted nightly database backups with a rehearsed restore, and the
+CI split with a nightly full cycle (docs/OPERATIONS.md). As of v0.3.0:
 An invitation-only access boundary, member administration (bootstrap,
 add/revoke/restore, member email changes), sign-in email through Resend and
 item editing (shared editing, publishing, conflict checks and the public
@@ -53,7 +56,8 @@ remains visible meanwhile.
 Accepted direction: a small Next.js App Router monolith on Vercel, Neon
 PostgreSQL, private Cloudflare R2 and Resend. Compatible versions and the auth
 library have been selected for the local foundation; confirmation links are the
-initial engineering default. Nothing has been provisioned.
+initial engineering default. Vercel, Neon, Resend, private R2 and the backup
+bucket are provisioned (docs/HOSTING.md); the custom domain is not.
 Aim for low monthly recurring cost with focused dependencies and bounded CI;
 account capacity, numeric cap and actual costs remain to verify. Yoram requests
 daily ops tracking; actual coverage has not been verified here.

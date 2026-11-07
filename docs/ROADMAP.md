@@ -26,12 +26,12 @@ book is planned to premiere there.
 | 0 | Foundation | Hebrew RTL site, invitation-only sign-in by email, member administration, production on Vercel + Neon | Tasks 1–2 | Done (v0.2.0, 2026-11-02) |
 | 1 | Item editing | Archive items with metadata, private-by-default, shared editing with conflict checks, publish / make private / archive / restore, minimal public archive and item pages | Task 3 (items) | Done (v0.3.0, 2026-11-04) |
 | 2 | Public tabs | New site structure (Yoram, 2026-11-05): Home, Life story, Timeline, Map, From the internet and Search for everyone; Archive for family members only; Achievements dropped. Published items reach tabs automatically from their details. Slices: 1 navigation, family-only archive and search ([spec](superpowers/specs/2026-11-05-public-navigation-search-design.md)); 2 timeline; 3 map; 4 internet sources; 5 life-story editing | Task 3 (rest), Task 4 | Slice 1 released (v0.4.0, 2026-11-05); slices 2–5 follow media and import |
-| 3 | Media storage | Private R2 storage, uploads with validation, safe derivatives (thumbnails, web video/audio), playback inside item pages, external sources with attribution ([spec](superpowers/specs/2026-11-05-media-import-design.md), stage 2) | Task 5 | In progress (stage 1 built; stage 2 not started) |
-| 4 | Collection import | The existing collection (now in Drive) and found internet material brought in with their metadata: family items start private and are reviewed item by item, while internet records that explicitly name Yaki publish as link cards (Yoram, 2026-11-05) ([spec](superpowers/specs/2026-11-05-media-import-design.md), stage 1: catalog import with a dry run) | Task 6 | Stage 1 imported 2026-11-06: 1,162 items (1,115 private family items, 47 public link cards; 64 web sources held for later decisions). Files not yet copied (stages 2–4) |
+| 3 | Media storage | Private R2 storage, uploads with validation, safe derivatives (thumbnails, web video/audio), playback inside item pages, external sources with attribution ([spec](superpowers/specs/2026-11-05-media-import-design.md), stage 2) | Task 5 | In progress (private R2 storage and the access-checked media route released in v0.6.0; uploads, derivatives and playback not started) |
+| 4 | Collection import | The existing collection (now in Drive) and found internet material brought in with their metadata: family items start private and are reviewed item by item, while internet records that explicitly name Yaki publish as link cards (Yoram, 2026-11-05) ([spec](superpowers/specs/2026-11-05-media-import-design.md), stage 1: catalog import with a dry run) | Task 6 | Stage 1 imported 2026-11-06: 1,162 items (1,115 private family items, 47 public link cards; 64 web sources held for later decisions). Five selected collages copied to R2 on 2026-11-06; the rest of the files not yet copied (stages 2–4) |
 | 5 | Discovery | Search filters beyond the year (type, people, places, tags); people and place pages. Basic search, timeline and map moved to phase 2 | Task 4, extended | Not started |
 | 6 | The book | Yaki's book presented on the site (form to decide: reader, chapters, excerpts or download) | new | Idea; needs design |
 | 7 | The film | A film made from the book, presented on the site | new | Idea; production is outside this repository |
-| 8 | Launch | `kobob.org` as the address, costs confirmed. Backups with a rehearsed restore moved ahead of the viewer and the first invitation (Yoram, 2026-11-06; see the order below) | Task 7 | Partly done (sender domain) |
+| 8 | Launch | `kobob.org` as the address, costs confirmed. Backups with a rehearsed restore moved ahead of the viewer and the first invitation (Yoram, 2026-11-06; see the order below) | Task 7 | Partly done (sender domain; backups with a rehearsed restore 2026-11-07) |
 | 9 | English version | The whole site also in English (Yoram, 2026-11-05): interface strings, left-to-right layout, and English text for published content (titles, descriptions, life story, people and place names). To decide in its design: address scheme (e.g. `/en/...`), whether English text needs its own publish step, and who translates (family, or machine translation reviewed by the family) | new | Idea; needs design |
 
 Phases 3 and 4 can overlap: import is easier once storage exists, and the
@@ -49,6 +49,9 @@ banner) rather than by palette. Each step gets its own design and release.
    invitation: scheduled database dump to private storage, one rehearsed
    restore, retention and cost approved, keys recorded. Also the operational
    findings: sign-in rate bucket per client, takedown and incident runbook.
+   Done 2026-11-07 (v0.7.0, v0.7.1; OPERATIONS.md → Database backup and
+   Restore drill), except the monitor's first report and the first scheduled
+   dump, due 2026-11-08.
 3. "Pictures on a phone": media stages 2–4 (storage and delivery, file copy,
    review pages) as one milestone; done when Yoram opens ten family photos on
    a phone.

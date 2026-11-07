@@ -1,11 +1,14 @@
 # Operations, cost and launch conventions
 
-**Status (2026-11-06):** in production at `https://kobob.vercel.app` (Vercel
-`fra1`, Neon Frankfurt), v0.5.0. Sign-in email through Resend, item
+**Status (2026-11-07):** in production at `https://kobob.vercel.app` (Vercel
+`fra1`, Neon Frankfurt), v0.7.1. Sign-in email through Resend, item
 editing and public search are live and the first administrator exists. The
 catalog import (stage 1) ran on 2026-11-06: 1,162 items, 47 of them public
-link cards (Import records below). Backups, private media and the custom
-domain (`kobob.org`) are not set up yet; backups come next (ROADMAP.md →
+link cards (Import records below). Private R2 holds the five selected collages
+only. Encrypted database backups run nightly to a private Backblaze bucket, the
+first dump restored cleanly in a drill on 2026-11-07, and the ops monitor
+watches the bucket (Database backup and Restore drill below). The custom
+domain (`kobob.org`) is not set up yet; media stages 2–4 come next (ROADMAP.md →
 Order of work).
 
 ## Ownership
@@ -290,7 +293,8 @@ Release checklist:
      `storage`; `/` and `/search` answer 200; `/family` redirects to sign-in;
      an unknown media id answers 404.
    - `v0.7.0`, 2026-11-07: `30ef6a6` (PR #44), encrypted database backups
-     (`DB Backup`, secrets not yet provisioned), restore verification, the
+     (`DB Backup`; its secrets were provisioned on 2026-11-07, Database backup
+     below), restore verification, the
      per-client sign-in limit, `admin:recover`, and CI split into `CI`
      (`Unit tests`, `E2E tests` with the `@sanity` subset) plus `Nightly`; no
      migration.
@@ -536,7 +540,9 @@ and release flow. Do not run a destructive down migration to make old code start
   public access. Metadata, relationships and media obey the same boundary.
 - [ ] Private media, caches, metadata and preview data boundaries are checked.
 - [ ] Restore drill and rollback procedure are recorded.
-- [ ] Ops monitoring/configuration is added in a separate authorized PR.
+- [x] Ops monitoring/configuration is added in a separate authorized PR. Done
+  2026-11-07: hetzy8/ops PR #86 watches the backup bucket's dump age and
+  `DB Backup`; still to confirm in the first nightly monitor report.
 - [ ] A verified production deployment and its annotated version tag exist.
 
 ## Accepted direction and migration gates

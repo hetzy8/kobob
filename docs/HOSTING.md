@@ -4,7 +4,9 @@
 **Status:** direction accepted. Provisioned 2026-11-02: Vercel project `kobob`
 (`fra1`), Neon project `kobob` (Frankfurt); Resend domain `mail.kobob.org`
 (Ireland) on 2026-11-03. Private R2 media on 2026-11-06, holding only the
-five selected collages so far (OPERATIONS.md → Private media (R2)).
+five selected collages so far (OPERATIONS.md → Private media (R2)). Private
+Backblaze B2 bucket for encrypted database dumps on 2026-11-07, inside the
+free allowance (OPERATIONS.md → Database backup).
 
 ## Decision and alternatives
 
@@ -50,6 +52,8 @@ These public rates were checked on 2026-11-01; no total bill is estimated yet.
 
 - Confirm existing account plans, incremental charges, data regions, sender
   authority, independent backup destination/retention and a monthly budget.
+  (Backup destination and retention: done 2026-11-07, OPERATIONS.md →
+  Database backup. A monthly budget is still not approved.)
 - Check current Vercel request, streaming response and execution limits against
   representative files. The [function limits](https://vercel.com/docs/functions/limitations)
   document a 4.5 MB body limit; do not proxy ordinary large uploads as bodies.
