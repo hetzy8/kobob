@@ -1224,9 +1224,13 @@ From this network, the second count should be at most 1 higher than the first, s
 
 **Result of Step 9 (2026-11-07):** confirmed, the header works and cannot be spoofed. Hotspot: exactly +1 (one key, count 3). Home: +2, which is none of the listed outcomes; the rows showed two keys in one quarter with counts 2 and 1, and the home connection turned out to have two public egress addresses (two ISP ranges seen from the same Mac), so Vercel saw two real clients. A second home run at 15:15 settled it: three requests without the spoof headers added one key with count 3, and three with the spoof headers added no key and raised that count to 6. Note for the next run of this probe: a home network with more than one egress address can legitimately give more than +1; only +3 from three requests, or a new key appearing for spoofed requests, means the header is spoofable.
 
-- [ ] **Step 10: Restore drill.** Follow OPERATIONS.md → Restore drill. Share the two reports' counts and migration with the agent, never the host.
+- [x] **Step 10: Restore drill.** Follow OPERATIONS.md → Restore drill. Share the two reports' counts and migration with the agent, never the host.
 
-- [ ] **Step 11: Record.** A docs PR into `dev` records, under the evidence rule: dump date and size, the script's counts and migration, who ran it. Also the dump size against the 10 GB allowance, the current price from Backblaze's pricing page, and the probe result. Nothing recorded names the production host. Change `Status: not rehearsed` only then. Tick `Restore drill and rollback procedure` in the launch checklist only after step 13.
+**Result of Step 10 (2026-11-07):** passed on the second attempt. The first attempt died at `docker run`: the `postgres:18.6-alpine` image refuses a mount at `/var/lib/postgresql/data` (the Postgres 17 path); the runbook now mounts the tmpfs at `/var/lib/postgresql` (PR #53). Restore `0 0 0 0 0`, both report exits 0, both `problems` empty; differences from production were the host and RateLimit only. Counts and migration are in OPERATIONS.md → Restore drill.
+
+- [x] **Step 11: Record.** A docs PR into `dev` records, under the evidence rule: dump date and size, the script's counts and migration, who ran it. Also the dump size against the 10 GB allowance, the current price from Backblaze's pricing page, and the probe result. Nothing recorded names the production host. Change `Status: not rehearsed` only then. Tick `Restore drill and rollback procedure` in the launch checklist only after step 13.
+
+**Result of Step 11 (2026-11-07):** recorded in OPERATIONS.md: the drill under Restore drill, the measured cost under Database backup (about 15 MB at full retention against the 10 GB allowance; $6.95 per TB-month beyond it), and the probe result under the v0.7.0 release note. The launch item stays unticked until step 13.
 
 - [ ] **Step 12: Ops monitor, on Yoram's authorization.** A `hetzy8/ops` PR. Read `.github/monitor/vendors/backblaze.mjs` first, and any workflow that passes `B2_READ_KEY_ID`, to check that a second entry works:
   - `projects.json`, kobob: add `DB Backup` to `workflows`, and `"backupWithinHours": 26`.

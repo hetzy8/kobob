@@ -294,6 +294,10 @@ Release checklist:
      per-client sign-in limit, `admin:recover`, and CI split into `CI`
      (`Unit tests`, `E2E tests` with the `@sanity` subset) plus `Nightly`; no
      migration.
+     The per-client limit was probed on production on 2026-11-07: requests
+     carrying forged forwarded-for headers add no rate-limit bucket, and a
+     second network gets its own, so the header cannot be spoofed and visitors
+     do not share a bucket.
      [Deploy run 42361889618](https://github.com/hetzy8/kobob/actions/runs/42361889618)
      green; health `ok` on `30ef6a6` with every config flag true; `/`,
      `/search?q=a` and `/sign-in` answer 200; `/family` redirects to sign-in;
@@ -383,8 +387,11 @@ activity; when the monitor reports an old dump, check that first and run
 | `AGE_PUBLIC_KEY` | Public half of the age key | `KOBOB_BACKUP_AGE_PUBLIC_KEY` |
 
 The private age key, `KOBOB_BACKUP_AGE_PRIVATE_KEY`, is in Bitwarden only. Losing it
-makes every dump unreadable. Cost: not yet measured; recorded here after the first
-dump.
+makes every dump unreadable. Cost: measured 2026-11-07. The first dump is 345,597 bytes.
+At that size the full retention (32 daily plus 12 monthly dumps) is about 15 MB,
+far inside Backblaze's 10 GB free allowance, so the bucket costs nothing today.
+Beyond the allowance B2 lists $6.95 per TB-month with egress free up to three
+times stored data (pricing page, read 2026-11-07).
 
 A failed run can still have uploaded its dump. If a suspect dump was the first of
 the month, it holds the month's slot in `monthly/`, and later runs skip that month.
@@ -394,7 +401,17 @@ days.
 
 ### Restore drill
 
-Status: not rehearsed.
+Status: rehearsed 2026-11-07 by Yoram, with the agent reading reports. Dump
+`daily/kobob-2026-11-07T13-00-15Z.sql.gz.age`, 345,597 bytes, from the first run
+(42374898823). Restore `0 0 0 0 0`, both reports exit 0, both `problems` empty.
+Restored counts: Item 1,162 (family/private 1,115, internet/public 47), ItemRevision
+1,162, ItemCatalogRecord 1,162, EditorialAudit 1,162, MediaFile 1,121, ExternalSource
+47, ImportRun 2, User 1, Session 3, MembershipAudit 1, RateLimit 3, `_prisma_migrations`
+4; latest and newest migration `20261105133746_media_import`. The only differences
+from production were the host and RateLimit (15, from the same day's header probe).
+Revoked-member denial: not applicable, no revoked member exists. The first attempt
+failed before restoring anything because the runbook mounted the tmpfs at the
+Postgres 17 data path; fixed in the block below.
 
 Run on the operator Mac after the first dump, after any material schema change or
 key change, and at least every six months. Download the newest dump from the
