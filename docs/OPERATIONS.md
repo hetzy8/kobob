@@ -316,6 +316,15 @@ Release checklist:
      no application change.
      [Deploy run 42368411128](https://github.com/hetzy8/kobob/actions/runs/42368411128)
      green; health `ok` on `04e1664` with every config flag true.
+   - `v0.7.2`, 2026-11-07: `ea84aed` (PR #57), docs only (PRs #49–#56): the
+     day's backup records, the restore runbook's tmpfs mount for Postgres 18,
+     the docs sync pass, four Mermaid diagrams, and four R2 placeholder lines
+     in `.env.example`; no migration, no application change. Tagged as a
+     patch because the runbook fix is operational.
+     [Deploy run 42379500257](https://github.com/hetzy8/kobob/actions/runs/42379500257)
+     green; health `ok` on `ea84aed` with every config flag true; `/`,
+     `/search?q=a` and `/sign-in` answer 200; `/family` redirects to sign-in;
+     `/archive` and an unknown media id answer 404; title `יקי חץ`.
 6. Delete `dev` and recreate it from the release commit, then retarget any
    open PRs to the new `dev` (`gh pr edit <n> --base dev`). This is the hetzy8
    standards release rule (getmygoals' practice): each cycle starts level with
