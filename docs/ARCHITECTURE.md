@@ -52,7 +52,68 @@ library supports pre-approved membership, email-link consumption, and session
 revocation. If the library requires uncontrolled signup, reject that integration
 and record the alternative before proceeding.
 
+As provisioned on 2026-11-07 (HOSTING.md and OPERATIONS.md hold the dates and
+keys; this is the shape):
+
+```mermaid
+flowchart TB
+    Visitor([Visitor]) --> App
+    Member([Member]) --> App
+    subgraph vercel [Vercel, fra1]
+        App[Next.js app<br/>kobob.vercel.app]
+    end
+    App -- Prisma, DATABASE_URL --> Neon[(Neon PostgreSQL<br/>Frankfurt)]
+    App -- S3 read-only key, /api/media --> R2[(Private R2 media)]
+    App -- RESEND_API_KEY, sign-in links --> Resend[Resend<br/>mail.kobob.org]
+    subgraph gha [GitHub Actions, hetzy8/kobob]
+        CI[CI and Nightly]
+        Deploy[Vercel Deploy production]
+        Backup[DB Backup, Environment backup]
+    end
+    Deploy -- deploy hook on main --> App
+    Backup -- pg_dump as kobob_backup --> Neon
+    Backup -- age-encrypted dumps, list and write key --> B2[(Backblaze bucket)]
+    Monitor[hetzy8/ops nightly monitor] -- /api/health --> App
+    Monitor -- gh run list --> gha
+    Monitor -- list-only key --> B2
+```
+
 ## Trust boundary
+
+Sign-in as implemented in `src/lib/auth-system.ts` (`handle`, `issueAllowed`)
+with the client address from `src/lib/client-address.ts`:
+
+```mermaid
+sequenceDiagram
+    actor Visitor
+    participant route as POST /api/access/request
+    participant handle as accessSystem.handle
+    participant issueAllowed
+    participant db as Prisma (User, RateLimit, Verification, Session)
+    participant magicLink as Better Auth magicLink
+    participant sendLink as sendLink (Resend)
+    Visitor->>route: email
+    route->>handle: handle(request)
+    handle-->>Visitor: 403 if the Origin header is not the site, 400 if the body is bad
+    handle->>issueAllowed: email, request
+    issueAllowed->>db: upsert client (hashed clientAddressFrom), global and email keys per quarter hour
+    db-->>issueAllowed: counts against 20 per client, 50 global, 3 per email
+    issueAllowed-->>handle: allowed or not
+    handle->>db: findUnique User by email
+    alt limit reached, or not an active member
+        handle-->>Visitor: accepted: true (same answer, no link)
+    else active member
+        handle->>magicLink: signInMagicLink(email, callback /family)
+        magicLink->>db: store the hashed token, 15 minutes
+        magicLink->>sendLink: link to /verify with the token in the URL fragment
+        sendLink-->>Visitor: email
+        handle-->>Visitor: accepted: true
+    end
+    Visitor->>route: POST /api/access/confirm with the token
+    handle->>magicLink: magicLinkVerify
+    magicLink->>db: consume the token, create the Session
+    handle-->>Visitor: 303 to /family, or to /verify?error=invalid
+```
 
 ### Task 0 compatibility review, 2026-11-01
 

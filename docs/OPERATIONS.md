@@ -379,6 +379,28 @@ reports dump age. GitHub disables schedules after 60 days without repository
 activity; when the monitor reports an old dump, check that first and run
 `gh workflow enable db-backup.yml --repo hetzy8/kobob`.
 
+```mermaid
+sequenceDiagram
+    participant workflow as DB Backup (Environment backup, main only)
+    participant script as scripts/db-backup.sh
+    participant neon as Neon, role kobob_backup
+    participant bucket as Backblaze bucket
+    participant monitor as hetzy8/ops nightly monitor
+    actor Admin
+    workflow->>script: 03:00 UTC
+    script->>bucket: rclone lsf daily/ (size of the previous dump)
+    script->>neon: pg_dump --no-owner --no-privileges (up to 6 attempts)
+    script->>script: gzip -9, age -r AGE_PUBLIC_KEY
+    script->>bucket: rclone copyto daily/kobob-<stamp>.sql.gz.age
+    script->>bucket: copyto monthly/ when the month has no dump yet
+    script-->>workflow: exit 1 if under 1000 bytes or under half the previous size
+    monitor->>bucket: 04:30 UTC, list daily/ with the list-only key
+    monitor-->>Admin: newest dump age and size; act when none within 26 h
+    Admin->>bucket: restore drill: download the newest dump
+    Admin->>Admin: age -d with the private key, gunzip, psql into a throwaway Postgres 18
+    Admin->>Admin: verify:restore on the restored and the production database, compare
+```
+
 | Secret in Environment `backup` | Source | Map name |
 |---|---|---|
 | `BACKUP_DATABASE_URL` | Direct, non-pooled URL of the read-only role `kobob_backup` | `KOBOB_BACKUP_DATABASE_URL` |
