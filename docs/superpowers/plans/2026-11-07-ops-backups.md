@@ -1109,7 +1109,7 @@ Give each a `note`: its purpose, that it is kobob-only, and for the two keys `Bu
 
 Agents give these commands and read back results; values never pass through an agent. Each step is Yoram's. Steps 1 to 5 can start at once. The ops PR (Task 6) is merged before step 6, and Gate A is passed before step 7, so the secrets exist before the workflow reaches `main` and the first scheduled run cannot fail on missing secrets.
 
-- [ ] **Step 1: Neon.** In the Neon SQL editor, on the kobob project: `SHOW server_version;`. It must start with 17; otherwise stop, since the script and workflow pin 17. Then, with a password from `openssl rand -hex 32`, so nothing in it can break the URL:
+- [x] **Step 1: Neon.** In the Neon SQL editor, on the kobob project: `SHOW server_version;`. It must start with 17; otherwise stop, since the script and workflow pin 17. Then, with a password from `openssl rand -hex 32`, so nothing in it can break the URL:
 
 ```sql
 CREATE ROLE kobob_backup WITH LOGIN PASSWORD '<generated>';
@@ -1117,6 +1117,8 @@ GRANT pg_read_all_data TO kobob_backup;
 ```
 
 Build the direct URL from the existing direct host (no `-pooler`) with `?sslmode=require`, and keep it for step 6.
+
+**Result of Step 1 (2026-11-07):** the server is PostgreSQL 18.6, so the tooling was re-pinned to 18 (PR #45) instead of stopping. The first dump (run 42372314950) failed with "password authentication failed" for `kobob_backup`: the stored URL was well-formed (direct host, right user) but its password did not match the role. Fixed by resetting the password with `ALTER ROLE`, re-granting `pg_read_all_data`, and pushing only `KOBOB_BACKUP_DATABASE_URL` again from ops; a local `psql` on the stored URL then connected as `kobob_backup`.
 
 - [ ] **Step 2: Bucket.** Backblaze console → Create a Bucket: choose a name and keep it out of Git, files private, Object Lock **enabled**. Then on the bucket:
   - Object Lock: default retention, mode Governance, 30 days.
@@ -1183,7 +1185,9 @@ Then from `~/ops`, on `main`: `node scripts/secrets.mjs rotate KOBOB_BACKUP_DATA
 
 - [x] **Step 7: Release.** Done 2026-11-07 as v0.7.0 (`30ef6a6`, PR #44, deploy run 42361889618 green). Step 1 then found PostgreSQL 18.6 on Neon; PR #45 re-pins the tooling to 18 and needs its own release before step 8. Original text: After Gate A, on Yoram's go: the `dev` → `main` PR per OPERATIONS.md, smoke gate green, tag `v0.7.0`, record it, recreate `dev`. No migration. Confirm on production: the tab title is `יקי חץ` and the banner is gone.
 
-- [ ] **Step 8: First dump.** `gh workflow run db-backup.yml --repo hetzy8/kobob --ref main`, then `gh run watch --repo hetzy8/kobob` on it. Expected: green. In the Backblaze console: the new file is in `daily/` and `monthly/` has one file for this month, with Object Lock on them. A 03:00 run may already have added its own files. Read the public log and confirm it shows sizes and object names only. Then confirm a run on another branch is refused: `gh workflow run db-backup.yml --repo hetzy8/kobob --ref dev` must fail at the Environment gate.
+- [x] **Step 8: First dump.** `gh workflow run db-backup.yml --repo hetzy8/kobob --ref main`, then `gh run watch --repo hetzy8/kobob` on it. Expected: green. In the Backblaze console: the new file is in `daily/` and `monthly/` has one file for this month, with Object Lock on them. A 03:00 run may already have added its own files. Read the public log and confirm it shows sizes and object names only. Then confirm a run on another branch is refused: `gh workflow run db-backup.yml --repo hetzy8/kobob --ref dev` must fail at the Environment gate.
+
+**Result of Step 8 (2026-11-07):** run 42374898823 green on `main` with pg_dump 18.6 and rclone v1.75.2: dump 345597 bytes (previous: none), uploaded `daily/kobob-2026-11-07T13-00-15Z.sql.gz.age` and the same name under `monthly/`. The public log shows sizes and object names only. The `dev` dispatch (run 42375012762) failed with no steps run: "Branch \"dev\" is not allowed to deploy to backup due to environment protection rules". Console check of the two objects and their Object Lock is Yoram's.
 
 - [ ] **Step 9: Probe the address header.** With a read-only connection to count, and synthetic non-member addresses so no mail is sent:
 
