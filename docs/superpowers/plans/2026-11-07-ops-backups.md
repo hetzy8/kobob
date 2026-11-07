@@ -1175,7 +1175,7 @@ unset E B
 
 Then from `~/ops`, on `main`: `node scripts/secrets.mjs rotate KOBOB_BACKUP_DATABASE_URL KOBOB_B2_BACKUP_KEY_ID KOBOB_B2_BACKUP_KEY KOBOB_B2_BACKUP_BUCKET KOBOB_BACKUP_AGE_PUBLIC_KEY` (dry run), again with `--apply`, pasting each value, then `node scripts/secrets.mjs audit`. Confirm the Environment was used: `gh secret list --repo hetzy8/kobob` must show no `B2_*`, `AGE_*` or `BACKUP_*` names. If it shows any, the ops change was missing: delete them and stop.
 
-- [ ] **Step 7: Release.** After Gate A, on Yoram's go: the `dev` → `main` PR per OPERATIONS.md, smoke gate green, tag `v0.7.0`, record it, recreate `dev`. No migration. Confirm on production: the tab title is `יקי חץ` and the banner is gone.
+- [x] **Step 7: Release.** Done 2026-11-07 as v0.7.0 (`30ef6a6`, PR #44, deploy run 42361889618 green). Step 1 then found PostgreSQL 18.6 on Neon; PR #45 re-pins the tooling to 18 and needs its own release before step 8. Original text: After Gate A, on Yoram's go: the `dev` → `main` PR per OPERATIONS.md, smoke gate green, tag `v0.7.0`, record it, recreate `dev`. No migration. Confirm on production: the tab title is `יקי חץ` and the banner is gone.
 
 - [ ] **Step 8: First dump.** `gh workflow run db-backup.yml --repo hetzy8/kobob --ref main`, then `gh run watch --repo hetzy8/kobob` on it. Expected: green. In the Backblaze console: the new file is in `daily/` and `monthly/` has one file for this month, with Object Lock on them. A 03:00 run may already have added its own files. Read the public log and confirm it shows sizes and object names only. Then confirm a run on another branch is refused: `gh workflow run db-backup.yml --repo hetzy8/kobob --ref dev` must fail at the Environment gate.
 
