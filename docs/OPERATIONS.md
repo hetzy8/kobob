@@ -414,7 +414,7 @@ docker run -d --name kobob-restore \
   -e POSTGRES_PASSWORD="$PW" \
   -e POSTGRES_DB=restore \
   -p 127.0.0.1:55441:5432 \
-  --tmpfs /var/lib/postgresql/data \
+  --tmpfs /var/lib/postgresql \
   postgres:18.6-alpine
 until docker exec kobob-restore pg_isready -q -U postgres -h 127.0.0.1; do sleep 1; done
 export BWS_ACCESS_TOKEN="$(security find-generic-password -s ops-secrets-bws -w)"
