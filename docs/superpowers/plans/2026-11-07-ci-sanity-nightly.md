@@ -504,6 +504,8 @@ gh run watch <databaseId> --exit-status
 ```
 Expected: the job `Full cycle` passes. In the run log, the checkout step shows `ref: dev`. If it fails on a browser test, that is a real nightly finding about `dev`; record it in the PR rather than retrying.
 
+**Result of Step 4 (2026-11-07):** not possible before a release. `gh workflow run nightly.yml --ref chore/ci-sanity-nightly` answers `HTTP 404: workflow nightly.yml not found on the default branch`, and the workflows API lists only `Verify`, `Vercel Deploy (production)` and Copilot. GitHub indexes a workflow that has only `schedule` and `workflow_dispatch` triggers when its file first reaches the default branch, so `Nightly` (and `DB Backup` from PR #42) exist for GitHub only after the next `dev` → `main` release. The first nightly dispatch is a release-checklist item, not a PR gate. The steps themselves are the ones `CI` ran green on this PR, plus `ref: dev` on the checkout.
+
 - [ ] **Step 5: Comment the evidence on the PR**
 
 ```bash
