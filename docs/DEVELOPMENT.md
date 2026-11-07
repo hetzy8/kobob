@@ -343,8 +343,8 @@ A transaction-scoped advisory lock serializes administration and bootstrap,
 including concurrent last-verified-active-admin checks. A private audit table
 records actor/target IDs, action and time without copying email values. No role
 promotion UI, member deletion or production data is included. Administrator email
-changes are deliberately unavailable in the UI; a verified owner-recovery flow
-is still required before enabling that operation for the sole administrator.
+changes for the sole administrator are deliberately unavailable in the UI; the
+owner-recovery path is `npm run admin:recover` (OPERATIONS.md → Runbook).
 
 `npm run admin:bootstrap` is an explicit interactive operator command. Configure
 an isolated local database and server settings in the process environment first;

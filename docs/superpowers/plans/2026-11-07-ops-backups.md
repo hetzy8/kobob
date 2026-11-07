@@ -1009,8 +1009,8 @@ key) are replaced by hand. A leaked private age key exposes every dump still in 
 bucket: generate a new key, and treat the old dumps as exposed until they expire.
 
 **Lost administrator email.** Yoram verifies the owner's identity outside the site,
-then runs `npm run admin:bootstrap` as in Email delivery above. There is no public
-reset path.
+then runs `npm run admin:recover` (added after review: `admin:bootstrap` refuses once
+any administrator exists). There is no public reset path.
 
 **Site down.** Check `/api/health` first: a 503 with `databaseUrl` true points at the
 database, and `commit` shows what is live. Then the latest `Vercel Deploy

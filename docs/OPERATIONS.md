@@ -463,9 +463,14 @@ until the last dump using it expires, up to 367 days, or those dumps become
 unreadable. Treat the old dumps as exposed until they expire.
 
 **Lost administrator email.** Yoram verifies the owner's identity outside the site,
-then runs `npm run admin:bootstrap` as in Email delivery above. There is no public
-reset path, and no public admin-creation endpoint. Adding a replacement admin
-revokes obsolete access and records an audit event.
+then runs `npm run admin:recover` in their own terminal, with the same values as the
+`admin:bootstrap` command in Email delivery above. `admin:bootstrap` only creates the
+first administrator and refuses here. `admin:recover` asks for the lost address and the
+replacement, and needs an explicit RECOVER. It moves that active administrator to the
+replacement, which no other member may already hold; ends their sessions and pending
+links; requires the new mailbox to verify; and records a `recover` audit event. Sign in
+from the new mailbox, then check that the old address gets no link. There is no public
+reset path, and no public admin-creation endpoint.
 
 **Site down.** Check `/api/health` first: a 503 with `config.databaseUrl` true points
 at the database, and `commit` shows what is live. Then the latest `Vercel Deploy

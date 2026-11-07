@@ -2,6 +2,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createDatabase } from "../../src/lib/database";
 import { readServerConfig, requireTestDatabaseUrl } from "../../src/lib/config";
 import { createAuthSystem } from "../../src/lib/auth-system";
+import { recoverAdmin } from "../../src/services/members";
 
 const db = createDatabase(requireTestDatabaseUrl(process.env));
 const config = readServerConfig({
@@ -475,6 +476,50 @@ it("cleans expired unbound housekeeping rows during verification", async () => {
 	expect(await db.session.count()).toBe(1);
 });
 
+it("moves a recovered administrator to the new mailbox and ends old access", async () => {
+	const { auth, headers } = await login("admin");
+	expect((await auth.requireMember(headers)).role).toBe("admin");
+	// The library's five-second lock from that sign-in, long expired in real use.
+	await db.verification.updateMany({
+		where: { identifier: { startsWith: "revoke-unproven-account-access:" } },
+		data: { expiresAt: new Date(Date.now() - 1000) },
+	});
+	await auth.handle(
+		post("/api/access/request", { email: "family@example.test" }),
+	);
+	const oldLink = deliveries.at(-1);
+	if (!oldLink) throw new Error("No synthetic delivery captured");
+	const oldToken = new URLSearchParams(new URL(oldLink.url).hash.slice(1)).get(
+		"token",
+	);
+	await recoverAdmin(db, "family@example.test", "replacement@example.test");
+	await expect(auth.requireMember(headers)).rejects.toThrow("UNAUTHORIZED");
+	const refused = await auth.handle(
+		post("/api/access/confirm", { token: oldToken ?? "" }),
+	);
+	expect(cookies(refused)).not.toContain("session");
+	deliveries = [];
+	await auth.handle(
+		post("/api/access/request", { email: "family@example.test" }),
+	);
+	expect(deliveries).toEqual([]);
+	await auth.handle(
+		post("/api/access/request", { email: "replacement@example.test" }),
+	);
+	const newLink = deliveries.at(-1);
+	if (!newLink) throw new Error("No synthetic delivery captured");
+	const newToken = new URLSearchParams(new URL(newLink.url).hash.slice(1)).get(
+		"token",
+	);
+	const confirmed = await auth.handle(
+		post("/api/access/confirm", { token: newToken ?? "" }),
+	);
+	const member = await auth.requireMember(
+		new Headers({ cookie: cookies(confirmed) }),
+	);
+	expect(member.role).toBe("admin");
+});
+
 describe("per-client issuance limits", () => {
 	const perClient = () =>
 		createAuthSystem({
@@ -506,6 +551,53 @@ describe("per-client issuance limits", () => {
 		expect(deliveries.map(({ email }) => email)).toEqual([
 			"family@example.test",
 		]);
+	});
+
+	it("keeps a synchronized burst from one client off the global limit", async () => {
+		await invite();
+		const burst = 60;
+		let arrived = 0;
+		let release = () => {};
+		const allArrived = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		// Every request finishes its first limit read before any counter moves.
+		const gated = db.$extends({
+			query: {
+				rateLimit: {
+					async findUnique({ args, query }) {
+						if (++arrived >= burst) release();
+						await allArrived;
+						return query(args);
+					},
+				},
+			},
+		}) as unknown as typeof db;
+		const auth = createAuthSystem({
+			db: gated,
+			config,
+			sendLink: async (message) => {
+				deliveries.push(message);
+			},
+			clientAddress: (request) => request.headers.get("x-test-client") ?? "",
+		});
+		await Promise.all(
+			Array.from({ length: burst }, (_, n) =>
+				auth.handle(from("stranger", `unknown${n}@example.test`)),
+			),
+		);
+		expect(await globalCount()).toBe(20);
+		await perClient().handle(from("relative", "family@example.test"));
+		expect(deliveries.map(({ email }) => email)).toEqual([
+			"family@example.test",
+		]);
+	}, 30_000);
+
+	it("allocates no rows for new addresses once the global limit is reached", async () => {
+		for (let n = 0; n < 60; n++)
+			await perClient().handle(from(`client${n}`, `unknown${n}@example.test`));
+		expect(await globalCount()).toBe(50);
+		expect(await db.rateLimit.count()).toBe(101);
 	});
 
 	it("creates no rows for a client already over its limit", async () => {

@@ -179,30 +179,31 @@ export function createAuthSystem({
 		const hash = (value: string) =>
 			createHmac("sha256", config.authSecret).update(value).digest("hex");
 		const clientKey = `client:${hash(clientAddress?.(request) || "unresolved-client")}:${bucket}`;
-		const clientMax = 20;
-		// A client at its limit is refused before any counter moves, so one
-		// stranger cannot use up the global limit for everyone. Concurrent
-		// requests can pass this read together; the atomic sequence below still
-		// bounds them, and a slight overshoot of the global count is harmless.
-		const client = await db.rateLimit.findUnique({
-			where: { key: clientKey },
+		const globalKey = `global:${bucket}`;
+		const globalMax = 50;
+		// Before allocating a row for an attacker-controlled address: once the
+		// global limit is reached, new addresses add nothing. Concurrent requests
+		// can pass this read together, which costs only short-lived rows.
+		const global = await db.rateLimit.findUnique({
+			where: { key: globalKey },
 			select: { count: true },
 		});
-		if (client && client.count >= clientMax) return false;
+		if (global && global.count >= globalMax) return false;
+		// The client's atomic increment comes before the global one and is the
+		// gate: only its first 20 requests reach the global counter, however many
+		// arrive at once, so one client cannot use up the limit for everyone.
 		const limits = [
-			{ key: `global:${bucket}`, max: 50 },
-			{ key: clientKey, max: clientMax },
+			{ key: clientKey, max: 20 },
+			{ key: globalKey, max: globalMax },
 			{ key: `email:${hash(email)}:${bucket}`, max: 3 },
 		];
-		// Check coarse limits first, before allocating rows for attacker-controlled
-		// addresses. Each counter increment is a native atomic database upsert.
-		for (const [index, limit] of limits.entries()) {
+		for (const limit of limits) {
 			const row = await db.rateLimit.upsert({
 				where: { key: limit.key },
 				create: { key: limit.key, count: 1, lastRequest: BigInt(Date.now()) },
 				update: { count: { increment: 1 }, lastRequest: BigInt(Date.now()) },
 			});
-			if (index === 0 && row.count === 1) {
+			if (limit.key === globalKey && row.count === 1) {
 				await db.rateLimit.deleteMany({
 					where: { lastRequest: { lt: BigInt(Date.now() - 86400000) } },
 				});
