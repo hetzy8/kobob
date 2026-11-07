@@ -37,6 +37,21 @@ Checks at this slice: 76 unit tests, 60 integration tests, 28 browser tests
 (11 existing and 17 for item editing), lint, typecheck and the webpack build
 pass (Node 20 locally; the project targets Node 24).
 
+Item lifecycle, from `transition` and `setRightsStatus` in
+`src/services/editorial.ts` (`state` active or archived, `visibility` private
+or public; archived items are always private):
+
+```mermaid
+stateDiagram-v2
+    [*] --> private : create
+    private --> public : publish (a family item needs rightsStatus cleared)
+    public --> public : publish again when the working revision differs
+    public --> private : make-private, or rights withdrawn on a family item
+    private --> archived : archive
+    public --> archived : archive (published revision cleared)
+    archived --> private : restore
+```
+
 Public navigation and search (2026-11-05, phase 2 slice 1): visitors see Life
 story and Search; signed-in members also see Archive, which opens `/family`.
 Achievements and the public `/archive` were removed. `/search` matches the
