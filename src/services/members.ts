@@ -24,6 +24,45 @@ export async function bootstrapAdmin(db: Database, email: string) {
 		return member.id;
 	});
 }
+// Every access change requires fresh verification and ends existing access.
+async function applyAccessChange(
+	tx: Prisma.TransactionClient,
+	id: string,
+	change: Prisma.UserUpdateInput,
+) {
+	await tx.user.update({
+		where: { id },
+		data: {
+			...change,
+			emailVerified: false,
+			accessVersion: { increment: 1 },
+		},
+	});
+	await tx.session.deleteMany({ where: { userId: id } });
+	await tx.verification.deleteMany({ where: { memberId: id } });
+}
+// Owner-only recovery for a lost administrator mailbox. Reached only through
+// the operator command, which needs the direct database credential.
+export async function recoverAdmin(
+	db: Database,
+	currentEmail: string,
+	newEmail: string,
+) {
+	const current = emailSchema.parse(currentEmail);
+	const replacement = emailSchema.parse(newEmail);
+	return db.$transaction(async (tx) => {
+		await lock(tx);
+		const admin = await tx.user.findUnique({ where: { email: current } });
+		if (admin?.role !== "admin" || admin.status !== "active")
+			throw new Error("ADMIN_NOT_FOUND");
+		if (await tx.user.findUnique({ where: { email: replacement } }))
+			throw new Error("MEMBER_ALREADY_EXISTS");
+		await applyAccessChange(tx, admin.id, { email: replacement });
+		await tx.membershipAudit.create({
+			data: { targetId: admin.id, action: "recover" },
+		});
+	});
+}
 export function createMemberService(
 	db: Database,
 	requireAdmin: () => Promise<MemberContext>,
@@ -67,18 +106,13 @@ export function createMemberService(
 				throw new Error("INVALID_STATE");
 			if (action === "revoke" && target.status !== "active")
 				throw new Error("INVALID_STATE");
-			await tx.user.update({
-				where: { id },
-				data: {
-					...(action === "email"
-						? { email: normalized }
-						: { status: action === "revoke" ? "revoked" : "active" }),
-					emailVerified: false,
-					accessVersion: { increment: 1 },
-				},
-			});
-			await tx.session.deleteMany({ where: { userId: id } });
-			await tx.verification.deleteMany({ where: { memberId: id } });
+			await applyAccessChange(
+				tx,
+				id,
+				action === "email"
+					? { email: normalized }
+					: { status: action === "revoke" ? "revoked" : "active" },
+			);
 			await tx.membershipAudit.create({
 				data: { actorId: actor.id, targetId: id, action },
 			});

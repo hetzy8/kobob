@@ -155,11 +155,13 @@ stranger's 51 requests would still exhaust the global limit for everyone.
   falls back to the current shared bucket, which only local runs reach. The
   plan confirms Vercel's handling of this header on a preview or production
   request before relying on it.
-- `issueAllowed` first reads the client's counter without incrementing it. A
-  client already over its limit (20) is refused without touching any other
-  counter or creating a row. Otherwise the existing atomic sequence runs
-  unchanged, keeping the coarse check before rows are allocated. Concurrent
-  requests can overshoot slightly, which is harmless.
+- `issueAllowed` first reads the global counter without incrementing it, and
+  refuses at its limit before any row is allocated. It then increments the
+  client counter (limit 20), the global counter and the per-address counter, in
+  that order, each atomically. Only a client's first 20 requests can reach the
+  global counter, however many arrive at once. (Changed in review: the first
+  version read the client counter, and a synchronized burst passed that read
+  together and used up the global limit.)
 
 Accepted limits: many addresses together can still exhaust the global limit,
 which protects the mail quota; and someone who knows a member's email can block
@@ -185,7 +187,8 @@ A new `Runbook` section in `OPERATIONS.md`, procedures only, no real data:
 - **Leaked secret.** Which secret reaches which target (`ops/secrets`), rotate
   it through the tooling, and check what it could have reached.
 - **Lost administrator email.** The owner-verified operator procedure with
-  `scripts/bootstrap-admin.ts`; no public reset path.
+  `scripts/recover-admin.ts` (changed in review: `scripts/bootstrap-admin.ts`
+  refuses once any administrator exists); no public reset path.
 - **Site down.** Health endpoint, deploy run, Neon and Vercel status, rollback
   rules from the release section.
 

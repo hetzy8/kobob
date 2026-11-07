@@ -1,0 +1,39 @@
+name: DB Backup
+# Daily encrypted dump to Backblaze B2 (docs/OPERATIONS.md → Database backup).
+# Schedules run only from main, and the backup Environment admits only main.
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch: {}
+permissions:
+  contents: read
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: backup
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Install tools
+        run: |
+          set -euo pipefail
+          # pg_dump refuses a server newer than itself; matches Neon's major.
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17 age rclone
+          /usr/lib/postgresql/17/bin/pg_dump --version
+          rclone version | head -1
+      - name: Dump, encrypt and upload
+        env:
+          BACKUP_DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+          B2_KEY: ${{ secrets.B2_KEY }}
+          B2_BUCKET: ${{ secrets.B2_BUCKET }}
+          AGE_PUBLIC_KEY: ${{ secrets.AGE_PUBLIC_KEY }}
+        run: bash scripts/db-backup.sh

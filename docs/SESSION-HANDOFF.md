@@ -46,6 +46,9 @@ Read AGENTS.md, README.md, docs/README.md, the product spec and plan before chan
   copied to production, private (OPERATIONS.md → Import records). Next: the
   backup implementation plan. Before copying the whole collection, see the
   deviation dated 2026-11-06 in the media plan.
+- Update 2026-11-07: the [ops and backups design](superpowers/specs/2026-11-06-ops-backups-design.md)
+  is implemented on `feat/ops-backups`; drill pending (OPERATIONS.md → Restore
+  drill).
 - Earlier next work: see [ROADMAP.md](ROADMAP.md): phase 2 slice 1
   (navigation, family-only archive and search, branch `feat/public-search`),
   then slices 2-5 (timeline, map, internet sources, life-story editing).

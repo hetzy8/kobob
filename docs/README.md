@@ -21,7 +21,8 @@ All documents are English. The website itself will be Hebrew RTL.
 | [Public navigation and search plan](superpowers/plans/2026-11-05-public-navigation-search.md) | Tasks for phase 2 slice 1 | All steps done |
 | [Media and import design](superpowers/specs/2026-11-05-media-import-design.md) | Private media storage and the catalog import, in stages | Stage 1 in production 2026-11-06; storage, media route and copy tool in v0.6.0; large-file measurement, full copy and viewer not started |
 | [Media and import plan](superpowers/plans/2026-11-05-media-import.md) | Tasks in four stages: catalog import, storage and delivery, file copy, review pages | Stage 1 done through Gate A; Tasks 6, 7, 9 and 10 released for the selected collages; the rest follows ops and backups |
-| [Ops and backups design](superpowers/specs/2026-11-06-ops-backups-design.md) | Database backup, restore drill, sign-in lockout fix, runbook, development wording | Approved 2026-11-06; not implemented |
+| [Ops and backups design](superpowers/specs/2026-11-06-ops-backups-design.md) | Database backup, restore drill, sign-in lockout fix, runbook, development wording | Implemented on `feat/ops-backups`; drill pending |
+| [Ops and backups plan](superpowers/plans/2026-11-07-ops-backups.md) | Tasks for the backup workflow, restore check, sign-in limit fix, runbook and wording | Implemented on `feat/ops-backups`; drill pending |
 | [Operations](OPERATIONS.md) | Secrets, costs, backups, releases, domain and launch gates | In production; release records, Resend lessons, kobob.org plan |
 
 ## Source of truth
