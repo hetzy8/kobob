@@ -1189,7 +1189,7 @@ Then from `~/ops`, on `main`: `node scripts/secrets.mjs rotate KOBOB_BACKUP_DATA
 
 **Result of Step 8 (2026-11-07):** run 42374898823 green on `main` with pg_dump 18.6 and rclone v1.75.2: dump 345597 bytes (previous: none), uploaded `daily/kobob-2026-11-07T13-00-15Z.sql.gz.age` and the same name under `monthly/`. The public log shows sizes and object names only. The `dev` dispatch (run 42375012762) failed with no steps run: "Branch \"dev\" is not allowed to deploy to backup due to environment protection rules". The Backblaze console shows `daily/` and `monthly/` at 345.6 KB each, uploaded 15:00 local, beside `rehearsal/`; the bucket has Object Lock enabled.
 
-- [ ] **Step 9: Probe the address header.** With a read-only connection to count, and synthetic non-member addresses so no mail is sent:
+- [x] **Step 9: Probe the address header.** With a read-only connection to count, and synthetic non-member addresses so no mail is sent:
 
 ```zsh
 export BWS_ACCESS_TOKEN="$(security find-generic-password -s ops-secrets-bws -w)"
@@ -1221,6 +1221,8 @@ From this network, the second count should be at most 1 higher than the first, s
 - At most +1, then +1 from the other network: the header works and cannot be spoofed.
 - +3 from this network: **the header can be spoofed.** A stranger could escape the client limit, though the global limit still holds. Bring it to Yoram, with the option of reading `x-real-ip` or the last `x-forwarded-for` entry.
 - +0 from the other network: **every visitor shares one bucket,** so the lockout fix is not working. Do not record it as confirmed. Fix it before inviting anyone.
+
+**Result of Step 9 (2026-11-07):** confirmed, the header works and cannot be spoofed. Hotspot: exactly +1 (one key, count 3). Home: +2, which is none of the listed outcomes; the rows showed two keys in one quarter with counts 2 and 1, and the home connection turned out to have two public egress addresses (two ISP ranges seen from the same Mac), so Vercel saw two real clients. A second home run at 15:15 settled it: three requests without the spoof headers added one key with count 3, and three with the spoof headers added no key and raised that count to 6. Note for the next run of this probe: a home network with more than one egress address can legitimately give more than +1; only +3 from three requests, or a new key appearing for spoofed requests, means the header is spoofable.
 
 - [ ] **Step 10: Restore drill.** Follow OPERATIONS.md → Restore drill. Share the two reports' counts and migration with the agent, never the host.
 
