@@ -1136,7 +1136,7 @@ Each key is shown only once. Keep both somewhere private: the CI key is needed a
 
 - [ ] **Step 4: Age key.** Run `age-keygen` with no file argument, so the key stays off disk. Add the `AGE-SECRET-KEY-…` line to Bitwarden `shared` as `KOBOB_BACKUP_AGE_PRIVATE_KEY` in the web app, and keep the `age1…` public key for step 6. Clear the terminal.
 
-- [ ] **Step 5: Rehearse the upload.** This is the first real test of the CI key with the rclone the workflow installs, and a problem found after the release costs another release. From any terminal, pasting the CI key when asked:
+- [x] **Step 5: Rehearse the upload.** This is the first real test of the CI key with the rclone the workflow installs, and a problem found after the release costs another release. From any terminal, pasting the CI key when asked:
 
 ```zsh
 read -rs "I?CI key id: "; echo
@@ -1165,7 +1165,9 @@ Expected: listing status 0 or 3, upload status 0, and the file listed with its s
 
 **Result of Step 5 (2026-11-07):** failed with apt's rclone 1.60.1: `failed to authorize account: ... This request is not currently supported on API version number 1 (400 bad_request)`. Backblaze refuses API v1 for this account, and the workflow installed the same apt package, so it would have failed identically. Fix: `db-backup.yml` installs the pinned release build `v1.75.2` (deb, checksum verified). Rehearse again with the matching image: replace the `ubuntu:24.04` run with `rclone/rclone:1.75.2`, which has rclone as its entrypoint, running the three rclone commands one container each (`lsf` of `daily/`, `copyto` of a one-line file mounted from a temp dir, `lsf` of `rehearsal/`); same expected results.
 
-- [ ] **Step 6: Environment and secrets.**
+**Result of the second rehearsal (2026-11-07 13:52):** passed with `rclone/rclone:1.75.2`. `kobob-rehearsal.txt` is in `rehearsal/` at 10 bytes with Object Lock, confirmed in the Backblaze console. The CI key and the pinned rclone work against this account; the apt package was the only cause. Step 8 should log `rclone v1.75.2`.
+
+- [x] **Step 6: Environment and secrets.**
 
 ```zsh
 E=repos/hetzy8/kobob/environments/backup
@@ -1176,6 +1178,8 @@ unset E B
 ```
 
 Then from `~/ops`, on `main`: `node scripts/secrets.mjs rotate KOBOB_BACKUP_DATABASE_URL KOBOB_B2_BACKUP_KEY_ID KOBOB_B2_BACKUP_KEY KOBOB_B2_BACKUP_BUCKET KOBOB_BACKUP_AGE_PUBLIC_KEY` (dry run), again with `--apply`, pasting each value, then `node scripts/secrets.mjs audit`. Confirm the Environment was used: `gh secret list --repo hetzy8/kobob` must show no `B2_*`, `AGE_*` or `BACKUP_*` names. If it shows any, the ops change was missing: delete them and stop.
+
+**Result of Step 6 (2026-11-07):** done. The `backup` Environment exists with a custom branch policy admitting only `main`; its five secrets are `AGE_PUBLIC_KEY`, `B2_BUCKET`, `B2_KEY`, `B2_KEY_ID` and `BACKUP_DATABASE_URL`, written by ops `secrets.mjs rotate --apply` (first write, nothing old to revoke; the five values are now in Bitwarden `shared`). Audit shows only the two pre-existing getmygoals gaps. Repo-level secrets hold only `VERCEL_DEPLOY_HOOK_URL`.
 
 - [x] **Step 7: Release.** Done 2026-11-07 as v0.7.0 (`30ef6a6`, PR #44, deploy run 42361889618 green). Step 1 then found PostgreSQL 18.6 on Neon; PR #45 re-pins the tooling to 18 and needs its own release before step 8. Original text: After Gate A, on Yoram's go: the `dev` → `main` PR per OPERATIONS.md, smoke gate green, tag `v0.7.0`, record it, recreate `dev`. No migration. Confirm on production: the tab title is `יקי חץ` and the banner is gone.
 
